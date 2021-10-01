@@ -75,7 +75,6 @@ jobs:
         GRB_LICENSE_FILE_CONTENTS: ${{ secrets.GRB_LICENSE_FILE_CONTENTS }}
       run: |
         printenv GRB_LICENSE_FILE_CONTENTS > $HOME/gurobi.lic
-        wc $HOME/gurobi.lic
     - name: Test with tox
       run: |
         tox -e ${{ matrix.toxenv }}
