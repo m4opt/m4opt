@@ -1,9 +1,17 @@
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
+from gurobipy import Model
 
-# Packages may add whatever they like to this file, but
-# should keep this content at the top.
-# ----------------------------------------------------------------------------
 from ._astropy_init import *   # noqa
-# ----------------------------------------------------------------------------
 
 __all__ = []
+
+
+def big_gurobi_problem():
+    m = Model()
+    m.addMVar(10000)
+    m.optimize()
+
+
+def small_gurobi_problem():
+    m = Model()
+    m.addMVar(1000)
+    m.optimize()
