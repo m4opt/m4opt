@@ -1,4 +1,4 @@
-from .. import big_gurobi_problem, small_gurobi_problem
+from ..gurobi import big_gurobi_problem, small_gurobi_problem
 
 
 def test_big_gurobi_problem():
