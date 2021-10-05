@@ -11,8 +11,6 @@ import os
 
 from astropy.version import version as astropy_version
 
-from m4opt.tests.plugins import problem_size_limits
-
 # For Astropy 3.0 and later, we can use the standalone pytest plugin
 if astropy_version < '3.0':
     from astropy.tests.pytest_plugins import *  # noqa
@@ -25,8 +23,7 @@ else:
     except ImportError:
         ASTROPY_HEADER = False
 
-from .tests.plugins.problem_size_limits import (  # noqa: F401
-    pytest_runtest_call)
+from .tests.plugins.problem_size_limits import pytest_runtest_call  # noqa: F401
 
 
 def pytest_configure(config):
