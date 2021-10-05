@@ -25,7 +25,8 @@ else:
     except ImportError:
         ASTROPY_HEADER = False
 
-from .tests.plugins.problem_size_limits import pytest_runtest_call  # noqa
+from .tests.plugins.problem_size_limits import (  # noqa: F401
+    pytest_runtest_call)
 
 
 def pytest_configure(config):
