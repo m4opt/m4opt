@@ -10,12 +10,14 @@ packagename.test
 import os
 
 try:
-    from pytest_astropy_header.display import PYTEST_HEADER_MODULES, TESTED_VERSIONS
+    from pytest_astropy_header.display import (
+        PYTEST_HEADER_MODULES, TESTED_VERSIONS)
     ASTROPY_HEADER = True
 except ImportError:
     ASTROPY_HEADER = False
 
-from .tests.plugins.problem_size_limits import pytest_runtest_call  # noqa: F401
+from .tests.plugins.problem_size_limits import (  # noqa: F401
+    pytest_runtest_call)
 
 
 def pytest_configure(config):
@@ -31,7 +33,8 @@ def pytest_configure(config):
         config.option.astropy_header = True
 
         # Customize the following lines to add/remove entries from the list of
-        # packages for which version numbers are displayed when running the tests.
+        # packages for which version numbers are displayed when running the
+        # tests.
         PYTEST_HEADER_MODULES.pop('Pandas', None)
         PYTEST_HEADER_MODULES['scikit-image'] = 'skimage'
 
@@ -39,8 +42,8 @@ def pytest_configure(config):
         packagename = os.path.basename(os.path.dirname(__file__))
         TESTED_VERSIONS[packagename] = __version__
 
-# Uncomment the last two lines in this block to treat all DeprecationWarnings as
-# exceptions. For Astropy v2.0 or later, there are 2 additional keywords,
+# Uncomment the last two lines in this block to treat all DeprecationWarnings
+# as exceptions. For Astropy v2.0 or later, there are 2 additional keywords,
 # as follow (although default should work for most cases).
 # To ignore some packages that produce deprecation warnings on import
 # (in addition to 'compiler', 'scipy', 'pygments', 'ipykernel', and
