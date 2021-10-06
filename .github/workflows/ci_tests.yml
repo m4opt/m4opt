@@ -14,13 +14,14 @@ jobs:
   ci_tests:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    container: python:${{ matrix.python }}
     strategy:
       matrix:
         include:
-          - name: Code style checks
-            os: ubuntu-latest
-            python: 3.x
-            toxenv: codestyle
+          # - name: Code style checks
+          #   os: ubuntu-latest
+          #   python: 3.x
+          #   toxenv: codestyle
 
           - name: Python 3.7 with minimal dependencies
             os: ubuntu-latest
@@ -32,15 +33,15 @@ jobs:
             python: 3.8
             toxenv: py38-test-alldeps-cov
 
-          - name: OS X - Python 3.8 with all optional dependencies
-            os: macos-latest
-            python: 3.8
-            toxenv: py38-test-alldeps
+          # - name: OS X - Python 3.8 with all optional dependencies
+          #   os: macos-latest
+          #   python: 3.8
+          #   toxenv: py38-test-alldeps
 
-          - name: Windows - Python 3.8 with all optional dependencies
-            os: windows-latest
-            python: 3.8
-            toxenv: py38-test-alldeps
+          # - name: Windows - Python 3.8 with all optional dependencies
+          #   os: windows-latest
+          #   python: 3.8
+          #   toxenv: py38-test-alldeps
 
           # - name: Python 3.7 with oldest supported version of all dependencies
           #   os: ubuntu-16.04
@@ -62,10 +63,10 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - name: Set up python ${{ matrix.python }} on ${{ matrix.os }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python }}
+    # - name: Set up python ${{ matrix.python }} on ${{ matrix.os }}
+    #   uses: actions/setup-python@v2
+    #   with:
+    #     python-version: ${{ matrix.python }}
     - name: Install base dependencies
       run: |
         python -m pip install --upgrade pip
