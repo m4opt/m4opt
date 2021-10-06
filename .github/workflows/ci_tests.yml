@@ -32,15 +32,15 @@ jobs:
             python: 3.8
             toxenv: py38-test-alldeps-cov
 
-          - name: OS X - Python 3.8 with all optional dependencies
-            os: macos-latest
-            python: 3.8
-            toxenv: py38-test-alldeps
+          # - name: OS X - Python 3.8 with all optional dependencies
+          #   os: macos-latest
+          #   python: 3.8
+          #   toxenv: py38-test-alldeps
 
-          - name: Windows - Python 3.8 with all optional dependencies
-            os: windows-latest
-            python: 3.8
-            toxenv: py38-test-alldeps
+          # - name: Windows - Python 3.8 with all optional dependencies
+          #   os: windows-latest
+          #   python: 3.8
+          #   toxenv: py38-test-alldeps
 
           # - name: Python 3.7 with oldest supported version of all dependencies
           #   os: ubuntu-16.04
@@ -70,17 +70,25 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install tox codecov
+
     - name: Install Gurobi license
       env:
         GRB_LICENSE_FILE_CONTENTS: ${{ secrets.GRB_LICENSE_FILE_CONTENTS }}
+      if: ${{ contains(matrix.toxenv, 'test') && env.GRB_LICENSE_FILE_CONTENTS != '' }}
       run: |
-        if [ -n "$GRB_LICENSE_FILE_CONTENTS" ]
-        then
-          printenv GRB_LICENSE_FILE_CONTENTS > $HOME/gurobi.lic
-        fi
+        printenv GRB_LICENSE_FILE_CONTENTS > $HOME/gurobi.lic
+
+    - name: Install IBM ILOG CPLEX Optimization Studio
+      env:  # include env so that it can be used in the `if` clause below
+        CPLEX_STUDIO_DOWNLOAD_URL: ${{ secrets.CPLEX_STUDIO_DOWNLOAD_URL }}
+      with:
+        CPLEX_STUDIO_DOWNLOAD_URL: ${{ secrets.CPLEX_STUDIO_DOWNLOAD_URL }}
+      if: ${{ contains(matrix.toxenv, 'test') && env.CPLEX_STUDIO_DOWNLOAD_URL != '' }}
+      uses: ./.github/actions/install_cplex
+
     - name: Test with tox
       run: |
-        tox -e ${{ matrix.toxenv }}
+        tox -e ${{ matrix.toxenv }}$(if [ -e /opt/ibm/ILOG/CPLEX_Studio201 ]; then echo -cplex; fi)
     # This is an example of how to upload coverage to codecov
     # - name: Upload coverage to codecov
     #   if: "contains(matrix.toxenv, '-cov')"
