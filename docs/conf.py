@@ -61,7 +61,8 @@ exclude_patterns.append('_templates')
 
 # This is added to the end of RST files - a good place to put substitutions to
 # be used globally.
-rst_epilog += """
+rst_epilog += r"""
+.. |M4OPT| replace:: M\ :sup:`4`\ OPT
 """
 
 # -- Project information ------------------------------------------------------
@@ -204,3 +205,9 @@ linkcheck_anchors = False
 #     dtype, target = line.split(None, 1)
 #     target = target.strip()
 #     nitpick_ignore.append((dtype, six.u(target)))
+
+
+# -- Options for intersphinx --------------------------------------------------
+intersphinx_mapping.update({
+    'pip': ('https://pip.pypa.io/en/stable/', None),
+})

@@ -1,14 +1,12 @@
-Documentation
-=============
+|M4OPT|: Multi-Mission Multi-Messenger Observation Planning Toolkit
+===================================================================
 
-This is the documentation for m4opt.
+|M4OPT| is an open-source toolkit for multi-facility scheduling of astrophysics observing campaigns. It focuses on extremely rapid follow-up of gravitational wave (GW) and neutrino events with heterogeneous networks of space and ground-based observatories.
+
+Getting Started
+---------------
 
 .. toctree::
-  :maxdepth: 2
+   :maxdepth: 1
 
-  m4opt/index.rst
-
-.. note:: The layout of this directory is simply a suggestion.  To follow
-          traditional practice, do *not* edit this page, but instead place
-          all documentation for the package inside ``m4opt/``.
-          You can follow this practice or choose your own layout.
+   install
