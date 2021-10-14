@@ -1,3 +1,5 @@
+.. highlight:: sh
+
 Install |M4OPT|
 ===============
 
