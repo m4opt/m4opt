@@ -52,10 +52,10 @@ jobs:
           #   python: 3.8
           #   toxenv: py38-test-devdeps
 
-          # - name: Test building of Sphinx docs
-          #   os: ubuntu-latest
-          #   python: 3.x
-          #   toxenv: build_docs
+          - name: Test building of Sphinx docs
+            os: ubuntu-latest
+            python: 3.8
+            toxenv: build_docs
 
     steps:
     - name: Checkout code
@@ -95,3 +95,12 @@ jobs:
     #   uses: codecov/codecov-action@v1
     #   with:
     #     file: ./coverage.xml
+
+    # FIXME: remove this step once project is public and readthedocs is turned on
+    - name: Archive documentation
+      uses: actions/upload-artifact@v2
+      if: ${{ matrix.toxenv == 'build_docs' }}
+      with:
+        name: docs
+        path: |
+          docs/_build/html
