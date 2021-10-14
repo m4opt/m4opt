@@ -1,5 +1,6 @@
+###################################################################
 |M4OPT|: Multi-Mission Multi-Messenger Observation Planning Toolkit
-===================================================================
+###################################################################
 
 |M4OPT| is an open-source toolkit for multi-facility scheduling of astrophysics
 observing campaigns. It focuses on extremely rapid follow-up of gravitational
@@ -18,15 +19,6 @@ the `Astropy`_ ecosystem. It also complies with `NASA Procedural Requirements
 classifications>`_ and is suitable for non-safety-critical ground software
 applications for `Class D NASA payloads <NPR 8705.4A>`_.
 
-Getting Started
----------------
-
-.. toctree::
-   :maxdepth: 1
-
-   install
-   solvers
-
 .. _`mixed integer programming`: https://en.wikipedia.org/wiki/Integer_programming
 .. _`CPLEX`: https://www.ibm.com/products/ilog-cplex-optimization-studio
 .. _`Gurobi`: https://www.gurobi.com
@@ -35,3 +27,24 @@ Getting Started
 .. _`NPR 7150.2C`: https://nodis3.gsfc.nasa.gov/displayDir.cfm?t=NPR&c=7150&s=2C
 .. _`NPR 7150.2C software classifications`: https://nodis3.gsfc.nasa.gov/displayDir.cfm?Internal_ID=N_PR_7150_002C_&page_name=AppendixD
 .. _`NPR 8705.4A`: https://nodis3.gsfc.nasa.gov/displayDir.cfm?t=NPR&c=8705&s=4A
+
+***************
+Getting Started
+***************
+
+.. toctree::
+   :maxdepth: 1
+
+   install
+   solvers
+
+*****
+Index
+*****
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+.. _feedback@astropy.org: mailto:feedback@astropy.org
+.. _affiliated packages: https://www.astropy.org/affiliated/
