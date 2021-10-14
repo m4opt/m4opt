@@ -38,6 +38,27 @@ Getting Started
    install
    solvers
 
+***********************
+Developer Documentation
+***********************
+
+.. toctree::
+   :maxdepth: 1
+
+   changes
+   contributing
+   testing
+
+***************
+Project Details
+***************
+
+.. toctree::
+   :maxdepth: 1
+
+   requirements
+   npr7150
+
 *****
 Index
 *****
