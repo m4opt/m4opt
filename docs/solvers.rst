@@ -1,29 +1,32 @@
 Install third-party solvers
 ===========================
 
-For the largest problems, |M4OPT| requires a commercial MIP solver: `CPLEX`_ or
-`Gurobi`_. Both products are available for free for academic users (students,
-staff, and faculty at accredited educational institutions).
+For the largest problems, |M4OPT| requires a commercial MIP solver: `IBM ILOG
+CPLEX Optimization Studio`_ (just "CPLEX" for short) or `Gurobi`_. Both
+products are available for free for academic users (students, staff, and
+faculty at accredited educational institutions).
 
-CPLEX
------
+.. _`IBM ILOG CPLEX Optimization Studio`: https://www.ibm.com/products/ilog-cplex-optimization-studio
+.. _`Gurobi`: https://www.gurobi.com
 
-`IBM ILOG CPLEX Optimization Studio <CPLEX>`_ (just "CPLEX" for short) comes
-with a variety of tools and a full-featured integrated development environment
-(IDE). However, we require only two components, the lightweight `cplex
-<cplex (Python package)>`_ and `docplex`_ Python packages.
+Install CPLEX
+-------------
 
-.. _`cplex (Python package)`: https://pypi.org/project/cplex/
+CPLEX comes with a variety of tools and interfaces including a full-featured
+integrated development environment (IDE). However, we require only two
+components, the lightweight `cplex`_ and `docplex`_ Python packages.
+
+.. _`cplex`: https://pypi.org/project/cplex/
 .. _`docplex`: https://pypi.org/project/docplex/
 
 Academic users
 ~~~~~~~~~~~~~~
 
-Academic users cannot use the versions of `cplex <cplex (Python package)>`_ and
-`docplex`_ that are installed automatically when you :doc:`install M4OPT using
-pip <install>`. Instead, they need to use the Python packages that come with
-the full academic software distribution of IBM ILOG CPLEX Optimization Studio,
-following the instructions below.
+Academic users cannot use the versions of `cplex`_ and `docplex`_ that are
+installed automatically when you :doc:`install M4OPT using pip <install>`.
+Instead, they need to use the Python packages that come with the full academic
+software distribution of IBM ILOG CPLEX Optimization Studio, following the
+instructions below.
 
 1. In a Web browser, navigate to the `IBM Academic Initiative Data Science`_
    site.
@@ -71,8 +74,8 @@ required. Follow these two steps:
 
 .. _`CPLEX license types`: https://www.ibm.com/products/ilog-cplex-optimization-studio/pricing
 
-Gurobi
-------
+Install Gurobi
+--------------
 
 Gurobi for Python is distributed as the lightweight `gurobipy`_ Python package.
 It is installed automatically when you :doc:`install M4OPT using pip

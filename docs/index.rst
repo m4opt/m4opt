@@ -28,6 +28,8 @@ Getting Started
    solvers
 
 .. _`mixed integer programming`: https://en.wikipedia.org/wiki/Integer_programming
+.. _`CPLEX`: https://www.ibm.com/products/ilog-cplex-optimization-studio
+.. _`Gurobi`: https://www.gurobi.com
 .. _`Astropy affiliated pacakge`: https://www.astropy.org/affiliated/
 .. _`Astropy`: https://www.astropy.org
 .. _`NPR 7150.2C`: https://nodis3.gsfc.nasa.gov/displayDir.cfm?t=NPR&c=7150&s=2C

@@ -63,8 +63,6 @@ exclude_patterns.append('_templates')
 # be used globally.
 rst_epilog += r"""
 .. |M4OPT| replace:: M\ :sup:`4`\ OPT
-.. _`CPLEX`: https://www.ibm.com/products/ilog-cplex-optimization-studio
-.. _`Gurobi`: https://www.gurobi.com
 """
 
 # -- Project information ------------------------------------------------------
