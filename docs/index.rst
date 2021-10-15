@@ -13,7 +13,8 @@ Although |M4OPT| is open source, for the largest problems it can leverage two
 industrial-strength commercial MIP solvers: `CPLEX`_ or `Gurobi`_. Both solvers
 are available for free for academic users.
 
-|M4OPT| is designed to be an `Astropy affiliated pacakge`_ to interoperate with
+|M4OPT| is designed from the `Astropy affiliated pacakge`_ template, and is 
+meant to follow those standards, including interoperability with
 the `Astropy`_ ecosystem. It also complies with `NASA Procedural Requirements
 (NPR) 7150 <NPR 7150.2C>`_ for `Class C software <NPR 7150.2C software
 classifications>`_ and is suitable for non-safety-critical ground software
