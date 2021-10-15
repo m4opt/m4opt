@@ -71,24 +71,15 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install tox codecov
 
-    - name: Install Gurobi license
-      env:
-        GRB_LICENSE_FILE_CONTENTS: ${{ secrets.GRB_LICENSE_FILE_CONTENTS }}
-      if: ${{ contains(matrix.toxenv, 'test') && env.GRB_LICENSE_FILE_CONTENTS != '' }}
-      run: |
-        printenv GRB_LICENSE_FILE_CONTENTS > $HOME/gurobi.lic
-
-    - name: Install IBM ILOG CPLEX Optimization Studio
-      env:  # include env so that it can be used in the `if` clause below
-        CPLEX_STUDIO_DOWNLOAD_URL: ${{ secrets.CPLEX_STUDIO_DOWNLOAD_URL }}
-      with:
-        CPLEX_STUDIO_DOWNLOAD_URL: ${{ secrets.CPLEX_STUDIO_DOWNLOAD_URL }}
-      if: ${{ contains(matrix.toxenv, 'test') && env.CPLEX_STUDIO_DOWNLOAD_URL != '' }}
-      uses: ./.github/actions/install_cplex
-
     - name: Test with tox
+      env:
+        CPLEX_STUDIO_KEY: ${{ secrets.CPLEX_STUDIO_KEY }}
+        GRB_LICENSE_FILE_CONTENTS: ${{ secrets.GRB_LICENSE_FILE_CONTENTS }}
       run: |
-        tox -e ${{ matrix.toxenv }}$(if [ -e /opt/ibm/ILOG/CPLEX_Studio201 ]; then echo -cplex; fi)
+        if [ -n "$GRB_LICENSE_FILE_CONTENTS" ]; then
+          printenv GRB_LICENSE_FILE_CONTENTS > $HOME/gurobi.lic
+        fi
+        tox -e ${{ matrix.toxenv }}
     # This is an example of how to upload coverage to codecov
     # - name: Upload coverage to codecov
     #   if: "contains(matrix.toxenv, '-cov')"
