@@ -51,6 +51,15 @@ Developer Documentation
    testing
    related
 
+*******
+Modules
+*******
+
+.. toctree::
+   :maxdepth: 1
+
+   reference/tests
+
 ***************
 Project Details
 ***************

@@ -211,3 +211,8 @@ linkcheck_anchors = False
 intersphinx_mapping.update({
     'pip': ('https://pip.pypa.io/en/stable/', None),
 })
+
+
+# -- Options for the sphinxcontrib.needs extension ----------------------------
+
+extensions += ["sphinxcontrib.needs"]
