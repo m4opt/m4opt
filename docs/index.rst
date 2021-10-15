@@ -48,6 +48,7 @@ Developer Documentation
    changes
    contributing
    testing
+   related
 
 ***************
 Project Details
