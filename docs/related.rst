@@ -4,7 +4,7 @@ Related Work and Recommended Reading
 Additionally, linked here are several tutorials, talks and other sources of documentation the developers found useful
 when creating |M4OPT| and other MILP-based schedulers.
 
-Previous Projects
+Related Projects
 -----------------
 * `Astroplan Scheduling Software`_: Astroplan is an open-source python package designed as a toolbox to
   help plan and schedule observing runs. Astroplan does not make use of MILP scheduling, but serves as an inspiration of
