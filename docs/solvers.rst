@@ -2,34 +2,36 @@ Install third-party solvers
 ===========================
 
 For the largest problems, |M4OPT| requires a commercial MIP solver: `IBM ILOG
-CPLEX Optimization Studio`_ (just "CPLEX" for short) or `Gurobi`_. Both
+CPLEX Optimization Studio`__ (just "CPLEX" for short) or `Gurobi`__. Both
 products are available for free for academic users (students, staff, and
 faculty at accredited educational institutions).
 
-.. _`IBM ILOG CPLEX Optimization Studio`: https://www.ibm.com/products/ilog-cplex-optimization-studio
-.. _`Gurobi`: https://www.gurobi.com
+__ https://www.ibm.com/products/ilog-cplex-optimization-studio
+__ https://www.gurobi.com
 
 Install CPLEX
 -------------
 
 CPLEX comes with a variety of tools and interfaces including a full-featured
 integrated development environment (IDE). However, we require only two
-components, the lightweight `cplex`_ and `docplex`_ Python packages.
+components, the lightweight `cplex`__ and `docplex`__ Python packages.
 
-.. _`cplex`: https://pypi.org/project/cplex/
-.. _`docplex`: https://pypi.org/project/docplex/
+__ https://pypi.org/project/cplex/
+__ https://pypi.org/project/docplex/
 
 Academic users
 ~~~~~~~~~~~~~~
 
-Academic users cannot use the versions of `cplex`_ and `docplex`_ that are
-installed automatically when you :doc:`install M4OPT using pip <install>`.
-Instead, they need to use the Python packages that come with the full academic
-software distribution of IBM ILOG CPLEX Optimization Studio, following the
-instructions below.
+Academic users cannot use the versions of cplex and docplex that are installed
+automatically when you :doc:`install M4OPT using pip <install>`. Instead, they
+need to use the Python packages that come with the full academic software
+distribution of IBM ILOG CPLEX Optimization Studio, following the instructions
+below.
 
-1. In a Web browser, navigate to the `IBM Academic Initiative Data Science`_
+1. In a Web browser, navigate to the `IBM Academic Initiative Data Science`__
    site.
+
+__ https://www.ibm.com/academic
 
 2. Register or log in using your institutional email address (ending in .edu).
 
@@ -46,13 +48,13 @@ instructions below.
    Replace ``/opt/ibm/CPLEX_Studio201`` with the path where the software was
    installed. On macOS, this may be in the ``/Applications`` directory.
 
-.. _`IBM Academic Initiative Data Science`: https://www.ibm.com/academic
-
 All others
 ~~~~~~~~~~
 
-IBM offers a `variety of license options for CPLEX <CPLEX license types>`_ and
-differentiates between "development" and "production" use.
+IBM offers a `variety of license options for CPLEX`__ and differentiates between
+"development" and "production" use.
+
+__ https://www.ibm.com/products/ilog-cplex-optimization-studio/pricing
 
 A particularly cost-effective and flexible option for non-production use is the
 "Developer Subscription". It allows a single authorized user to install and run
@@ -72,14 +74,14 @@ required. Follow these two steps:
 
    Consider adding this command to your login shell's profile script.
 
-.. _`CPLEX license types`: https://www.ibm.com/products/ilog-cplex-optimization-studio/pricing
-
 Install Gurobi
 --------------
 
-Gurobi for Python is distributed as the lightweight `gurobipy`_ Python package.
-It is installed automatically when you :doc:`install M4OPT using pip
+Gurobi for Python is distributed as the lightweight `gurobipy`__ Python
+package. It is installed automatically when you :doc:`install M4OPT using pip
 <install>`.
+
+__ https://pypi.org/project/gurobipy/
 
 No matter what kind of license that you have, to make gurobipy fully functional
 you simply need to have your ``gurobi.lic`` license file present in your home
@@ -95,14 +97,14 @@ distribution. We recommend that you use the gurobipy Python package that was
 automatically installed by pip, rather than the one that came with the Gurobi
 Optimizer installer.**
 
-.. _`gurobipy`: https://pypi.org/project/gurobipy/
-
 Academic users
 ~~~~~~~~~~~~~~
 
 1. Make sure that your computer is connected to your campus network or VPN.
 
-2. In a Web browser, navigate to `Gurobi Academic Programs and Licenses`_.
+2. In a Web browser, navigate to `Gurobi Academic Programs and Licenses`__.
+
+__ https://www.gurobi.com/academia/academic-program-and-licenses/
 
 3. Follow the instructions under the "Individual Academic Licenses" heading to
    download and install Gurobi and retrieve your ``gurobi.lic`` file using
@@ -111,12 +113,11 @@ Academic users
 4. Once you have retrieved the ``gurobi.lic`` file on your computer, it
    does not need to be connected to your campus network or VPN to use Gurobi.
 
-.. _`Gurobi Academic Programs and Licenses`: https://www.gurobi.com/academia/academic-program-and-licenses/
-
 All others
 ~~~~~~~~~~
 
-For commerical and government users, Gurobi offers a `variety of license types <Gurobi license types>`_. Contact `Gurobi sales`_ for pricing.
+For commerical and government users, `Gurobi offers a variety of license
+types`__. Contact `Gurobi sales`__ for pricing.
 
-.. _`Gurobi license types`: https://www.gurobi.com/products/licensing-options/
-.. _`Gurobi sales`: https://www.gurobi.com/products/purchase-gurobi/
+__ https://www.gurobi.com/products/licensing-options/
+__ https://www.gurobi.com/products/purchase-gurobi/

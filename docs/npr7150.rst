@@ -5,12 +5,16 @@ NPR 7150.2C
 |M4OPT| is designed to support both space-based observatories and ground-based
 telescopes. Both ground and flight software for NASA payloads are subject to
 software engineering requirements set forth in the NASA Procedural Requirements
-(NPR) document `NPR 7150.2C`_.
+(NPR) document `NPR 7150.2C`__.
+
+__ https://nodis3.gsfc.nasa.gov/displayDir.cfm?t=NPR&c=7150&s=2C
 
 The software classification determines which of NPR 7150.2C's requirements are
-in force. |M4OPT| is classified as `Class C software <NPR 7150.2C software
-classifications>`_, suitable for non-safety-critical applications on `Class D
-NASA payloads <NPR 8705.4A>`_.
+in force. |M4OPT| is classified as `Class C software`__, suitable for
+non-safety-critical applications on `Class D NASA payloads`__.
+
+__ https://nodis3.gsfc.nasa.gov/displayDir.cfm?Internal_ID=N_PR_7150_002C_&page_name=AppendixD
+__ https://nodis3.gsfc.nasa.gov/displayDir.cfm?t=NPR&c=8705&s=4A
 
 |M4OPT| is fully compliant with all requirements for Class C software. One of
 the requirements is that there must be a requirements matrix, which is
@@ -318,7 +322,6 @@ open-source scientific Python software development.
 | 5.5.3         | The project manager shall implement mandatory assessments of reported non-conformances for all COTS, GOTS, MOTS, OSS, or reused software components.                                                                                                                                                                                                                                                  | In `GitHub Issues`_                                                                        |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------+
 
-.. _`NPR 7150.2C`: https://nodis3.gsfc.nasa.gov/displayDir.cfm?t=NPR&c=7150&s=2C
 .. _`GitHub issues`: https://github.com/m4opt/m4opt/issues
 .. _`GitHub Actions`: https://github.com/m4opt/m4opt/actions
 .. _`GitHub milestones`: https://github.com/m4opt/m4opt/milestones
