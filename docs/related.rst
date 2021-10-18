@@ -1,6 +1,6 @@
 Related Work and Recommended Reading
 ====================================
-|M4OPT| builds off of the work of several previous scheduling programs, software releases, and projects linked here.
+|M4OPT| builds on several related software packages and products.
 Additionally, linked here are several tutorials, talks and other sources of documentation the developers found useful
 when creating |M4OPT| and other MILP-based schedulers.
 
