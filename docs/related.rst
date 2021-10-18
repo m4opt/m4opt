@@ -9,7 +9,7 @@ Previous Projects
 * `Astroplan Scheduling Software`_: Astroplan is an open-source python package designed as a toolbox to
   help plan and schedule observing runs. Astroplan does not make use of MILP scheduling, but serves as an inspiration of
   the type of general-use scheduling package we hope |M4OPT| can be.
-* `Gwemopt`_: Gwemopt is a graviational-wave follow-up scheduling software which uses a greedy algorithm. It was
+* `gwemopt`_: Gwemopt is a graviational-wave follow-up scheduling software which uses a greedy algorithm. It was
   used to schedule Zwicky Transient Facility (ZTF) target of opportunity (ToO) follow-up during O3.
 * `dorado-scheduling`_: Dorado is a proposed space mission for ultraviolet graviational-wave follow-up, for which an
   MILP-based ToO scheduler was developed. This scheduler makes use of IBM's CPLEX Optimization Studio.
