@@ -75,4 +75,4 @@ in the case of IWPSS, or interdisciplinarily as in the case of SPARK and ICAPS
 
 .. _`International Workshops on Planning and Scheduling for Space (IWPSS)`: https://sites.google.com/view/iwpss/
 .. _`Scheduling and Planning Applications woRKshop (SPARK)`: https://icaps21.icaps-conference.org/workshops/SPARK/
-.. _`International Conference on Automated Planning and Scheduling (ICAPS)`: https://www.icaps-conference.org/
+.. _`International Conference on Automated Planning and Scheduling (ICAPS)`: https://icaps21.icaps-conference.org/
