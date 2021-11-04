@@ -1,4 +1,4 @@
-import constraints
+import AbstractConstraints
 
 
 """
@@ -15,7 +15,7 @@ This class exists for ease of use for the user
 class Constraint_manager:
 
 
-    def __init__(self, observerData: dict):
+    def __init__(self, observerData: dict, model):
         """
         Initalize all of your local variables about the observer (or maybe
         stick with the dict?), an empty list of constraints added, and the
@@ -45,6 +45,7 @@ class Constraint_manager:
             throw ValueError
 
         constraint_to_be_added = constraintType(observerData, constraintParams)
+        constraint_to_be_added.add_self_to_model(model)
         self.constraint_list.append(constraint_to_be_added)
 
         return self
@@ -62,7 +63,7 @@ class Constraint_manager:
         something like:
 
         constraint_to_remove = __find_constraint_by_id(constraintToRemoveID)
-        constraint_to_remove.remove_self_from_model()
+        constraint_to_remove.remove_self_from_model(model)
         self.constraint_list.pop(constraint_to_remove)
             (pop might not work if it's instance vs. pointer, but do something
             similar)
