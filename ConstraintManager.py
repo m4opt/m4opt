@@ -12,7 +12,7 @@ etc.
 This class exists for ease of use for the user
 
 """
-class Constraint_manager:
+class ConstraintManager:
 
 
     def __init__(self, observerData: dict, model):
