@@ -38,7 +38,7 @@ schedule = Observer.fromFile(
 )
 
 schedule = Observer.fromFile(
-    '../telescopes/TESS.dat'
+    '../telescopes/UVEX.dat'
 ).scheduleType(
     'observerList',
     targets = ascii.read('exampleTargetList.csv')

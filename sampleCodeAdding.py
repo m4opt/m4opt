@@ -29,7 +29,7 @@ observer.addConstaint(TimeDeadlineConstraint(
 schedule = observe.solve('cplex')
 
 
-observer = Observer.fromFile('../telescopes/TESS.dat')
+observer = Observer.fromFile('../telescopes/UXEV.dat')
 observer.setScheduleType('observerList',
                          targets = ascii.read('exampleTargetList.csv'))
 observer.addConstaint(TimeDeadlineConstraint(
