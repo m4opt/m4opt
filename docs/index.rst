@@ -59,7 +59,6 @@ Project Details
 .. toctree::
    :maxdepth: 1
 
-   requirements
    npr7150
 
 *****
