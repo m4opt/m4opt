@@ -6,7 +6,7 @@ Palomar Observatory. It was designed for wide-field time-domain surveys and
 often performed Target of Opportunity (ToO) follow-up of gravitational wave
 events
 
-:Field of View:             7°.50 N-S x 7°.32 square; 47.7 deg :math:`^2` light
+:Field of View:             7°.50 N-S x 7°.32 E-W; 47.7 deg :math:`^2` light
                             sensitive area
 :Filters:                   r-, g-, i-
 :Location:                  Palomar Observatory
@@ -21,10 +21,11 @@ Objective
 
 ZTF receives a gravitational wave alert, which has an event time and a 3-D
 probability density skymap :math:`w` in right ascension, declination and
-luminosity distance. The skymap, along with a a model lightcurve :math:`L` for
+luminosity distance. The skymap, along with a a model lightcurve :math:`L`
 that describes the expected time dependence of the source's flux, and a time
-interval :math:`t` to :math:`t + \Delta T` to observe during, the goal is to
-produce a schedule that maximizes the chance of detecting the source.
+interval :math:`t` to :math:`t + \Delta T` to observe during are used to
+produce a schedule, the goal is to maximize the chance of detecting the source,
+using integrated probability observed to represent that.
 
 This schedule is produced by choosing a subset :math:`C` of the set
 of 1778 fixed reference images for ZTF, denoted :math:`P` and arranging them
@@ -32,10 +33,10 @@ into a schedule :math:`S`. Restrictions a schedule must fulfil to be valid
 are laid out in the Constraints section.
 
 The objective is to maximize the weighted coverage of where the skymap is
-observed. For a section to be marked as observed, an exposure long enough
+observed. For a pixel to be marked as observed, an exposure long enough
 to have sufficient signal-to-noise ratio (≥ 5) needs to be made.
-The length of the exposure needed primarily depends on :math:`L` and
-what time the exposure begins.
+The length of the exposure needed primarily depends on :math:`L` and when
+the exposure is taken.
 
 ..  todo:: Use the same CCD S/N equation for PSF photometry as Dorado? it's
            where I got this variable exposure idea
@@ -47,10 +48,12 @@ The decision variables consist of:
 
 *   The number of observations
 *   For each observation:
+
     -   Its pointing
     -   Its start time
     -   Its exposure time
 *   For each HEALPix pixel on the sky:
+
     -   Whether it is observed
 
 Constraints
@@ -59,8 +62,9 @@ Constraints
 ZTF observations are subject to the following constraints:
 
 *   The telescope must
+
     -   observe fields with an airmass below 2.5
-    -   observe fields greater than [DISTANCE] from the moon
+    -   observe fields greater than [DISTANCE] from the center of the moon
     -   observe fields below [max declination for ZTF]
 *   The telescope can only make observations after the sun is 18° below
     the horizon
@@ -69,6 +73,8 @@ ZTF observations are subject to the following constraints:
     bands with at least 30 minutes of time between.
 *   For a HEALPix pixel to be marked as observed, an exposure long enough to
     have SNR ≥ 5 of it must be taken.
+
+..  todo:: Fill in these values
 
 Pseudocode
 ----------
@@ -94,5 +100,3 @@ Pseudocode
         lightcurve = 'path/to/lightcurve.dat', SNR = 5).add(observer)
 
     ...
-
-B & Leo

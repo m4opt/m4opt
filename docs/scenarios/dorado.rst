@@ -49,6 +49,7 @@ The decision variables consist of:
 
 *   The number of observations
 *   For each observation:
+
     -   Its pointing
     -   Its start time
     -   Its exposure time
