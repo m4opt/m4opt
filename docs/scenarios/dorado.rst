@@ -100,4 +100,50 @@ Pseudocode
         m4opt.constraints.GalacticLatitudeConstraint(10 * u.deg)
     ]
 
-    ...
+    # load/define observer features
+    instrument_settings = {"readNoise":4, "darkNoise":3, "nPix":1000, "gain":1.0, "nBins":10, "plate_scale":25, "other":(other)}
+    observer.setInstrument(instrument_settings)
+
+    # or preload set instrument
+    observer.chooseInstrument("dorado")
+    
+    # set observer conditions
+    zodiacal = m4opt.ZodiacalBackground()
+    galactic = m4opt.GalacticBackground()
+    airglow = m4opt.AirglowBackground()
+
+    observer.background.add(zodiacal, galactic, airglow)
+    observer.background.set_extinction(True) # dust extinction
+
+    # get target set
+    # requires location and spectrum, will we consider extinction?
+    skymap = m4opt.Skymap('./file_of_skymap')
+    targets = m4opt.targets_from_skymap(Skymap)
+
+    # or just read from file
+    #target_list = m4opt.read_targets('./file_to_targets')
+
+    # need potential observing plan to evaluate?
+    # given observing_plan = [targets, times]
+    # and observer for instrument, we can do:
+
+    # get list of exposure times for each target
+    SNR_tol = 5.*u.dimensionless_unscaled
+    
+    et = []
+    for target,time in zip(obs_plan.targets, obs_plan.times):
+        et.append(m4opt.Exposure.exposure_time(target, SNR_tol, observer.Instrument, observer.background, time))
+    
+    observer.add(m4opt.constraints.TimeConstraint(obs_plan.times[2:end] - obs_plan.times[1:end-1], '<=', et[1:end-1]))
+    
+    # for exposure time calculation in Exposure(?) module
+    def exposure_time(target, snr, instrument, background, time):
+
+        source_count = get_source_count_rate(target, instrument.bandpass, extinction=background.extinction) * instrument.APERATURE_CORRECTION
+        background_count = get_background_count_rate(instrument.bandpass, target.coords, time=time, night=isNight(time))
+    
+        return _exptime(snr, source_count, background_count, instrument.DARK_NOISE, instrument.READ_NOISE, instrument.NPIX)
+        
+    
+
+
