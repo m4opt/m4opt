@@ -49,6 +49,7 @@ The decision variables consist of:
 
 *   The number of observations
 *   For each observation:
+
     -   Its pointing
     -   Its start time
     -   Its exposure time
@@ -88,16 +89,21 @@ Pseudocode
     # Factory method or subclass?
     observer = m4opt.Observer.in_orbit('path/to/ephemeris.tle')
 
-    observer.constraints += [
-        m4opt.constraints.TrappedParticleFluxConstraint(
-            flux=1*u.cm**-2*u.s**-1, energy=20*u.MeV,
-            particle='p', solar='max'),
-        m4opt.constraints.TrappedParticleFluxConstraint(
-            flux=100*u.cm**-2*u.s**-1, energy=1*u.MeV,
-            particle='e', solar='max'),
-        m4opt.constraints.SunSeparationConstraint(46 * u.deg),
-        m4opt.constraints.MoonSeparationConstraint(6 * u.deg),
-        m4opt.constraints.GalacticLatitudeConstraint(10 * u.deg)
-    ]
+    # `when=m4opt.constraints.When.OBSERVING` is the default.
+    # These constraints apply only during an observation.
+    m4opt.constraints.SunSeparationConstraint(46 * u.deg).add(observer)
+    m4opt.constraints.MoonSeparationConstraint(6 * u.deg).add(observer)
+    m4opt.constraints.GalacticLatitudeConstraint(10 * u.deg).add(observer)
+    m4opt.constraints.TrappedParticleFluxConstraint(
+        flux=1*u.cm**-2*u.s**-1, energy=20*u.MeV,
+        particle='p', solar='max').add(observer)
+    m4opt.constraints.TrappedParticleFluxConstraint(
+        flux=100*u.cm**-2*u.s**-1, energy=1*u.MeV,
+        particle='e', solar='max').add(observer)
+
+    # Constraints with when=m4opt.constraints.When.ALWAYS must
+    # always be satisfied, otherwise we kill the instrument or spacecraft!
+    m4opt.constraints.SunSeparationConstraint(10 * u.deg).add(
+        observer, when=m4opt.constraints.When.ALWAYS)
 
     ...
