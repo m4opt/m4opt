@@ -1,5 +1,5 @@
 The SED Machine and SED Machine v2
-======
+==================================
 
 The SED Machine is a combination imager and low-resolution spectrograph
 System on the Palomar 1.6 meter telescope. A modified version is being built
