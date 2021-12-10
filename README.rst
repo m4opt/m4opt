@@ -4,7 +4,9 @@ Multi-Mission Multi-Messenger Observation Planning Toolkit
 .. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
     :target: http://www.astropy.org
     :alt: Powered by Astropy Badge
-
+.. image:: https://codecov.io/gh/m4opt/m4opt/branch/main/graph/badge.svg?token=L837JHNTUV
+    :target: https://codecov.io/gh/m4opt/m4opt
+    :alt: Code coverage status
 
 License
 -------
