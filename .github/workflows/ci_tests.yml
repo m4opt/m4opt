@@ -80,12 +80,13 @@ jobs:
           printenv GRB_LICENSE_FILE_CONTENTS > $HOME/gurobi.lic
         fi
         tox -e ${{ matrix.toxenv }}
-    # This is an example of how to upload coverage to codecov
-    # - name: Upload coverage to codecov
-    #   if: "contains(matrix.toxenv, '-cov')"
-    #   uses: codecov/codecov-action@v1
-    #   with:
-    #     file: ./coverage.xml
+
+    - name: Upload coverage to codecov
+      if: "contains(matrix.toxenv, '-cov')"
+      uses: codecov/codecov-action@v2
+      env:
+        # Remove once repository is public
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     # FIXME: remove this step once project is public and readthedocs is turned on
     - name: Archive documentation
