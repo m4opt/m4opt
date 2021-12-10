@@ -1,5 +1,5 @@
-Scenarios
-=========
+Example Scenarios
+=================
 
 This section contains a selection of reference optimization problem that
 exercise and define the required features of |m4opt|. Each scenario contains a

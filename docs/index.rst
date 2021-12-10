@@ -38,6 +38,7 @@ Getting Started
 
    install
    solvers
+   scenarios/index
 
 ***********************
 Developer Documentation
