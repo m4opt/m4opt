@@ -211,3 +211,7 @@ linkcheck_anchors = False
 intersphinx_mapping.update({
     'pip': ('https://pip.pypa.io/en/stable/', None),
 })
+
+# -- Options for the sphinx.ext.todo exception --------------------------------
+# extensions += ['sphinx.ext.todo']
+todo_include_todos = True
