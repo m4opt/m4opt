@@ -7,8 +7,8 @@ This is a second draft at writing this up, with more of the bells and whistles
 This is a target of opportunity search following up a GW localization map. 
 Given a probability density skymap *w* in right ascension and declination, a
 model lightcurve *L* for the source that describes the expected time 
-dependence of the flux from the source, a time interval *t* to *t + ΔT*, and the
-set *P* of 1778 fixed pointings for ZTF. Each exposure has a quality metric
+dependence of the flux from the source, a time interval *t* to *t + ΔT*, and
+the set *P* of 1778 fixed pointings for ZTF. Each exposure has a quality metric
 *q_i* depending on several factors: what time an exposure begins; how long an
 exposure lasts; the amount of probability density within by an exposure
 footprint; and other atmospheric and observing factors, such as airmass
