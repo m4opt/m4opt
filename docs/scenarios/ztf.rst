@@ -1,9 +1,6 @@
 ZTF Target Of Opportunity Follow-up Scenario
 ============================================
 
-This is a second draft at writing this up, with more of the bells and whistles
-|M4OPT| is gonna have compared to MUSHROOMS
-
 This is a target of opportunity search following up a GW localization map. 
 Given a probability density skymap *w* in right ascension and declination, a
 model lightcurve *L* for the source that describes the expected time 
