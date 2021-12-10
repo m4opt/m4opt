@@ -3,7 +3,7 @@ ZTF
 
 Zwicky Transient Facility (ZTF) is a ground-based telescope run by Caltech at
 Palomar Observatory. It was designed for wide-field time-domain surveys and
-often performed Target of Opportunity (ToO) follow-up of gravitational wave
+often performs Target of Opportunity (ToO) follow-up of gravitational wave
 events
 
 :Field of View:             7°.50 N-S x 7°.32 E-W; 47.7 deg :math:`^2` light
@@ -22,21 +22,21 @@ Objective
 ZTF receives a gravitational wave alert, which has an event time and a 3-D
 probability density skymap :math:`w` in right ascension, declination and
 luminosity distance. The skymap, along with a a model lightcurve :math:`L`
-that describes the expected time dependence of the source's flux, and a time
+that describes the expected time dependence of the source's flux and a time
 interval :math:`t` to :math:`t + \Delta T` to observe during are used to
-produce a schedule, the goal is to maximize the chance of detecting the source,
-using integrated probability observed to represent that.
+produce a schedule.
 
 This schedule is produced by choosing a subset :math:`C` of the set
 of 1778 fixed reference images for ZTF, denoted :math:`P` and arranging them
-into a schedule :math:`S`. Restrictions a schedule must fulfil to be valid
-are laid out in the Constraints section.
+into a schedule :math:`S`. Restrictions :math:`S` must fulfil to be a valid
+schedule are laid out in the Constraints section.
 
-The objective is to maximize the weighted coverage of where the skymap is
-observed. For a pixel to be marked as observed, an exposure long enough
+The objective when creating this schedule is to maximize
+the sum of the probability density observed since it correlates with detection
+probability. For a pixel to be marked as observed, an exposure long enough
 to have sufficient signal-to-noise ratio (≥ 5) needs to be made.
-The length of the exposure needed primarily depends on :math:`L` and when
-the exposure is taken.
+The length of the exposure needed primarily depends on :math:`L` and how long
+after the event the exposure is taken.
 
 ..  todo:: Use the same CCD S/N equation for PSF photometry as Dorado? it's
            where I got this variable exposure idea
