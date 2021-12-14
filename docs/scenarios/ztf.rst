@@ -38,8 +38,8 @@ to have sufficient signal-to-noise ratio (≥ 5) needs to be made.
 The length of the exposure needed primarily depends on :math:`L` and how long
 after the event the exposure is taken.
 
-..  todo:: Use the same CCD S/N equation for PSF photometry as Dorado? it's
-           where I got this variable exposure idea
+..  todo:: Use the same CCD S/N equation for PSF photometry as Dorado? It seems
+           like this is a larger question for the group as a whole
 
 Decision Variables
 ------------------
@@ -64,8 +64,15 @@ ZTF observations are subject to the following constraints:
 *   The telescope must
 
     -   observe fields with an airmass below 2.5
-    -   observe fields greater than [DISTANCE] from the center of the moon
-    -   observe fields below [max declination for ZTF]
+    -   observe fields greater than 20 degrees from the center of the moon
+    -   observe fields not in ZTF pointing limits
+
+        -   \|HA\| < 5.95 hours
+        -   Not HA < -17.6 deg and Dec < -22 deg
+        -   Not west of HA -17.6 deg, Dec < -45 deg
+        -   Not \|HA\| > 3 deg and Dec < -46
+        -   Dec :math:`\leq` 87.5
+
 *   The telescope can only make observations after the sun is 18° below
     the horizon
 *   Observations can only be made during the provided time interval
@@ -73,8 +80,6 @@ ZTF observations are subject to the following constraints:
     bands with at least 30 minutes of time between.
 *   For a HEALPix pixel to be marked as observed, an exposure long enough to
     have SNR ≥ 5 of it must be taken.
-
-..  todo:: Fill in these values
 
 Pseudocode
 ----------
@@ -89,14 +94,20 @@ Pseudocode
     skymap, data = read_sky_map('path/to/skymap.fits')
     start_time = data['gpstime']
 
+    m4opt.objective.ToOObjective(skymap).add(observer)
+
     m4opt.constraints.SunElevationConstraint(-18 * u.deg).add(observer)
-    m4opt.constraints.MoonSeparationConstraint(6 * u.deg).add(observer)
+    m4opt.constraints.MoonSeparationConstraint(20 * u.deg).add(observer)
     m4opt.constraints.AirmassConstraint(2.5).add(observer)
     m4opt.constraints.TimeConstraint(
-        start = start_time, end = start_time + 24 * u.hour).add(observer)
+        start=start_time, end=start_time + 24 * u.hour).add(observer)
     m4opt.constraints.CadenceConstraint(
-         count = 2, time = 30 * u.minute, filters = ['r', 'g']).add(observer)
+         count=2, time=30 * u.minute, filters=['r', 'g']).add(observer)
     m4opt.constraints.SNRConstraint(
-        lightcurve = 'path/to/lightcurve.dat', SNR = 5).add(observer)
+        lightcurve='path/to/lightcurve.dat', SNR=5).add(observer)
+    '''
+    default pointing constraints automatically stored in ztf file, and
+    no additional ones are to be added
+    '''
 
     ...
