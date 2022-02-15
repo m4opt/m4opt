@@ -8,7 +8,7 @@ for photon rate evaluation
 # dependencies
 import numpy as np
 from astropy.coordinates import GeocentricTrueEcliptic, get_sun, SkyCoord
-from astropy.modeling import Model, Parameter
+from astropy.modeling import Model, CompoundModel
 from synphot.spectrum import SourceSpectrum
 from astropy.table import QTable
 import astropy.units as u
@@ -19,9 +19,8 @@ from scipy.interpolate import RegularGridInterpolator
 # all backgrounds here based on dorado-sensitivity/backgrounds
 # source: https://github.com/nasa/dorado-sensitivity/blob/main/dorado/sensitivity/backgrounds.py
 
-# TODO: should we limit objects to one spectrum each? GalacticBackground has two.
-# Alternatively, change default behavior to have lists of spectra and scale factors in each object?
-
+# TODO: should we change default behavior of GalacticBackground so that it returns one object
+# instead of a CompoundModel?
 # TODO: Should we refactor into a base PhotonSource, and have other backgrounds/sources inherit from this?
 
 class PhotonSource(Model):
@@ -34,6 +33,8 @@ class PhotonSource(Model):
         Name of object. Used for accessing internal parameters in compound background model.
     spectrum : ``synphot.SourceSpectrum`` 
         Background Spectrum used for calculating source counts
+    scale_factor : float
+        Scaling for spectrum flux
     """
 
     # definitions required for astropy.Model
@@ -56,9 +57,12 @@ class PhotonSource(Model):
     def set_spectrum(self, spectrum):
         self.spectrum = spectrum
 
+    def set_scale_factor(self, scale_factor):
+        self.scale_factor = scale_factor
+
     def evaluate(self, wavelength):
         if self.valid():
-            return self.spectrum(wavelength)
+            return self.spectrum(wavelength)*self.scale_factor
         else:
             return RuntimeError("spectrum is not defined")
 
@@ -373,20 +377,11 @@ class GalacticBackground(Model):
     n_inputs = 1 # wavelength
     n_outputs = 1 # flux
 
-    def __init__(self, name="galactic", spectrum = None, scale_fac = 1.):
+    def __init__(self, name="galactic", spectrum = None, default=0, scale_fac = 1.):
  
-        if isinstance(spectrum, (list, tuple)):
-            self.spectrum = spectrum
-        else:        
-            self.spectrum = [spectrum]
-    
-        if isinstance(scale_fac, (list, tuple)):
-            self.scale_factor = scale_fac
-        else:        
-            self.scale_factor = [scale_fac]
-    
-        assert len(self.spectrum) == len(self.scale_factor), "scale factor must be given for each input spectrum"
-
+        self.spectrum = spectrum
+        self.scale_factor = scale_fac
+        self.default = default # used only in default case
         super().__init__()
         
         #goes after __init__() because reasons(?)
@@ -404,7 +399,9 @@ class GalacticBackground(Model):
                                 amplitude=1 * PHOTLAM * u.steradian**-1 * u.arcsec**2)
         
 
-        return cls(spectrum=[galactic1, galactic2], scale_factor = [1,1])
+        # technically returns CompoundModel
+        return (cls(name='galactic1', spectrum=galactic1, default=1) + 
+                cls(name='galactic2', spectrum=galactic2, default=2))
 
     @classmethod
     def from_file(cls, path, name):
@@ -429,22 +426,60 @@ class GalacticBackground(Model):
             return True
 
     def set_spectrum(self, spectrum):
-        if isinstance(spectrum, (list, tuple)):
-            self.spectrum = spectrum
-        else:        
-            self.spectrum = [spectrum]
+        self.spectrum = spectrum
 
     def set_scale_factor(self, scale_fac):
-        if isinstance(scale_fac, (list, tuple)):
-            self.scale_factor = scale_fac
-        else:        
-            self.scale_factor = [scale_fac]
-    
-        assert len(self.spectrum) == len(self.scale_factor), "scale factor must be given for each input spectrum"
+        self.scale_factor = scale_fac
 
     def evaluate(self, wavelength):
         if self.valid():
-            return sum([sp(wavelength)*sc for sp,sc in zip(self.spectrum,self.scale_factor)])
+            return self.spectrum(wavelength)*self.scale_factor
         else:
             return RuntimeError("spectrum is not defined")
+    
+    def get_galactic_scales(self, coord):
+        """Get the Galactic diffuse emission, normalized to 1 square arcsecond.
+        Estimate the Galactic diffuse emission based on the cosecant fits from
+        Murthy (2014).
+        Parameters
+        ----------
+        coord : astropy.coordinates.SkyCoord
+            The coordinates of the object under observation.
+        Returns
+        -------
+        synphot.SourceSpectrum
+            The Galactic diffuse emission spectrum, normalized to 1 square
+            arcsecond.
+        References
+        ----------
+        https://doi.org/10.3847/1538-4357/aabcb9
+        """
 
+        # NOTE: only works with default GalacticBackground, which returns compound model
+        assert self.default == 1 or self.default == 2, "Function only works with objects instantiated from GalacticBackground.default()"
+
+        b = SkyCoord(coord).galactic.b
+        csc = 1 / np.sin(b)
+        pos = (csc > 0)
+
+        # Constants from Murthy (2014) Table 4.
+        # Note that slopes for the Southern hemisphere have been negated to cancel
+        # the minus sign in the Galactic latitude.
+        fuv_a = np.where(pos, 93.4, -205.5)
+        fuv_b = np.where(pos, 133.2, -401.8)
+
+        fuv = fuv_a + fuv_b * csc
+
+        if self.default == 1:
+            return fuv
+        else:
+            nuv_a = np.where(pos, 257.5, 66.7)
+            nuv_b = np.where(pos, 185.1, -356.3)
+            nuv = nuv_a + nuv_b * csc
+            
+            # GALEX filter effective wavelengths in angstroms from
+            # http://www.galex.caltech.edu/researcher/techdoc-ch1.html#3
+            fuv_wave = 1528
+            nuv_wave = 2271
+
+            return (nuv - fuv) / (nuv_wave - fuv_wave)
