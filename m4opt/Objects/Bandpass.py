@@ -7,6 +7,7 @@ Bandpass Object: holds bandpass information
 from astropy.modeling import Model
 
 # TODO: Should we merge this with PhotonSource? it has essentially the same features
+# except it uses Spectral Element instead of SourceSpectrum
 
 class Bandpass(Model):
     """
