@@ -21,8 +21,8 @@ from scipy.interpolate import RegularGridInterpolator
 
 # TODO: should we change default behavior of GalacticBackground so that it returns one object
 # instead of a CompoundModel?
-# TODO: Should we refactor into a base PhotonSource, and have other backgrounds/sources inherit from this?
 
+# Photon Source (target or Background)
 class PhotonSource(Model):
     """
     simple Photon Source Object
@@ -41,8 +41,9 @@ class PhotonSource(Model):
     n_inputs = 1 # wavelength
     n_outputs = 1 # flux
 
-    def __init__(self, name="target", spectrum = None):
+    def __init__(self, name="target", spectrum = None, scale_factor = 1.):
         self.spectrum = spectrum
+        self.scale_factor = scale_factor
         super().__init__()
 
         #goes after __init__() because reasons(?)
@@ -67,7 +68,7 @@ class PhotonSource(Model):
             return RuntimeError("spectrum is not defined")
 
 # Zodiacal Background
-class ZodiacalBackground(Model):
+class ZodiacalBackground(PhotonSource):
     """
     Zodiacal Background Object
 
@@ -78,7 +79,7 @@ class ZodiacalBackground(Model):
     spectrum : ``synphot.SourceSpectrum`` 
         Background Spectrum used for calculating source counts
     scale_factor : float
-        Scale factor for zodical light; expressed as a ratio between
+        Scale factor for zodiacal light; expressed as a ratio between
         desired value and set spectrum.
         See ``set_zodiacal_light_scale()`` for default estimation function,
         or ``set_scale_factor()`` for setting directly from user-provided value. 
@@ -105,17 +106,12 @@ class ZodiacalBackground(Model):
     n_inputs = 1 # wavelength
     n_outputs = 1 # flux
 
-    def __init__(self, name="zodical", spectrum = None, scale_fac = 1.):
-        self.spectrum = spectrum
-        self.scale_factor = scale_fac
-        self.zodical_angular_dependence = None
-        super().__init__()
-
-        #goes after __init__() because reasons(?)
-        self.name = name
+    def __init__(self, name="zodiacal", spectrum = None, scale_fac = 1.):
+        self.zodiacal_angular_dependence = None
+        super().__init__(name, spectrum, scale_fac)
 
     @classmethod
-    def from_file(cls, path, name="zodical"):
+    def from_file(cls, path, name="zodiacal"):
         table = QTable.read(path)
         
         spectrum = SourceSpectrum(Empirical1D,
@@ -146,25 +142,6 @@ class ZodiacalBackground(Model):
             amplitude= amp * PHOTLAM * u.steradian**-1 * u.arcsec**2)
         return cls(name=name, spectrum=spectrum)
 
-    def valid(self):
-        if self.spectrum is None:
-            return False
-        else:
-            return True
-
-    def set_spectrum(self, spectrum):
-        self.spectrum = spectrum
-
-    def set_scale_factor(self, scale_fac):
-        self.scale_factor = scale_fac
-
-    def evaluate(self, wavelength):
-        if self.valid():
-            return self.spectrum(wavelength)*self.scale_factor
-        else:
-            return RuntimeError("spectrum is not defined")
-
-
     def set_zodiacal_light_scale(self, coord, time):
         """
         Taken from dorado-sensitivity/backgrounds.py
@@ -191,8 +168,8 @@ class ZodiacalBackground(Model):
         https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-5-detector-and-sky-backgrounds
         """
 
-        if self.zodical_angular_dependence is None:
-            self.zodical_angular_dependence = self.get_zodi_angular_interp()
+        if self.zodiacal_angular_dependence is None:
+            self.zodiacal_angular_dependence = self.get_zodi_angular_interp()
 
         obj = SkyCoord(coord).transform_to(GeocentricTrueEcliptic(equinox=time))
         sun = get_sun(time).transform_to(GeocentricTrueEcliptic(equinox=time))
@@ -238,7 +215,7 @@ class ZodiacalBackground(Model):
 
 
 # Airglow Background
-class AirglowBackground(Model):
+class AirglowBackground(PhotonSource):
     """
     Airglow Background Object
 
@@ -274,11 +251,7 @@ class AirglowBackground(Model):
 
     def __init__(self, name="airglow", spectrum = None, scale_fac = 1.):
         
-        self.spectrum = spectrum
-        self.scale_factor = scale_fac
-        super().__init__()
-        #goes after __init__() because reasons(?)
-        self.name = name
+        super().__init__(name, spectrum, scale_fac)
         
     @classmethod
     def default(cls):
@@ -305,36 +278,9 @@ class AirglowBackground(Model):
             amplitude= amp * PHOTLAM * u.steradian**-1 * u.arcsec**2)
         return cls(name=name, spectrum=spectrum)
 
-    def valid(self):
-        if self.spectrum is None:
-            return False
-        else:
-            return True
-
-    def set_spectrum(self, spectrum):
-        self.spectrum = spectrum
-
-    def set_scale_factor(self, scale_fac):
-        self.scale_factor = scale_fac
-
-    def evaluate(self, wavelength):
-        if self.valid():
-            return self.spectrum(wavelength)*self.scale_factor
-        else:
-            return RuntimeError("spectrum is not defined")
-
     def set_airglow_scale(self, night):
-        """Get the scale factor for the airglow spectrum.
-        Estimate the ratio between the airglow and its daytime value.
-        Parameters
-        ----------
-        night : bool
-            Use the "low" value if True, or the "average" value if False.
-        Returns
-        -------
-        scale : float
-            The airglow scale factor.
-        References
+        """
+        Reference
         ----------
         https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-5-detector-and-sky-backgrounds
         """
@@ -342,7 +288,7 @@ class AirglowBackground(Model):
 
 
 # Galactic light background
-class GalacticBackground(Model):
+class GalacticBackground(PhotonSource):
     """
     Galactic Background Object
 
@@ -356,16 +302,17 @@ class GalacticBackground(Model):
     scale_factor : float
         Scale factor for galactic light; expressed as a ratio between
         desired value and set spectrum.
-        See ``set_galactic_scale()`` for default estimation function,
+        See ``get_default_galactic_scale()`` for default estimation function,
         or ``set_scale_factor()`` for setting directly from user-provided value. 
 
     Notes
     -----
-    ``default()`` estimatea the Galactic diffuse emission based on the cosecant fits from
-    Murthy (2014). In this case, there are two combined spectra and two scale factors. 
-    ``set_galactic_scale()`` will provide correct scale factors based on galactic coordinate.
+    ``default()`` estimates the Galactic diffuse emission based on the cosecant fits from
+    Murthy (2014). In this case, there are two combined spectra and two scale factors, so the 
+    class returned by ``default()`` is actually a ``CompoundModel``, not a ``GalacticBackground``.
+    In this case, ``get_default_galactic_scale()`` will provide correct default scale factors based on galactic coordinate.
 
-    Otherwise, if user-defined spectrum(s) is provided, ``set_scale_factor()`` should instead
+    However, if user-defined spectrum(s) is provided, ``set_scale_factor()`` should instead
     be used to directly set the appropriate scale factor(s).
 
     Examples
@@ -379,13 +326,8 @@ class GalacticBackground(Model):
 
     def __init__(self, name="galactic", spectrum = None, default=0, scale_fac = 1.):
  
-        self.spectrum = spectrum
-        self.scale_factor = scale_fac
         self.default = default # used only in default case
-        super().__init__()
-        
-        #goes after __init__() because reasons(?)
-        self.name = name
+        super().__init__(name, spectrum, scale_fac)
         
     @classmethod
     def default(cls):
@@ -419,25 +361,7 @@ class GalacticBackground(Model):
             amplitude= amp * PHOTLAM * u.steradian**-1 * u.arcsec**2)
         return cls(name=name, spectrum=spectrum)    
 
-    def valid(self):
-        if self.spectrum is None:
-            return False
-        else:
-            return True
-
-    def set_spectrum(self, spectrum):
-        self.spectrum = spectrum
-
-    def set_scale_factor(self, scale_fac):
-        self.scale_factor = scale_fac
-
-    def evaluate(self, wavelength):
-        if self.valid():
-            return self.spectrum(wavelength)*self.scale_factor
-        else:
-            return RuntimeError("spectrum is not defined")
-    
-    def get_galactic_scales(self, coord):
+    def get_default_galactic_scales(self, coord):
         """Get the Galactic diffuse emission, normalized to 1 square arcsecond.
         Estimate the Galactic diffuse emission based on the cosecant fits from
         Murthy (2014).
