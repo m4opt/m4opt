@@ -7,7 +7,7 @@ and Spectrum (background and/or target)
 from astropy.modeling import CompoundModel
 from synphot.units import PHOTLAM
 import astropy.units as u
-from PhotonSource import set_background_scales
+from .PhotonSource import set_background_scales
 
 # TODO: further generalize functions; currently based on dorado-sensitivity
 # (for Dorado instrument)
