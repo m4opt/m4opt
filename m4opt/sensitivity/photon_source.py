@@ -8,7 +8,7 @@ for photon rate evaluation
 # dependencies
 import numpy as np
 from astropy.coordinates import GeocentricTrueEcliptic, get_sun, SkyCoord
-from astropy.modeling import Model
+from astropy.modeling import Model, CompoundModel
 from synphot.spectrum import SourceSpectrum
 from astropy.table import QTable
 import astropy.units as u
@@ -17,10 +17,6 @@ from synphot.units import PHOTLAM
 from scipy.interpolate import RegularGridInterpolator
 
 # all backgrounds here based on dorado-sensitivity/backgrounds
-
-
-# TODO: should we change default behavior of GalacticBackground
-# so that it returns one object instead of a CompoundModel?
 
 
 # Photon Source (target or Background)
@@ -48,6 +44,10 @@ class PhotonSource(Model):
         self.scale_factor = scale_factor
         super().__init__()
 
+        # set for convenience; can be overloaded by custom function
+        self.set_scale = self.set_scale_factor
+        self.scale_args = ['scale_factor']
+
         # goes after __init__() because reasons(?)
         self.name = name
 
@@ -68,6 +68,16 @@ class PhotonSource(Model):
             return self.spectrum(wavelength)*self.scale_factor
         else:
             return RuntimeError("spectrum is not defined")
+
+    def provide_scale_function(self, scale_func, arguments):
+        """
+        Provide custom function for setting scale_factor
+        """
+        if callable(scale_func):
+            self.set_scale = scale_func
+            self.scale_args = arguments
+        else:
+            raise TypeError("scale_func must be a function")
 
 
 # Zodiacal Background
@@ -112,7 +122,7 @@ class ZodiacalBackground(PhotonSource):
     n_outputs = 1  # flux
 
     def __init__(self, name="zodiacal", spectrum=None, scale_fac=1.):
-        self.zodiacal_angular_dependence = None
+        self.zodi_angular_dependence = None
         super().__init__(name, spectrum, scale_fac)
 
     @classmethod
@@ -142,7 +152,10 @@ class ZodiacalBackground(PhotonSource):
             lookup_table=table['surface_brightness'] * u.arcsec**2
             )
 
-        return cls(spectrum=high_zodiacal)
+        object = cls(spectrum=high_zodiacal)
+        object.provide_scale_function(object.set_zodiacal_light_scale,
+                                      ['coord', 'time'])
+        return object
 
     @classmethod
     def from_amplitude(cls, amp, name):
@@ -178,8 +191,8 @@ class ZodiacalBackground(PhotonSource):
         https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-5-detector-and-sky-backgrounds
         """
 
-        if self.zodiacal_angular_dependence is None:
-            self.zodiacal_angular_dependence = self.get_zodi_angular_interp()
+        if self.zodi_angular_dependence is None:
+            self.zodi_angular_dependence = self.get_zodi_angular_interp()
 
         obj = SkyCoord(coord).transform_to(
             GeocentricTrueEcliptic(equinox=time)
@@ -199,7 +212,7 @@ class ZodiacalBackground(PhotonSource):
             result = result.item()
 
         result -= self.zodi_angular_dependence([180, 0]).item()
-        return u.mag(1).to_physical(result)
+        self.scale_factor = u.mag(1).to_physical(result)
 
     @staticmethod
     def set_zodi_angular_interp():
@@ -277,7 +290,10 @@ class AirglowBackground(PhotonSource):
             fwhm=0.023 * u.angstrom,
             total_flux=1.5e-15 * u.erg * u.s**-1 * u.cm**-2
             )
-        return cls(spectrum=default_airglow)
+
+        object = cls(spectrum=default_airglow)
+        object.provide_scale_function(object.set_airglow_scale, ['night'])
+        return object
 
     @classmethod
     def from_file(cls, path, name):
@@ -306,6 +322,9 @@ class AirglowBackground(PhotonSource):
         https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-5-detector-and-sky-backgrounds
         """
         self.scale_factor = np.where(night, 1e-2, 1)
+
+# TODO: should we change default behavior of GalacticBackground
+# so that it returns one object instead of a CompoundModel?
 
 
 # Galactic light background
@@ -370,8 +389,14 @@ class GalacticBackground(PhotonSource):
             )
 
         # technically returns CompoundModel
-        return (cls(name='galactic1', spectrum=galactic1, default=1) +
-                cls(name='galactic2', spectrum=galactic2, default=2))
+        gal1 = cls(name='galactic1', spectrum=galactic1, default=1)
+        gal2 = cls(name='galactic2', spectrum=galactic2, default=2)
+        gal1.provide_scale_function(gal1.get_default_galactic_scales,
+                                    ['coord'])
+        gal2.provide_scale_function(gal2.get_default_galactic_scales,
+                                    ['coord'])
+
+        return gal1 + gal2
 
     @classmethod
     def from_file(cls, path, name):
@@ -430,7 +455,7 @@ class GalacticBackground(PhotonSource):
         fuv = fuv_a + fuv_b * csc
 
         if self.default == 1:
-            return fuv
+            self.scale_factor = fuv
         else:
             nuv_a = np.where(pos, 257.5, 66.7)
             nuv_b = np.where(pos, 185.1, -356.3)
@@ -441,4 +466,29 @@ class GalacticBackground(PhotonSource):
             fuv_wave = 1528
             nuv_wave = 2271
 
-            return (nuv - fuv) / (nuv_wave - fuv_wave)
+            self.scale_factor = (nuv - fuv) / (nuv_wave - fuv_wave)
+
+
+def set_background_scales(background, **kwargs):
+    if isinstance(background, CompoundModel):
+        for name in background.submodel_names:
+            set_background_scales(background[name], **kwargs)
+    else:
+        needed_args = background.scale_args
+        kw = {}
+        for arg in needed_args:
+            try:
+                arg_val = kwargs[arg]
+                kw[arg] = arg_val
+            except KeyError:
+                raise ValueError(
+                    "Required Argument {0} for {1} not found.".format(
+                        arg, background.name
+                        ),
+                    "Please provide arguments: {0}".format(
+                        needed_args
+                        )
+                    )
+
+        background.set_scale(**kw)
+

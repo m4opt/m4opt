@@ -7,6 +7,7 @@ and Spectrum (background and/or target)
 from astropy.modeling import CompoundModel
 from synphot.units import PHOTLAM
 import astropy.units as u
+from PhotonSource import *
 
 # TODO: further generalize functions; currently based on dorado-sensitivity
 # (for Dorado instrument)
@@ -16,14 +17,21 @@ import astropy.units as u
 # since I am not able to extend them with the integrate() function
 def integrate_bandpass(background, bandpass, **kwargs):
     if isinstance(background, CompoundModel):
-        keys = [bk for bk in background.submodel_names]
         return sum([(background[name].scale_factor*background[name].spectrum *
-                     bandpass.bandpass).integrate(**kwargs) for name in keys])
+                    bandpass.bandpass).integrate(**kwargs) 
+                    for name in background.submodel_names])
     else:  # TODO: could check isinstance(background, Background) in future
         return (background.scale_factor *
                 background.spectrum * bandpass.bandpass).integrate(**kwargs)
 
 
-def get_count_rate(bkg, bandpass, instrument):
-    flux = integrate_bandpass(bkg, bandpass, flux_unit=PHOTLAM)
+def get_count_rate(source, bandpass, instrument):
+    flux = integrate_bandpass(source, bandpass, flux_unit=PHOTLAM)
     return flux * (instrument.area / u.ph)
+
+
+def get_background_count_rate(background, bandpass, instrument, **kwargs):
+    # set scale factors
+    set_background_scales(background, **kwargs)
+
+    return get_count_rate(background, bandpass, instrument)
