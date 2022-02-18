@@ -491,4 +491,3 @@ def set_background_scales(background, **kwargs):
                     )
 
         background.set_scale(**kw)
-
