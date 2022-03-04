@@ -40,6 +40,15 @@ Getting Started
    solvers
    scenarios/index
 
+******************
+User Documentation
+******************
+
+.. toctree::
+   :maxdepth: 1
+
+   models
+
 ***********************
 Developer Documentation
 ***********************
