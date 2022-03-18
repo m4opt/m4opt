@@ -12,9 +12,9 @@ from astropy import units as u
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
+from ..core import state
 from . import data
 from .core import Background
-from ..state import position, time
 
 mag_to_scale = u.mag(1).to_physical
 mag_low = 23.3
@@ -54,11 +54,11 @@ def read_leinert_angular_interp():
     return RegularGridInterpolator([lon, lat], sb)
 
 
-def get_scale(position, time):
+def get_scale(target_coord, obstime):
     interp = read_leinert_angular_interp()
-    frame = GeocentricTrueEcliptic(equinox=time)
-    obj = SkyCoord(position).transform_to(frame)
-    sun = get_sun(time).transform_to(frame)
+    frame = GeocentricTrueEcliptic(equinox=obstime)
+    obj = SkyCoord(target_coord).transform_to(frame)
+    sun = get_sun(obstime).transform_to(frame)
 
     # Wrap angles and look up in table
     lat = np.abs(obj.lat.deg)
@@ -78,7 +78,9 @@ def get_scale(position, time):
 
 @custom_model
 def ZodiacalScale(x):
-    return get_scale(position.get(), time.get()) * u.dimensionless_unscaled
+    observing_state = state.get()
+    return get_scale(observing_state.target_coord,
+                     observing_state.obstime) * u.dimensionless_unscaled
 
 
 class ZodiacalBackground:
@@ -130,9 +132,9 @@ class ZodiacalBackground:
 
     >>> from astropy.coordinates import SkyCoord
     >>> from astropy.time import Time
-    >>> skycoord = SkyCoord.from_name('NGC 4993')
-    >>> obstime = Time('2017-08-17T12:41:04.4')
-    >>> background = ZodiacalBackground.at(position=skycoord, time=obstime)
+    >>> coord = SkyCoord.from_name('NGC 4993')
+    >>> time = Time('2017-08-17T12:41:04.4')
+    >>> background = ZodiacalBackground.at(target_coord=coord, obstime=time)
     >>> background(3000 * u.angstrom).to(u.mag(u.AB / u.arcsec**2))
     <Magnitude 24.75100719 mag(AB / arcsec2)>
 
@@ -143,14 +145,14 @@ class ZodiacalBackground:
     >>> background(3000 * u.angstrom).to(u.mag(u.AB / u.arcsec**2))
     Traceback (most recent call last):
       ...
-    ValueError: Unknown position. Please evaluate the model by providing the \
-    target position and observing time in a `with:` statement, like this:
-        from m4opt.models import position, time
-        with position.set(skycoord), time.set(obstime):
+    ValueError: Unknown target. Please evaluate the model by providing the \
+    position and observing time in a `with:` statement, like this:
+        from m4opt.models import state
+        with state.set_observing(target_coord=coord, obstime=time):
             ...  # evaluate model here
 
-    >>> from m4opt.models import position, time
-    >>> with position.set(skycoord), time.set(obstime):
+    >>> from m4opt.models import state
+    >>> with state.set_observing(target_coord=coord, obstime=time):
     ...     background(3000 * u.angstrom).to(u.mag(u.AB / u.arcsec**2))
     <Magnitude 24.75100719 mag(AB / arcsec2)>
      """  # noqa: E501
@@ -159,20 +161,20 @@ class ZodiacalBackground:
         return cls.high() * ZodiacalScale()
 
     @classmethod
-    def at(cls, position, time):
+    def at(cls, target_coord, obstime):
         """Get the model for a fixed sky position and time.
 
         Parameters
         ----------
-        position : :class:`astropy.coordinates.SkyCoord`
+        target_coord : :class:`astropy.coordinates.SkyCoord`
             The coordinates of the object under observation. If the coordinates
             do not specify a distance, then the object is assumed to be a fixed
             star at infinite distance for the purpose of calculating its
             helioecliptic position.
-        time : :class:`astropy.time.Time`
+        obstime : :class:`astropy.time.Time`
             The time of the observation.
         """
-        return cls.high() * Const1D(get_scale(position, time))
+        return cls.high() * Const1D(get_scale(target_coord, obstime))
 
     @classmethod
     def low(cls):
