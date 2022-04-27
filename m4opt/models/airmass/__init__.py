@@ -2,7 +2,7 @@ from .airmass import Airmass
 
 __all__ = ('Airmass',)
 
-__doc__ = f"""
+__doc__ = """
 Airmass models: models for light attentuation due to Earth's atmosphere.
 
 Airmass models are defined at the observatory location using extinction tables,
