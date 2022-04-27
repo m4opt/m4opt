@@ -1,0 +1,1 @@
+kpnoextinct.dat: KPNO extinction table for IRAF ONEDSPEC (in Angstroms)
