@@ -1,6 +1,6 @@
-from .airmass import Airmass
+from .airmass import Airmass, Extinction
 
-__all__ = ('Airmass',)
+__all__ = ('Airmass', Extinction)
 
 __doc__ = """
 Airmass models: models for light attentuation due to Earth's atmosphere.
