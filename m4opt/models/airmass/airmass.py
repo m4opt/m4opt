@@ -114,20 +114,23 @@ class Airmass:
 
     """
 
-    def __init__(self, earth_location):
+    def __init__(self, earth_location, model_name=None):
         if not isinstance(earth_location, EarthLocation):
             raise TypeError("Input earth_location must be of type \
                              astropy.coordinates.earth.EarthLocation")
 
         self.earth_loc = earth_location
-        self.model = simple_airmass
+        self.set_model(model_name)
         return
 
     def set_model(self, model_name):
-        if model_name.lower() not in airmass_models.keys():
+        if model_name is None:
+            self.model = simple_airmass
+        elif model_name.lower() not in airmass_models.keys():
             raise AttributeError("model must be one of {0}".format(
                                  airmass_models.keys()))
-        self.model = airmass_models[model_name.lower()]
+        else:
+            self.model = airmass_models[model_name.lower()]
 
     def at(self, target_coord, obs_time):
         """
@@ -216,7 +219,8 @@ class Extinction:
     required information:
 
     >>> place = EarthLocation(lat=41.3*u.deg, lon=-74*u.deg, height=390*u.m)
-    >>> extn = Extinction.at(place, target, time)
+    >>> airmass = Airmass(place)
+    >>> extn = Extinction.at(airmass, target, time)
     >>> extn(3200*u.Angstrom)
     0.23643960524293295
 
@@ -232,7 +236,6 @@ class Extinction:
     0.23643960524293295
 
     If we already have an airmass, we can initialize with it instead:
-    >>> airmass = Airmass(place)
     >>> extn = Extinction.from_airmass(airmass)
     >>> with state.set_observing(target_coord=target, obstime=time):
     ...     print(extn(3200*u.Angstrom))
@@ -253,9 +256,8 @@ class Extinction:
                              )
 
     @classmethod
-    def from_observer(cls, earth_loc, airmass_model='simple'):
-        airmass = Airmass(earth_loc)
-        airmass.set_model(airmass_model)
+    def from_observer(cls, earth_loc, **kwargs):
+        airmass = Airmass(earth_loc, **kwargs)
         airmass_state = KnownAirmassState(airmass)
         return Const1D(10.)**(
                               Const1D(-0.4)*airmass_state
