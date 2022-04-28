@@ -23,7 +23,7 @@ def read_kpno_table():
     """
     kpno extinction table is from IRAF ONEDSPEC, so
     x is in angstroms
-    y is in AB mag per airmass (I THINK?)
+    y is in mag per airmass
 
     """
     with resources.path(data, 'kpnoextinct.dat') as path:
@@ -50,7 +50,7 @@ def KastenYoung_airmass(z):
     """
     From Kasten, F.; Young, A. T. (1989).
     "Revised optical air mass tables and approximation formula".
-    Applied Optics. 28 (22): 4735–4738.
+    Applied Optics. 28 (22): 4735-4738.
     doi:10.1364/AO.28.004735. PMID 20555942.
 
     Original formula given in altitude, here is rewritten
@@ -73,12 +73,20 @@ class Airmass:
     Object to calculate airmass at a given observatory location,
     for a provided target SkyCoord.
 
-    Airmass
+    Airmass class currently supports two models:
+    1. 'simple' : Plane-Parallel atmosphere, airmass = 1/cos(zenith)
+    2. 'kastenyoung' : Kasten+Young89 interpolation fit to data[1]_
+
+    References
+    ----------
+    .. [1] Kasten, F.; Young, A. T. (1989). "Revised optical air mass
+           tables and approximation formula". Applied Optics. 28 (22):
+           4735-4738. doi:10.1364/AO.28.004735. PMID 20555942.
 
     Examples
     --------
-    The Airmass object requires a ground location at initialization. You can
-    pass in your own location via `astropy.coordinates.EarthLocation`:
+    The Airmass object requires a ground observer location at initialization,
+    passed in via `astropy.coordinates.EarthLocation`:
 
     >>> from m4opt.models.airmass import Airmass
     >>> import astropy.units as u
@@ -102,7 +110,7 @@ class Airmass:
 
     The default airmass model is a plane-parallel atmosphere, which defines
     the airmass as the secant of the zenith angle. We can choose a different
-    model, if we wish to use more realistic values, especially near
+    model if we wish to use more realistic values, especially near
     the horizon:
 
     >>> time = Time('2012-7-13 03:00:00')

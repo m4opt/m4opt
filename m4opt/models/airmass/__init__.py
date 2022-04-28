@@ -1,11 +1,15 @@
 from .airmass import Airmass, Extinction
 
-__all__ = ('Airmass', Extinction)
+__all__ = ('Airmass', 'Extinction',)
 
 __doc__ = """
-Airmass models: models for light attentuation due to Earth's atmosphere.
+Extinction models: models for light attentuation due to Earth's atmosphere.
+Includes Airmass Object for airmass calculation.
 
-Airmass models are defined at the observatory location using extinction tables,
-and take the sky coordinate of the target as input, and return an attentuation
-factor (dimensionless) as output.
+Extinction models are defined at the observatory location and with an
+extinction table. They take the sky coordinate of the target as input,
+and return an attentuation factor (dimensionless) as output.
+
+Airmass models are defined at the observatory location and return the airmass
+for a given target in the sky.
 """
