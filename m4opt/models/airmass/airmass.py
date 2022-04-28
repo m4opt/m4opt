@@ -85,7 +85,7 @@ class Airmass:
     >>> from astropy.coordinates import SkyCoord, EarthLocation
     >>> from astropy.time import Time
 
-    >>> place_airm = Airmass(EarthLocation(lat=41.3*u.deg, lon=-74*u.deg,
+    >>> place_airm = Airmass(EarthLocation(lat=41.3*u.deg, lon=-74*u.deg,\
                              height=390*u.m))
 
     or choose a pre-defined location, e.g. Kitt Peak:
@@ -241,7 +241,7 @@ class Extinction:
     Or we can initialize a blank state, and fill in the blanks later:
     >>> extn = Extinction()
     >>> with state.set_observing(target_coord=target, obstime=time, \
-    ...                          observatory_loc=place):
+                                 observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
     0.23643960524293295
     """
