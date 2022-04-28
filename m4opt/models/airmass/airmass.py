@@ -240,7 +240,7 @@ class Extinction:
 
     Or we can initialize a blank state, and fill in the blanks later:
     >>> extn = Extinction()
-    >>> with state.set_observing(target_coord=target, obstime=time,
+    >>> with state.set_observing(target_coord=target, obstime=time, \
     ...                          observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
     0.23643960524293295
