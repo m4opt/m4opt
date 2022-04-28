@@ -216,7 +216,7 @@ class Extinction:
     required information:
 
     >>> place = EarthLocation(lat=41.3*u.deg, lon=-74*u.deg, height=390*u.m)
-    >>> extn = Extinction.at(am_place, target, time)
+    >>> extn = Extinction.at(place, target, time)
     >>> extn(3200*u.Angstrom)
     0.23643960524293295
 
