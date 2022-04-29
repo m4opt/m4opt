@@ -27,10 +27,15 @@ jobs:
             python: 3.8
             toxenv: py38-test
 
-          - name: Python 3.9 with all optional dependencies and coverage checking
+          - name: Python 3.9 with minimal dependencies
             os: ubuntu-latest
             python: 3.9
-            toxenv: py39-test-alldeps-cov
+            toxenv: py39-test
+
+          - name: Python 3.10 with all optional dependencies and coverage checking
+            os: ubuntu-latest
+            python: '3.10'
+            toxenv: py10-test-alldeps-cov
 
           # - name: OS X - Python 3.8 with all optional dependencies
           #   os: macos-latest
