@@ -19,20 +19,25 @@ from astropy.table import QTable
 
 
 @cache
-def read_kpno_table():
+def read_extinction_table(placename):
     """
-    kpno extinction table is from IRAF ONEDSPEC, so
-    x is in angstroms
-    y is in mag per airmass
+    extinction tables usually have
+    x in angstroms
+    y in mag per airmass
 
     """
-    with resources.path(data, 'kpnoextinct.dat') as path:
-        table = QTable.read(path, format='ascii',
-                            names=('wavelength', 'extinction'))
-    x = (table['wavelength']*u.Angstrom).to(
-        AbstractExtinction.input_units['x'], equivalencies=u.spectral())
-    y = table['extinction']
-    return np.flipud(x), np.flipud(y)
+    try:
+        with resources.path(data,
+                            Extinction.available_tables[placename]) as path:
+            table = QTable.read(path, format='ascii',
+                                names=('wavelength', 'extinction'))
+        x = (table['wavelength']*u.Angstrom).to(
+            AbstractExtinction.input_units['x'], equivalencies=u.spectral())
+        y = table['extinction']
+        return np.flipud(x), np.flipud(y)
+    except KeyError:
+        raise ValueError("Invalid placename {0}. Must be one of {1}".format(
+                        placename, Extinction.available_tables.keys()))
 
 
 def simple_airmass(z):
@@ -207,8 +212,7 @@ class Extinction:
     and so require the observatory location to be defined for airmass
     calculation.
 
-    NOTE: This currently uses the extinction table for Kitt Peak. Support
-    for other extinction tables will be added in a later release.
+    NOTE: Default extinction table is Kitt Peak.
 
     Examples
     --------
@@ -255,46 +259,76 @@ class Extinction:
                                  observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
     0.23643960524293295
+
+    Finally, Extinction models require an extinction table. All of the models
+    above have used the default table. However, other tables
+    can be chosen at initialization by passing the appropriate parameter:
+    >>> Extinction.available_tables
+    {'kpno': 'kpnoextinct.dat', 'apo': 'APOextinction.dat'}
+
+    >>> extn = Extinction.at(airmass, target, time, table_name='kpno')
+    >>> extn(3200*u.Angstrom)
+    0.23643960524293295
+
+    >>> extn = Extinction(table_name='apo')
+    >>> with state.set_observing(target_coord=target, obstime=time, \
+                                 observatory_loc=place):
+    ...     print(extn(3200*u.Angstrom))
+    0.2651060248681333
+
     """
 
-    def __new__(cls):
+    def __new__(cls, table_name=None):
         return Const1D(10.)**(
                               Const1D(-0.4) * UnknownAirmassState()
-                              * cls.default_table()
+                              * cls.table(table_name)
                              )
 
     @classmethod
-    def from_observer(cls, earth_loc, **kwargs):
+    def from_observer(cls, earth_loc, table_name=None, **kwargs):
         airmass = Airmass(earth_loc, **kwargs)
         airmass_state = KnownAirmassState(airmass)
         return Const1D(10.)**(
                               Const1D(-0.4)*airmass_state
-                              * cls.default_table()
+                              * cls.table(table_name)
                               )
 
     @classmethod
-    def from_airmass(cls, airmass):
+    def from_airmass(cls, airmass, table_name=None):
         airmass_state = KnownAirmassState(airmass)
         return Const1D(10.)**(
                               Const1D(-0.4)*airmass_state
-                              * cls.default_table()
+                              * cls.table(table_name)
                               )
 
     @classmethod
-    def at(cls, airmass, target_coord, obstime):
+    def at(cls, airmass, target_coord, obstime, table_name=None):
         return Const1D(10.)**(
                               Const1D(-0.4*airmass.at(target_coord, obstime))
-                              * cls.default_table()
+                              * cls.table(table_name)
                               )
+
+    @classmethod
+    def table(cls, table_name):
+        if table_name is None:
+            return cls.default_table()
+        elif table_name.lower() not in cls.available_tables:
+            raise AttributeError("table name must be one of {0}".format(
+                                  cls.available_tables))
+        else:
+            return cls.extinction_table(table_name)
 
     @classmethod
     def default_table(cls):
         """Default Airmass Extinction Table"""
-        return cls.kpno_extinction()
+        return cls.extinction_table("kpno")
 
     @staticmethod
-    def kpno_extinction():
-        result = Tabular1D(*read_kpno_table())
+    def extinction_table(table_name):
+        result = Tabular1D(*read_extinction_table(table_name))
         result.input_units_equivalencies = (AbstractExtinction.
                                             input_units_equivalencies)
         return result
+
+    available_tables = {'kpno': 'kpnoextinct.dat',
+                        'apo': 'APOextinction.dat'}
