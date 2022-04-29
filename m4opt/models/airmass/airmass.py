@@ -122,13 +122,13 @@ class Airmass:
 
     """
 
-    def __init__(self, earth_location, model_name=None):
+    def __init__(self, earth_location, airmass_model=None):
         if not isinstance(earth_location, EarthLocation):
             raise TypeError("Input earth_location must be of type \
                              astropy.coordinates.earth.EarthLocation")
 
         self.earth_loc = earth_location
-        self.set_model(model_name)
+        self.set_model(airmass_model)
         return
 
     def set_model(self, model_name):
