@@ -1,3 +1,4 @@
 from .core import state
+from .math import integrate
 
-__all__ = ('state',)
+__all__ = ('integrate', 'state',)
