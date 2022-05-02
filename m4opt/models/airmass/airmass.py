@@ -267,7 +267,7 @@ class AtmoExtinction:
 
     >>> extn = AtmoExtinction.at(airmass, target, time, table_name='kpno')
     >>> extn(3200*u.Angstrom)
-   <Quantity 0.23643961>
+    <Quantity 0.23643961>
 
     >>> extn = AtmoExtinction(table_name='apo')
     >>> with state.set_observing(target_coord=target, obstime=time, \
