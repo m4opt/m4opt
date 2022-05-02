@@ -110,7 +110,7 @@ class Airmass:
     >>> time = Time('2012-7-13 07:00:00')
     >>> target = SkyCoord.from_name('m33')
     >>> place_airm.at(target, time)
-    1.5395274690659384
+    <Quantity 1.53952747>
 
     The default airmass model is a plane-parallel atmosphere, which defines
     the airmass as the secant of the zenith angle. We can choose a different
@@ -119,10 +119,10 @@ class Airmass:
 
     >>> time = Time('2012-7-13 03:00:00')
     >>> place_airm.at(target, time)
-    442.5785661289659
+    <Quantity 442.57856613>
     >>> place_airm.set_model("kastenyoung")
     >>> place_airm.at(target,time)
-    36.05249806866009
+    <Quantity 36.05249807>
 
     """
 
@@ -233,7 +233,7 @@ class AtmoExtinction:
     >>> airmass = Airmass(place)
     >>> extn = AtmoExtinction.at(airmass, target, time)
     >>> extn(3200*u.Angstrom)
-    0.23643960524293295
+    <Quantity 0.23643961>
 
     Alternatively, we can define the object for a given observer location:
     >>> extn = AtmoExtinction.from_observer(place, airmass_model='simple')
@@ -267,7 +267,7 @@ class AtmoExtinction:
 
     >>> extn = AtmoExtinction.at(airmass, target, time, table_name='kpno')
     >>> extn(3200*u.Angstrom)
-    0.23643960524293295
+   <Quantity 0.23643961>
 
     >>> extn = AtmoExtinction(table_name='apo')
     >>> with state.set_observing(target_coord=target, obstime=time, \
