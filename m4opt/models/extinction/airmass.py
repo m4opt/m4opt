@@ -89,7 +89,7 @@ class Airmass:
     The Airmass object requires a ground observer location at initialization,
     passed in via `astropy.coordinates.EarthLocation`:
 
-    >>> from m4opt.models.airmass import Airmass
+    >>> from m4opt.models.extinction import Airmass
     >>> import astropy.units as u
     >>> from astropy.coordinates import SkyCoord, EarthLocation
     >>> from astropy.time import Time
@@ -213,7 +213,7 @@ class AtmoExtinction:
     Examples
     --------
 
-    >>> from m4opt.models.airmass import AtmoExtinction, Airmass
+    >>> from m4opt.models.extinction import AtmoExtinction, Airmass
     >>> import astropy.units as u
     >>> from astropy.coordinates import SkyCoord, EarthLocation
     >>> from astropy.time import Time
