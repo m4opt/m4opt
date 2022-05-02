@@ -7,7 +7,7 @@ from importlib import resources
 
 from ..core import state
 from . import data
-from .core import AbstractExtinction
+from .core import BaseExtinction
 
 import numpy as np
 import astropy.units as u
@@ -15,7 +15,6 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 from astropy.modeling import custom_model
 from astropy.modeling.models import Const1D, Tabular1D
 from astropy.table import QTable
-# from astropy.time import Time
 
 
 @cache
@@ -32,7 +31,7 @@ def read_extinction_table(placename):
             table = QTable.read(path, format='ascii',
                                 names=('wavelength', 'extinction'))
         x = (table['wavelength']*u.Angstrom).to(
-            AbstractExtinction.input_units['x'], equivalencies=u.spectral())
+            BaseExtinction.input_units['x'], equivalencies=u.spectral())
         y = table['extinction']
         return np.flipud(x), np.flipud(y)
     except KeyError:
@@ -326,7 +325,7 @@ class Extinction:
     @staticmethod
     def extinction_table(table_name):
         result = Tabular1D(*read_extinction_table(table_name))
-        result.input_units_equivalencies = (AbstractExtinction.
+        result.input_units_equivalencies = (BaseExtinction.
                                             input_units_equivalencies)
         return result
 

@@ -2,11 +2,11 @@ from astropy.modeling import Model
 from astropy import units as u
 
 
-class AbstractExtinction(Model):
-    """"Base class for atmospheric extinction Model.
+class BaseExtinction(Model):
+    """"Base class for extinction Model.
 
     This model provides a dimensionless parameter for the
-    attentuation of light due to the atmospheric extinction
+    attentuation of light due to extinction
     as a function of frequency."""
 
     n_inputs = 1
