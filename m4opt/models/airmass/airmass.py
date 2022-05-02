@@ -45,7 +45,7 @@ def simple_airmass(z):
     Not recommended for zenith angles (z) > 75 degreees.
 
     Input:
-    z : zenith angle (radians)
+    z : zenith angle (`astropy.units.Quantity`)
     """
     return 1./np.cos(z)
 
@@ -61,10 +61,10 @@ def KastenYoung_airmass(z):
     in terms of zenith angle (z)
 
     Input:
-    z : zenith angle (radians)
+    z : zenith angle (`astropy.units.Quantity`)
 
     """
-    return 1./(np.cos(z) + 0.50572 * (96.07995 - np.rad2deg(z))**(-1.6364))
+    return 1./(np.cos(z) + 0.50572 * (96.07995 - z.to(u.deg).value)**(-1.6364))
 
 
 airmass_models = {'simple': simple_airmass, 'kastenyoung': KastenYoung_airmass}
