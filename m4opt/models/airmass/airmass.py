@@ -154,7 +154,7 @@ class Airmass:
 
         frame = AltAz(obstime=obs_time, location=self.earth_loc)
         tf_target = target_coord.transform_to(frame)
-        return self.model(tf_target.zen.radian)
+        return self.model(tf_target.zen)
 
     @classmethod
     def kpno(cls):
