@@ -10,6 +10,6 @@ Airmass models are defined at the observatory location and return the airmass
 for a given target in the sky.
 """
 
-from .airmass import Airmass, Extinction
+from .airmass import Airmass, AtmoExtinction
 
-__all__ = ('Airmass', 'Extinction',)
+__all__ = ('Airmass', 'AtmoExtinction',)
