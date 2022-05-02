@@ -1,12 +1,4 @@
-try:
-    from functools import cache
-except ImportError:  # FIXME: drop once we require Python >= 3.9
-    from functools import lru_cache as cache
-
-from importlib import resources
-
 from ..core import state
-from . import data
 from .core import BaseExtinction
 
 import numpy as np
@@ -15,9 +7,13 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 from astropy.modeling import custom_model
 from astropy.modeling.models import Const1D, Tabular1D
 from astropy.table import QTable
+from astropy.utils.data import download_file
+
+path_to_extin = ('https://raw.githubusercontent.com/astropy/' +
+                 'specreduce-data/main/specreduce_data/' +
+                 'reference_data/extinction/')
 
 
-@cache
 def read_extinction_table(placename):
     """
     extinction tables usually have
@@ -26,17 +22,18 @@ def read_extinction_table(placename):
 
     """
     try:
-        with resources.path(data, AtmoExtinction.available_tables[
-                            placename]) as path:
-            table = QTable.read(path, format='ascii',
-                                names=('wavelength', 'extinction'))
-        x = (table['wavelength']*u.Angstrom).to(
-            BaseExtinction.input_units['x'], equivalencies=u.spectral())
-        y = table['extinction']
-        return np.flipud(x), np.flipud(y)
+        tablename = AtmoExtinction.available_tables[placename]
     except KeyError:
         raise ValueError("Invalid placename {0}. Must be one of {1}".format(
                         placename, AtmoExtinction.available_tables.keys()))
+
+    table = QTable.read(download_file(path_to_extin+tablename, cache=True),
+                        format='ascii', names=('wavelength', 'extinction'))
+
+    x = (table['wavelength']*u.Angstrom).to(
+        BaseExtinction.input_units['x'], equivalencies=u.spectral())
+    y = table['extinction']
+    return np.flipud(x), np.flipud(y)
 
 
 def simple_airmass(z):
@@ -263,7 +260,13 @@ class AtmoExtinction:
     models above have used the default table. However, other tables
     can be chosen at initialization by passing the appropriate parameter:
     >>> AtmoExtinction.available_tables
-    {'kpno': 'kpnoextinct.dat', 'apo': 'APOextinction.dat'}
+    {'apo': 'apoextinct.dat',
+    'kpno': 'kpnoextinct.dat',
+    'ctio': 'ctioextinct.dat',
+    'lapalm': 'lapalmextinct.dat',
+    'mko': 'mkoextinct.dat',
+    'lick': 'mthamextinct.dat',
+    'paranal': 'paranalextinct.dat'}
 
     >>> extn = AtmoExtinction.at(airmass, target, time, table_name='kpno')
     >>> extn(3200*u.Angstrom)
@@ -329,5 +332,8 @@ class AtmoExtinction:
                                             input_units_equivalencies)
         return result
 
-    available_tables = {'kpno': 'kpnoextinct.dat',
-                        'apo': 'APOextinction.dat'}
+    available_tables = {"apo": 'apoextinct.dat', 'kpno': 'kpnoextinct.dat',
+                        'ctio': 'ctioextinct.dat',
+                        'lapalm': 'lapalmextinct.dat', 'mko': 'mkoextinct.dat',
+                        'lick': 'mthamextinct.dat',
+                        'paranal': 'paranalextinct.dat'}
