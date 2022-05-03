@@ -268,14 +268,6 @@ class AtmoExtinction:
  'lick': 'mthamextinct.dat',\
  'paranal': 'paranalextinct.dat'}
 
-
-    {'apo': 'apoextinct.dat',
- 'kpno': 'kpnoextinct.dat',
- 'ctio': 'ctioextinct.dat',
- 'lapalm': 'lapalmextinct.dat',
- 'mko': 'mkoextinct.dat',
- 'lick': 'mthamextinct.dat',
- 'paranal': 'paranalextinct.dat'}
     >>> extn = AtmoExtinction.at(airmass, target, time, table_name='kpno')
     >>> extn(3200*u.Angstrom)
     <Quantity 0.23643961>
