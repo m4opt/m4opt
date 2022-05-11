@@ -107,7 +107,7 @@ release = package.__version__
 
 html_static_path = ['_static']
 
-html_css_files = ['css/risktable.css', ]
+html_css_files = ['css/risk_table.css', ]
 
 html_theme_options = {
     'logotext1': 'm4opt',  # white,  semi-bold

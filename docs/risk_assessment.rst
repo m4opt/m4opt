@@ -66,6 +66,7 @@ red, yellow, or green: these correspond to high, medium, or low risk.
     |            |   |                 Consequences                     |
     +------------+---+---------+----------+---------+---------+---------+
 
+
 List of Risks
 -------------
 
