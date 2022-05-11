@@ -89,9 +89,6 @@ jobs:
     - name: Upload coverage to codecov
       if: "contains(matrix.toxenv, '-cov')"
       uses: codecov/codecov-action@v2
-      env:
-        # Remove once repository is public
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     # FIXME: remove this step once project is public and readthedocs is turned on
     - name: Archive documentation
