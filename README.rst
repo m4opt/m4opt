@@ -7,6 +7,10 @@ Multi-Mission Multi-Messenger Observation Planning Toolkit
 .. image:: https://codecov.io/gh/m4opt/m4opt/branch/main/graph/badge.svg?token=L837JHNTUV
     :target: https://codecov.io/gh/m4opt/m4opt
     :alt: Code coverage status
+.. image:: https://readthedocs.org/projects/m4opt/badge/?version=latest
+    :target: https://m4opt.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 
 License
 -------
