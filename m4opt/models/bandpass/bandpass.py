@@ -58,7 +58,7 @@ class Bandpass:
 
     >>> from astropy.modeling.models import Box1D, Gaussian1D
     >>> bp_box = Bandpass.from_model(Box1D, amplitude=0.5, \
-        x_0 = 600*u.nm, width = 200*u.nm))
+        x_0 = 600*u.nm, width = 200*u.nm)
     >>> bp_box(5500*u.Angstrom)
     <Quantity 0.5>
 
