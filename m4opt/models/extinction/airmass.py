@@ -3,7 +3,7 @@ from .core import BaseExtinction
 
 import numpy as np
 import astropy.units as u
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+from astropy.coordinates import EarthLocation, AltAz
 from astropy.modeling import custom_model
 from astropy.modeling.models import Const1D, Tabular1D
 from astropy.table import QTable
@@ -35,7 +35,7 @@ def read_extinction_table(placename):
     return np.flipud(x), np.flipud(y)
 
 
-def simple_airmass(z):
+def simple_airmass(zen):
     """
     Simple airmass calculation assuming plane-parallel atmosphere.
     Not recommended for zenith angles (z) > 75 degrees.
@@ -43,10 +43,10 @@ def simple_airmass(z):
     Input:
     z : zenith angle (`astropy.units.Quantity`)
     """
-    return 1./np.cos(z)
+    return 1./np.cos(zen)
 
 
-def KastenYoung_airmass(z):
+def KastenYoung_airmass(zen):
     """
     From Kasten, F.; Young, A. T. (1989).
     "Revised optical air mass tables and approximation formula".
@@ -59,7 +59,8 @@ def KastenYoung_airmass(z):
     Input:
     z : zenith angle (`astropy.units.Quantity`)
     """
-    return 1./(np.cos(z) + 0.50572 * (96.07995 - z.to(u.deg).value)**(-1.6364))
+    return 1./(np.cos(zen) + 0.50572 * (96.07995 -
+                                        zen.to(u.deg).value)**(-1.6364))
 
 
 airmass_models = {'simple': simple_airmass, 'kastenyoung': KastenYoung_airmass}
@@ -97,7 +98,7 @@ class Airmass:
 
     or choose a pre-defined location, e.g. Kitt Peak:
 
-    >>> kpno_airm = Airmass.kpno()
+    >>> kpno_airm = Airmass(EarthLocation.of_site('Kitt Peak'))
 
     To evaluate an airmass for an observing target, we pass in the SkyCoord
     and the Time for the target, using `at()`:
@@ -122,8 +123,8 @@ class Airmass:
 
     def __init__(self, earth_location, airmass_model=None):
         if not isinstance(earth_location, EarthLocation):
-            raise TypeError("Input earth_location must be of type \
-                             astropy.coordinates.earth.EarthLocation")
+            raise TypeError("Input earth_location must be of type" +
+                            "astropy.coordinates.earth.EarthLocation")
 
         self.earth_loc = earth_location
         self.set_model(airmass_model)
@@ -142,9 +143,9 @@ class Airmass:
         """
         returns airmass at target sky location at obs_time
         """
-        if not isinstance(target_coord, SkyCoord):
-            raise TypeError("argument target_coord must be of type \
-                            astropy.coordinates.sky_coordinate.SkyCoord")
+        if not hasattr(target_coord, 'transform_to'):
+            raise TypeError("argument target_coord must be an astropy " +
+                            "coordinates object")
 
         frame = AltAz(obstime=obs_time, location=self.earth_loc)
         tf_target = target_coord.transform_to(frame)
@@ -255,8 +256,8 @@ class AtmoExtinction:
     ...     print(extn(3200*u.Angstrom))
     0.23643960524293295
 
-    Finally, AtmoExtinction models require an extinction table. All of the
-    models above have used the default table. However, other tables
+    All AtmoExtinction models require an extinction table. The
+    models above have used the default table; however, other tables
     can be chosen at initialization by passing the appropriate parameter:
 
     >>> AtmoExtinction.available_tables
@@ -277,47 +278,59 @@ class AtmoExtinction:
                                  observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
     0.2651060248681333
+
+    Finally, we can pass in the interpolation method for the extinction table
+    if finer control is needed. The default is 'linear', but other options can
+    be selected (see `astropy.modeling.tabular.Tabular1D` for details).
+
+    >>> extn = AtmoExtinction(table_name='apo', table_method='nearest')
+    >>> with state.set_observing(target_coord=target, obstime=time, \
+                                 observatory_loc=place):
+    ...     print(extn(3200*u.Angstrom))
+    0.2727180718446889
     """
 
-    def __new__(cls, table_name=None):
+    def __new__(cls, table_name=None, table_method="linear"):
         return Const1D(10.)**(
                               Const1D(-0.4) * UnknownAirmassState()
-                              * cls.table(table_name)
+                              * cls.table(table_name, table_method)
                              )
 
     @classmethod
-    def from_observer(cls, earth_loc, table_name=None, **kwargs):
+    def from_observer(cls, earth_loc, table_name=None, table_method='linear',
+                      **kwargs):
         airmass = Airmass(earth_loc, **kwargs)
         airmass_state = KnownAirmassState(airmass)
         return Const1D(10.)**(
                               Const1D(-0.4)*airmass_state
-                              * cls.table(table_name)
+                              * cls.table(table_name, table_method)
                               )
 
     @classmethod
-    def from_airmass(cls, airmass, table_name=None):
+    def from_airmass(cls, airmass, table_name=None, table_method='linear'):
         airmass_state = KnownAirmassState(airmass)
         return Const1D(10.)**(
                               Const1D(-0.4)*airmass_state
-                              * cls.table(table_name)
+                              * cls.table(table_name, table_method)
                               )
 
     @classmethod
-    def at(cls, airmass, target_coord, obstime, table_name=None):
+    def at(cls, airmass, target_coord, obstime, table_name=None,
+           table_method='linear'):
         return Const1D(10.)**(
                               Const1D(-0.4*airmass.at(target_coord, obstime))
-                              * cls.table(table_name)
+                              * cls.table(table_name, table_method)
                               )
 
     @classmethod
-    def table(cls, table_name):
+    def table(cls, table_name, method='linear'):
         if table_name is None:
             return cls.default_table()
         elif table_name.lower() not in cls.available_tables:
             raise AttributeError("table name must be one of {0}".format(
                                   cls.available_tables))
         else:
-            return cls.extinction_table(table_name)
+            return cls.extinction_table(table_name, method)
 
     @classmethod
     def default_table(cls):
@@ -325,8 +338,8 @@ class AtmoExtinction:
         return cls.extinction_table("kpno")
 
     @staticmethod
-    def extinction_table(table_name):
-        result = Tabular1D(*read_extinction_table(table_name))
+    def extinction_table(table_name, method="linear"):
+        result = Tabular1D(*read_extinction_table(table_name), method=method)
         result.input_units_equivalencies = (BaseExtinction.
                                             input_units_equivalencies)
         return result
