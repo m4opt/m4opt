@@ -313,7 +313,7 @@ class AtmoExtinction:
     @classmethod
     def table(cls, table_name, method='linear'):
         if table_name is None:
-            return cls.default_table()
+            return cls.default_table(method)
         elif table_name.lower() not in cls.available_tables:
             raise AttributeError("table name must be one of {0}".format(
                                   cls.available_tables))
@@ -321,9 +321,9 @@ class AtmoExtinction:
             return cls.extinction_table(table_name, method)
 
     @classmethod
-    def default_table(cls):
+    def default_table(cls, method="linear"):
         """Default Airmass Extinction Table"""
-        return cls.extinction_table("kpno")
+        return cls.extinction_table("kpno", method)
 
     @staticmethod
     def extinction_table(table_name, method="linear"):
