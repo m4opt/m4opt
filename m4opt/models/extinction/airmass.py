@@ -162,18 +162,6 @@ class Airmass:
                                  3358104.99690298, unit='m'))
 
 
-def airmass_func(observatory_loc):
-    """
-    Returns function to calculate airmass from target properties
-    """
-    airmass = Airmass(observatory_loc)
-
-    def airmass_calc(coord, obstime):
-        return airmass.at(coord, obstime)
-
-    return airmass_calc
-
-
 def KnownAirmassState(airmass):
     """Returns airmass state with given airmass
     """
