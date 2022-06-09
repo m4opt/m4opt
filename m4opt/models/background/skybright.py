@@ -43,11 +43,14 @@ def read_kpno_sky_data(option="medium"):
            doi:10.1086/656425
     """
 
-    if option.lower() not in kpno_sky_tables.keys():
-        raise AttributeError("option must be one of {0}".format(
+    key = option.lower()
+    try:
+        filename = kpno_sky_tables[key]
+    except KeyError:
+        raise ValueError("option must be one of {0}".format(
                              kpno_sky_tables.keys()))
 
-    with resources.path(data, kpno_sky_tables[option]) as path:
+    with resources.path(data, filename) as path:
         table = QTable.read(path, format='ascii',
                             names=('wavelength', 'surface_brightness'))
 
@@ -61,7 +64,7 @@ def read_kpno_sky_data(option="medium"):
     return np.flipud(x), np.flipud(y)
 
 
-class SkyBrightness:
+class SkyBackground:
     """
     Sky Brightness background: sky glow due to scattered and diffuse light
 
@@ -76,17 +79,17 @@ class SkyBrightness:
 
     Examples
     --------
-    There are four options for getting a SkyBrightness model: 'low', 'medium',
+    There are four options for getting a SkyBackground model: 'low', 'medium',
     'high', and 'veryhigh':
 
     >>> from astropy import units as u
-    >>> from m4opt.models.background import SkyBrightness
+    >>> from m4opt.models.background import SkyBackground
 
-    >>> background = SkyBrightness.low()
+    >>> background = SkyBackground.low()
     >>> background(5890 * u.angstrom).to(u.mag(u.AB / u.arcsec**2))
     <Magnitude 20.66945113 mag(AB / arcsec2)>
 
-    >>> background = SkyBrightness.veryhigh()
+    >>> background = SkyBackground.veryhigh()
     >>> background(5890 * u.angstrom).to(u.mag(u.AB / u.arcsec**2))
     <Magnitude 19.09920111 mag(AB / arcsec2)>
     """
