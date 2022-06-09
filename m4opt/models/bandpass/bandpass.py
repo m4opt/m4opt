@@ -1,18 +1,15 @@
-from astropy.modeling import Model
 from astropy.modeling.models import Tabular1D
 from astropy import units as u
 from astropy.units.physical import get_physical_type
 
-from .core import Background
+from .core import BaseBandpass
 
 # TODO: remove check below when tynt is released
 # and add tynt to required dependencies
 try:
     from tynt import FilterGenerator
-    has_tynt = True
     tynt_filters = FilterGenerator().available_filters()
 except ImportError:
-    has_tynt = False
     tynt_filters = None
 
 
@@ -51,21 +48,27 @@ class Bandpass:
     --->bp_V(5555*u.Angstrom)
     <Quantity 0.76578238>
 
-    Finally, you can instantiate a Bandpass model from an
-    `astropy.modeling.models` subclass and its associated input arguments.
-    Note, however, Bandpass objects require wavelength inputs and dimensionless
-    outputs.
+    Notes
+    -----
 
-    >>> from astropy.modeling.models import Box1D, Gaussian1D
-    >>> bp_box = Bandpass.from_model(Box1D, amplitude=0.5, \
-        x_0 = 600*u.nm, width = 200*u.nm)
-    >>> bp_box(5500*u.Angstrom)
-    <Quantity 0.5>
+    You can instantiate a generic Bandpass model from an `astropy` `1D
+    model subclass`_. However, in order to be compatible
+    with other `m4opt.models`, your model inputs must have spectral units and
+    the output must be dimensionless.
 
-    >>> bp_gauss = Bandpass.from_model(Gaussian1D, amplitude=0.5, \
-        mean=6000*u.Angstrom, stddev=500*u.Angstrom)
-    >>> bp_gauss(5500*u.Angstrom)
-    <Quantity 0.30326533>
+    .. _`1D model subclass`: https://docs.astropy.org/en/stable/modeling/predef_models1D.html # noqa
+
+    For example,
+
+    ---> from astropy import units as u
+    ---> gauss1d = Gaussian1D(amplitude=0.5, mean=6000 * u.Angstrom, stddev=500*u.Angstrom)
+    ---> gauss1d.result.input_units_equivalencies = {'x': u.spectral()}
+
+    will work with other `m4opt` models, but
+
+    ---> gauss1d = Gaussian1D(amplitude=0.5, mean=6000 * u.erg, stddev=500 * u.erg)
+
+    will not.
     """
 
     @classmethod
@@ -84,7 +87,8 @@ class Bandpass:
                                  "units.")
 
         result = Tabular1D(points, lookup_table*u.dimensionless_unscaled)
-        result.input_units_equivalencies = Background.input_units_equivalencies
+        result.input_units_equivalencies = (BaseBandpass.
+                                            input_units_equivalencies)
         return result
 
     @classmethod
@@ -92,7 +96,7 @@ class Bandpass:
         """
         Initializes bandpass from tynt package.
         """
-        if has_tynt:
+        if tynt_filters is not None:
             if filter_name not in tynt_filters:
                 raise ValueError("Invalid filter {0}. ".format(filter_name) +
                                  "See 'm4opt.bandpass.tynt_filters' for " +
@@ -101,7 +105,7 @@ class Bandpass:
             filter = FilterGenerator().reconstruct(filter_name)
             result = Tabular1D(filter.wavelength,
                                filter.transmittance*u.dimensionless_unscaled)
-            result.input_units_equivalencies = (Background.
+            result.input_units_equivalencies = (BaseBandpass.
                                                 input_units_equivalencies)
             return result
 
@@ -109,94 +113,3 @@ class Bandpass:
             print("optional dependency 'tynt' is not installed. " +
                   "Will return 'None'")
             return None
-
-    @classmethod
-    def from_model(cls, modelclass, **kwargs):
-        """
-        Initializes bandpass from `astropy.modeling.Model` class
-        given appropriate arguments.
-
-        This function uses code from `synphot.spectrum.SourceSpectrum' under
-        the terms of the synphot BSD 3-Clause License (see m4opt/licenses
-        directory).
-
-        """
-
-        if not issubclass(modelclass, Model):
-            raise ValueError("modelclass argument {0} ".format(modelclass) +
-                             " is not a valid astropy Model class")
-
-        modelname = modelclass.__name__
-        if modelname not in cls._model_param_dict:
-            raise ValueError("Model {0}".format(modelname) +
-                             " is not supported.")
-
-        modargs = {}
-        for argname, val in kwargs.items():
-            if argname in cls._model_param_dict[modelname]:
-                argtype_req = cls._model_param_dict[modelname][argname]
-                argtype = get_physical_type(val)
-
-                # check for proper input units
-                if argtype_req == 'wave':
-                    if argtype != "length":
-                        raise ValueError("Input argument {0}".format(argname) +
-                                         " does not have length units.")
-                    else:
-                        modargs[argname] = val
-                else:
-                    # should be dimensionless
-                    if argtype != "dimensionless":
-                        raise ValueError("Input argument {0}".format(argname) +
-                                         " should be dimensionless.")
-                    else:
-                        modargs[argname] = val * u.dimensionless_unscaled
-            else:
-                modargs[argname] = val * u.dimensionless_unscaled
-
-        result = modelclass(**modargs)
-        result.input_units_equivalencies = Background.input_units_equivalencies
-        return result
-
-    # taken and modified from `synphot.spectrum`
-    # under terms of BSD 3-Clause license
-    # (see m4opt/licenses directory)
-    _model_param_dict = {
-        'Box1D': {'amplitude': 'dimensionless', 'x_0': 'wave',
-                  'width': 'wave'},
-        'BrokenPowerLaw1D': {
-            'amplitude': 'dimensionless', 'x_break': 'wave',
-            'alpha_1': 'dimensionless', 'alpha_2': 'dimensionless'},
-        'Const1D': {'amplitude': 'dimensionless'},
-        'ConstFlux1D': {'amplitude': 'dimensionless'},
-        'Empirical1D': {'points': 'wave',
-                        'lookup_table': 'dimensionless'},
-        'ExtinctionModel1D': {'points': 'wave',
-                              'lookup_table': 'dimensionless'},
-        'ExponentialCutoffPowerLaw1D': {
-            'amplitude': 'dimensionless', 'x_0': 'wave',
-            'x_cutoff': 'wave', 'alpha': 'dimensionless'},
-        'Gaussian1D': {'amplitude': 'dimensionless', 'mean': 'wave',
-                       'stddev': 'wave'},
-        'GaussianAbsorption1D': {
-            'amplitude': 'dimensionless', 'mean': 'wave',
-            'stddev': 'wave'},
-        'LogParabola1D': {
-            'amplitude': 'dimensionless', 'x_0': 'wave',
-            'alpha': 'dimensionless',
-            'beta': 'dimensionless'},
-        'Lorentz1D': {'amplitude': 'dimensionless', 'x_0': 'wave',
-                      'fwhm': 'wave'},
-        'RickerWavelet1D': {
-            'amplitude': 'dimensionless', 'x_0': 'wave',
-            'sigma': 'wave'},
-        'MexicanHat1D': {
-            'amplitude': 'dimensionless', 'x_0': 'wave',
-            'sigma': 'wave'},
-        'PowerLaw1D': {
-            'amplitude': 'dimensionless', 'x_0': 'wave',
-            'alpha': 'dimensionless'},
-        'Trapezoid1D': {
-            'amplitude': 'dimensionless', 'x_0': 'wave',
-            'width': 'wave',
-            'slope': 'dimensionless'}}

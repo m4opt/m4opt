@@ -2,7 +2,7 @@ from astropy.modeling import Model
 from astropy import units as u
 
 
-class Background(Model):
+class BaseBandpass(Model):
     """"Base class for bandpass model spectra.
 
     A bandpass model is a 1D spectral model that provides the bandpass
