@@ -21,10 +21,11 @@ def read_extinction_table(placename):
     y in mag per airmass
     """
     try:
-        tablename = AtmoExtinction.available_tables[placename]
+        tablename = AtmosphericExtinction.available_tables[placename]
     except KeyError:
         raise ValueError("Invalid placename {0}. Must be one of {1}".format(
-                        placename, AtmoExtinction.available_tables.keys()))
+                        placename,
+                        AtmosphericExtinction.available_tables.keys()))
 
     table = QTable.read(download_file(path_to_extin+tablename, cache=True),
                         format='ascii', names=('wavelength', 'extinction'))
@@ -128,7 +129,6 @@ class Airmass:
 
         self.earth_loc = earth_location
         self.set_model(airmass_model)
-        return
 
     def set_model(self, model_name):
         if model_name is None:
@@ -150,16 +150,6 @@ class Airmass:
         frame = AltAz(obstime=obs_time, location=self.earth_loc)
         tf_target = target_coord.transform_to(frame)
         return self.model(tf_target.zen)
-
-    @classmethod
-    def kpno(cls):
-        """
-        defines Airmass Object using location of Kitt Peak National Observatory
-
-        Last updated via EarthLocation.of_site("Kitt Peak") on 2022/04/27
-        """
-        return cls(EarthLocation(-1994502.60430614, -5037538.54232911,
-                                 3358104.99690298, unit='m'))
 
 
 def KnownAirmassState(airmass):
@@ -186,40 +176,44 @@ def UnknownAirmassState(x):
                       observing_state.obstime) * u.dimensionless_unscaled
 
 
-class AtmoExtinction:
+class AtmosphericExtinction:
     """
-    AtmoExtinction: Attentuation of spectrum due to atmospheric effects.
+    Attentuation of spectrum due to atmospheric effects.
 
     Atmospheric effects are calculated via an airmass extinction table,
     and so require the observatory location to be defined for airmass
     calculation.
 
-    NOTE: Default extinction table is Kitt Peak.
+    Notes
+    -----
+
+    Default extinction table is Kitt Peak.
 
     Examples
     --------
 
-    >>> from m4opt.models.extinction import AtmoExtinction, Airmass
+    >>> from m4opt.models.extinction import AtmosphericExtinction, Airmass
     >>> import astropy.units as u
     >>> from astropy.coordinates import SkyCoord, EarthLocation
     >>> from astropy.time import Time
     >>> time = Time('2012-7-13 07:00:00')
     >>> target = SkyCoord.from_name('m33')
 
-    AtmoExtinction models require an observer location in order to calculate
-    the airmass via the local zenith angle of the target. We can do this
-    several different ways. First, we can simply pass all of the
+    AtmosphericExtinction models require an observer location in order to
+    calculate the airmass via the local zenith angle of the target. We can do
+    this in several different ways. First, we can simply pass all of the
     required information:
 
     >>> place = EarthLocation(lat=41.3*u.deg, lon=-74*u.deg, height=390*u.m)
     >>> airmass = Airmass(place)
-    >>> extn = AtmoExtinction.at(airmass, target, time)
+    >>> extn = AtmosphericExtinction.at(airmass, target, time)
     >>> extn(3200*u.Angstrom)
     <Quantity 0.23643961>
 
     Alternatively, we can define the object for a given observer location:
 
-    >>> extn = AtmoExtinction.from_observer(place, airmass_model='simple')
+    >>> extn = AtmosphericExtinction.from_observer(place, \
+        airmass_model='simple')
 
     However, this requires the use of `state` to fill in the
     target information:
@@ -231,24 +225,24 @@ class AtmoExtinction:
 
     If we already have an airmass, we can initialize with it instead:
 
-    >>> extn = AtmoExtinction.from_airmass(airmass)
+    >>> extn = AtmosphericExtinction.from_airmass(airmass)
     >>> with state.set_observing(target_coord=target, obstime=time):
     ...     print(extn(3200*u.Angstrom))
     0.23643960524293295
 
     Or we can initialize a blank state, and fill in the blanks later:
 
-    >>> extn = AtmoExtinction()
+    >>> extn = AtmosphericExtinction()
     >>> with state.set_observing(target_coord=target, obstime=time, \
                                  observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
     0.23643960524293295
 
-    All AtmoExtinction models require an extinction table. The
+    All AtmosphericExtinction models require an extinction table. The
     models above have used the default table; however, other tables
     can be chosen at initialization by passing the appropriate parameter:
 
-    >>> AtmoExtinction.available_tables
+    >>> AtmosphericExtinction.available_tables
     {'apo': 'apoextinct.dat',\
  'kpno': 'kpnoextinct.dat',\
  'ctio': 'ctioextinct.dat',\
@@ -257,11 +251,12 @@ class AtmoExtinction:
  'lick': 'mthamextinct.dat',\
  'paranal': 'paranalextinct.dat'}
 
-    >>> extn = AtmoExtinction.at(airmass, target, time, table_name='kpno')
+    >>> extn = AtmosphericExtinction.at(airmass, target, time, \
+        table_name='kpno')
     >>> extn(3200*u.Angstrom)
     <Quantity 0.23643961>
 
-    >>> extn = AtmoExtinction(table_name='apo')
+    >>> extn = AtmosphericExtinction(table_name='apo')
     >>> with state.set_observing(target_coord=target, obstime=time, \
                                  observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
@@ -271,7 +266,7 @@ class AtmoExtinction:
     if finer control is needed. The default is 'linear', but other options can
     be selected (see `astropy.modeling.tabular.Tabular1D` for details).
 
-    >>> extn = AtmoExtinction(table_name='apo', table_method='nearest')
+    >>> extn = AtmosphericExtinction(table_name='apo', table_method='nearest')
     >>> with state.set_observing(target_coord=target, obstime=time, \
                                  observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
