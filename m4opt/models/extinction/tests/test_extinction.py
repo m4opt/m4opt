@@ -10,7 +10,7 @@ AIRMASS_KP = Airmass(EarthLocation(-1994502.60430614, -5037538.54232911,
                      3358104.99690298, unit='m'))
 AIRMASS_PLACE_K = KastenYoungAirmass(EarthLocation(lat=41.3*u.deg,
                                                    lon=-74*u.deg,
-                                                   height=390*u.m))                   
+                                                   height=390*u.m))
 AIRMASS_PLACE_PP = PlaneParallelAirmass(EarthLocation(lat=41.3*u.deg,
                                                       lon=-74*u.deg,
                                                       height=390*u.m))
