@@ -9,9 +9,13 @@ from astropy.modeling.models import Const1D, Tabular1D
 from astropy.table import QTable
 from astropy.utils.data import download_file
 
+
 path_to_extin = ('https://raw.githubusercontent.com/astropy/' +
                  'specreduce-data/main/specreduce_data/' +
                  'reference_data/extinction/')
+
+__all__ = ('Airmass', 'AtmosphericExtinction',
+           'PlaneParallelAirmass', 'KastenYoungAirmass')
 
 
 def read_extinction_table(placename):
@@ -36,108 +40,30 @@ def read_extinction_table(placename):
     return np.flipud(x), np.flipud(y)
 
 
-def simple_airmass(zen):
+class BaseAirmass:
     """
-    Simple airmass calculation assuming plane-parallel atmosphere.
-    Not recommended for zenith angles (z) > 75 degrees.
-
-    Input:
-    z : zenith angle (`astropy.units.Quantity`)
-    """
-    return 1./np.cos(zen)
-
-
-def KastenYoung_airmass(zen):
-    """
-    From Kasten, F.; Young, A. T. (1989).
-    "Revised optical air mass tables and approximation formula".
-    Applied Optics. 28 (22): 4735-4738.
-    doi:10.1364/AO.28.004735. PMID 20555942.
-
-    Original formula given in altitude, here is rewritten
-    in terms of zenith angle (z)
-
-    Input:
-    z : zenith angle (`astropy.units.Quantity`)
-    """
-    return 1./(np.cos(zen) + 0.50572 * (96.07995 -
-                                        zen.to(u.deg).value)**(-1.6364))
-
-
-airmass_models = {'simple': simple_airmass, 'kastenyoung': KastenYoung_airmass}
-
-
-class Airmass:
-    """
-    Airmass:
-
     Object to calculate airmass at a given observatory location,
-    for a provided target SkyCoord.
-
-    Airmass class currently supports two models:
-    1. 'simple' : Plane-Parallel atmosphere, airmass = 1/cos(zenith)
-    2. 'kastenyoung' : Kasten+Young89 interpolation fit to data[1]_
-
-    References
-    ----------
-    .. [1] Kasten, F.; Young, A. T. (1989). "Revised optical air mass
-           tables and approximation formula". Applied Optics. 28 (22):
-           4735-4738. doi:10.1364/AO.28.004735. PMID 20555942.
-
-    Examples
-    --------
-    The Airmass object requires a ground observer location at initialization,
-    passed in via `astropy.coordinates.EarthLocation`:
-
-    >>> from m4opt.models.extinction import Airmass
-    >>> import astropy.units as u
-    >>> from astropy.coordinates import SkyCoord, EarthLocation
-    >>> from astropy.time import Time
-
-    >>> place_airm = Airmass(EarthLocation(lat=41.3*u.deg, lon=-74*u.deg,\
-                             height=390*u.m))
-
-    or choose a pre-defined location, e.g. Kitt Peak:
-
-    >>> kpno_airm = Airmass(EarthLocation.of_site('Kitt Peak'))
-
-    To evaluate an airmass for an observing target, we pass in the SkyCoord
-    and the Time for the target, using `at()`:
-
-    >>> time = Time('2012-7-13 07:00:00')
-    >>> target = SkyCoord.from_name('m33')
-    >>> place_airm.at(target, time)
-    <Quantity 1.53952747>
-
-    The default airmass model is a plane-parallel atmosphere, which defines
-    the airmass as the secant of the zenith angle. We can choose a different
-    model if we wish to use more realistic values, especially near
-    the horizon:
-
-    >>> time = Time('2012-7-13 03:00:00')
-    >>> place_airm.at(target, time)
-    <Quantity 442.57856613>
-    >>> place_airm.set_model("kastenyoung")
-    >>> place_airm.at(target,time)
-    <Quantity 36.05249807>
+    for a provided target SkyCoord. This base class provides logic for
+    observatory position handling, but derived classes must implement the
+    airmass model calculation via defining the 'calc_airmass()' function.
     """
 
-    def __init__(self, earth_location, airmass_model=None):
+    def __init__(self, earth_location):
         if not isinstance(earth_location, EarthLocation):
             raise TypeError("Input earth_location must be of type" +
                             "astropy.coordinates.earth.EarthLocation")
 
         self.earth_loc = earth_location
-        self.set_model(airmass_model)
 
-    def set_model(self, model_name):
-        if model_name is None:
-            self.model = simple_airmass
-        elif model_name.lower() not in airmass_models.keys():
-            raise AttributeError("model must be one of {0}".format(
-                                 airmass_models.keys()))
-        else:
-            self.model = airmass_models[model_name.lower()]
+    @staticmethod
+    def calc_airmass(zen):
+        """
+        Airmass Model must take in the zenith angle.
+
+        Input:
+        zen : zenith angle `astropy.units.Quantity`
+        """
+        pass
 
     def at(self, target_coord, obs_time):
         """
@@ -149,7 +75,115 @@ class Airmass:
 
         frame = AltAz(obstime=obs_time, location=self.earth_loc)
         tf_target = target_coord.transform_to(frame)
-        return self.model(tf_target.zen)
+        return self.calc_airmass(tf_target.zen)
+
+
+class PlaneParallelAirmass(BaseAirmass):
+    """
+
+    Plane-Parallel atmosphere, airmass = 1/cos(zenith).
+
+    Notes
+    -----
+    Not recommended for zenith angles > 75 degrees. See `KastenYoungAirmass`
+    for alternative model implementation.
+
+    Examples
+    --------
+    This object requires a ground observer location at initialization,
+    passed in via `astropy.coordinates.EarthLocation`:
+
+    >>> from m4opt.models.extinction import PlaneParallelAirmass
+    >>> import astropy.units as u
+    >>> from astropy.coordinates import SkyCoord, EarthLocation
+    >>> from astropy.time import Time
+
+    >>> place_airm = PlaneParallelAirmass(EarthLocation(lat=41.3*u.deg,\
+                                          lon=-74*u.deg,\
+                                          height=390*u.m))
+
+    or choose a pre-defined location, e.g. Kitt Peak:
+
+    >>> kpno_airm = PlaneParallelAirmass(EarthLocation.of_site('Kitt Peak'))
+
+    To evaluate an airmass for an observing target, we pass in the SkyCoord
+    and the Time for the target, using `at()`:
+
+    >>> time = Time('2012-7-13 07:00:00')
+    >>> target = SkyCoord.from_name('m33')
+    >>> place_airm.at(target, time)
+    <Quantity 1.53952747>
+    """
+
+    @staticmethod
+    def calc_airmass(zen):
+        """
+        Simple airmass calculation assuming plane-parallel atmosphere.
+
+        Input:
+        zen : zenith angle `astropy.units.Quantity`
+        """
+        return 1./np.cos(zen)
+
+
+class KastenYoungAirmass(BaseAirmass):
+    """
+    Kasten+Young89 interpolation fit to airmass table data[1]_ .
+
+    References
+    ----------
+    .. [1] Kasten, F.; Young, A. T. (1989). "Revised optical air mass
+           tables and approximation formula". Applied Optics. 28 (22):
+           4735-4738. doi:10.1364/AO.28.004735. PMID 20555942.
+
+    Examples
+    --------
+    This object requires a ground observer location at initialization,
+    passed in via `astropy.coordinates.EarthLocation`:
+
+    >>> from m4opt.models.extinction import KastenYoungAirmass
+    >>> import astropy.units as u
+    >>> from astropy.coordinates import SkyCoord, EarthLocation
+    >>> from astropy.time import Time
+
+    >>> place_airm = KastenYoungAirmass(EarthLocation(lat=41.3*u.deg,\
+                                          lon=-74*u.deg,\
+                                          height=390*u.m))
+
+    or choose a pre-defined location, e.g. Kitt Peak:
+
+    >>> kpno_airm = KastenYoungAirmass(EarthLocation.of_site('Kitt Peak'))
+
+    To evaluate an airmass for an observing target, we pass in the SkyCoord
+    and the Time for the target, using `at()`:
+
+    >>> target = SkyCoord.from_name('m33')
+    >>> time = Time('2012-7-13 03:00:00')
+    >>> place_airm.at(target,time)
+    <Quantity 36.05249807>
+    """
+
+    @staticmethod
+    def calc_airmass(zen):
+        """
+        From Kasten, F.; Young, A. T. (1989).
+        "Revised optical air mass tables and approximation formula".
+        Applied Optics. 28 (22): 4735-4738.
+        doi:10.1364/AO.28.004735. PMID 20555942.
+
+        Original formula given in altitude, here is rewritten
+        in terms of zenith angle
+
+        Input:
+        zen : zenith angle `astropy.units.Quantity`
+        """
+
+        return 1./(np.cos(zen) + 0.50572 * (96.07995 -
+                   zen.to(u.deg).value)**(-1.6364))
+
+
+# default Airmass class
+Airmass = PlaneParallelAirmass
 
 
 def KnownAirmassState(airmass):
@@ -165,15 +199,22 @@ def KnownAirmassState(airmass):
     return AState()
 
 
-@custom_model
-def UnknownAirmassState(x):
-    """Returns airmass state with unknown observatory location, which
-    will need to be set as part of the ObservingState
-    """
-    observing_state = state.get()
-    airmass = Airmass(observing_state.observatory_loc)
-    return airmass.at(observing_state.target_coord,
-                      observing_state.obstime) * u.dimensionless_unscaled
+def UnknownAirmassState(airmass_class=None):
+
+    if airmass_class is None:
+        airmass_class = Airmass
+
+    @custom_model
+    def UAState(x):
+        """Returns airmass state with unknown observatory location, which
+        will need to be set as part of the ObservingState
+        """
+        observing_state = state.get()
+        airmass = airmass_class(observing_state.observatory_loc)
+        return airmass.at(observing_state.target_coord,
+                          observing_state.obstime) * u.dimensionless_unscaled
+
+    return UAState()
 
 
 class AtmosphericExtinction:
@@ -212,8 +253,7 @@ class AtmosphericExtinction:
 
     Alternatively, we can define the object for a given observer location:
 
-    >>> extn = AtmosphericExtinction.from_observer(place, \
-        airmass_model='simple')
+    >>> extn = AtmosphericExtinction.from_observer(place)
 
     However, this requires the use of `state` to fill in the
     target information:
@@ -223,7 +263,17 @@ class AtmosphericExtinction:
     ...     print(extn(3200*u.Angstrom))
     0.23643960524293295
 
-    If we already have an airmass, we can initialize with it instead:
+    `from_observer()` also has the capability to set the airmass model:
+
+    >>> from m4opt.models.extinction import KastenYoungAirmass
+    >>> extn = AtmosphericExtinction.from_observer(place, \
+        airmass_class=KastenYoungAirmass)
+    >>> with state.set_observing(target_coord=target, obstime=time):
+    ...     print(extn(3200*u.Angstrom))
+    0.2369337657824151
+
+    If we already have an airmass object instantiated,
+    we can initialize with it instead:
 
     >>> extn = AtmosphericExtinction.from_airmass(airmass)
     >>> with state.set_observing(target_coord=target, obstime=time):
@@ -237,6 +287,14 @@ class AtmosphericExtinction:
                                  observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
     0.23643960524293295
+
+    You can also define the airmass model for this blank state:
+
+    >>> extn = AtmosphericExtinction(airmass_class=KastenYoungAirmass)
+    >>> with state.set_observing(target_coord=target, obstime=time, \
+                                 observatory_loc=place):
+    ...     print(extn(3200*u.Angstrom))
+    0.2369337657824151
 
     All AtmosphericExtinction models require an extinction table. The
     models above have used the default table; however, other tables
@@ -273,16 +331,18 @@ class AtmosphericExtinction:
     0.2727180718446889
     """
 
-    def __new__(cls, table_name=None, table_method="linear"):
+    def __new__(cls, table_name=None, table_method="linear",
+                airmass_class=Airmass):
         return Const1D(10.)**(
-                              Const1D(-0.4) * UnknownAirmassState()
+                              Const1D(-0.4)
+                              * UnknownAirmassState(airmass_class)
                               * cls.table(table_name, table_method)
                              )
 
     @classmethod
     def from_observer(cls, earth_loc, table_name=None, table_method='linear',
-                      **kwargs):
-        airmass = Airmass(earth_loc, **kwargs)
+                      airmass_class=Airmass, **kwargs):
+        airmass = airmass_class(earth_loc, **kwargs)
         airmass_state = KnownAirmassState(airmass)
         return Const1D(10.)**(
                               Const1D(-0.4)*airmass_state
