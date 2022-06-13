@@ -1,5 +1,6 @@
 from ..airmass import Airmass, AtmosphericExtinction
 from ..airmass import PlaneParallelAirmass, KastenYoungAirmass
+from ..airmass import read_extinction_table
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz
@@ -69,10 +70,8 @@ def test_Atmo_default_nearest():
     assert np.isclose(atmo(3275*u.Angstrom).value, 0.01091579211750249)
 
 
-"""
-@pytest.mark.remote_data
+@pytest.mark.remote_data # noqa
 def test_read_extinction():
-    freq, ext = read_extinction_table("parnal")
+    freq, ext = read_extinction_table("paranal")
     assert freq[20].value == 422242898591549.25
     assert ext[20] == 0.072
-"""
