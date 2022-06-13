@@ -10,8 +10,8 @@ from astropy.table import QTable
 from astropy.utils.data import download_file
 
 
-path_to_extin = ('https://raw.githubusercontent.com/astropy/' +
-                 'specreduce-data/main/specreduce_data/' +
+path_to_extin = ('https://raw.githubusercontent.com/astropy/'
+                 'specreduce-data/main/specreduce_data/'
                  'reference_data/extinction/')
 
 __all__ = ('Airmass', 'AtmosphericExtinction',
@@ -50,7 +50,7 @@ class BaseAirmass:
 
     def __init__(self, earth_location):
         if not isinstance(earth_location, EarthLocation):
-            raise TypeError("Input earth_location must be of type" +
+            raise TypeError("Input earth_location must be of type"
                             "astropy.coordinates.earth.EarthLocation")
 
         self.earth_loc = earth_location
@@ -70,7 +70,7 @@ class BaseAirmass:
         returns airmass at target sky location at obs_time
         """
         if not hasattr(target_coord, 'transform_to'):
-            raise TypeError("argument target_coord must be an astropy " +
+            raise TypeError("argument target_coord must be an astropy "
                             "coordinates object")
 
         frame = AltAz(obstime=obs_time, location=self.earth_loc)
