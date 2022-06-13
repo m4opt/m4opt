@@ -6,6 +6,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 from astropy.time import Time
 import numpy as np
+import pytest
 
 AIRMASS_KP = Airmass(EarthLocation(-1994502.60430614, -5037538.54232911,
                      3358104.99690298, unit='m'))
