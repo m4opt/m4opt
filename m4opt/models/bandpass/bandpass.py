@@ -94,7 +94,9 @@ class Bandpass:
     @classmethod
     def from_name(cls, filter_name):
         """
-        Initializes bandpass from tynt package.
+        Returns a bandpass for a filter specified by `filter_name`, using
+        parameterizations from the `tynt <https://github.com/bmorris3/tynt>`_
+        package.
         """
         if tynt_filters is not None:
             if filter_name not in tynt_filters:
@@ -110,6 +112,6 @@ class Bandpass:
             return result
 
         else:
-            print("optional dependency 'tynt' is not installed. " +
-                  "Will return 'None'")
-            return None
+            raise ImportError("optional dependency 'tynt' is not installed. "
+                              "To install it, do `pip install "
+                              "git+https://github.com/bmorris3/tynt.git@master`") # noqa
