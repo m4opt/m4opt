@@ -285,6 +285,7 @@ class AtmosphericExtinction:
 
     You can also define the airmass model for this blank state:
 
+    >>> from m4opt.models.extinction import KastenYoungAirmass
     >>> extn = AtmosphericExtinction.generic_observer(airmass_class=\
                                                       KastenYoungAirmass)
     >>> with state.set_observing(target_coord=target, obstime=time, \
