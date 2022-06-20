@@ -1,6 +1,11 @@
 from ..core import state
 from .core import BaseExtinction
 
+try:
+    from functools import cache
+except ImportError:  # FIXME: drop once we require Python >= 3.9
+    from functools import lru_cache as cache
+
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import EarthLocation, AltAz
@@ -18,18 +23,20 @@ __all__ = ('Airmass', 'AtmosphericExtinction',
            'PlaneParallelAirmass', 'KastenYoungAirmass')
 
 
+@cache
 def read_extinction_table(placename):
     """
     extinction tables usually have
     x in angstroms
     y in mag per airmass
     """
+    placename = placename.lower()
     try:
         tablename = AtmosphericExtinction.available_tables[placename]
     except KeyError:
-        raise ValueError("Invalid placename {0}. Must be one of {1}".format(
-                        placename,
-                        AtmosphericExtinction.available_tables.keys()))
+        raise ValueError(f"Invalid placename {placename}. "
+                         "Must be one of "
+                         f"{AtmosphericExtinction.available_tables.keys()}")
 
     table = QTable.read(download_file(path_to_extin+tablename, cache=True),
                         format='ascii', names=('wavelength', 'extinction'))
@@ -43,9 +50,11 @@ def read_extinction_table(placename):
 class BaseAirmass:
     """
     Object to calculate airmass at a given observatory location,
-    for a provided target SkyCoord. This base class provides logic for
-    observatory position handling, but derived classes must implement the
-    airmass model calculation via defining the 'calc_airmass()' function.
+    for a provided target SkyCoord.
+
+    The BaseAirmass class provides logic for initializing from observatory
+    position, but derived classes must implement the airmass model calculation
+    via defining the 'calc_airmass()' function.
     """
 
     def __init__(self, earth_location):
@@ -58,7 +67,7 @@ class BaseAirmass:
     @staticmethod
     def calc_airmass(zen):
         """
-        Airmass Model must take in the zenith angle.
+        Airmass Model must take in the zenith angle for airmass calculations.
 
         Input:
         zen : zenith angle `astropy.units.Quantity`
@@ -222,8 +231,8 @@ class AtmosphericExtinction:
     Attentuation of spectrum due to atmospheric effects.
 
     Atmospheric effects are calculated via an airmass extinction table,
-    and so require the observatory location to be defined for airmass
-    calculation.
+    and so require an appropriate Airmass instance (or a defined observatory
+    location) for the extinction calculation.
 
     Notes
     -----
@@ -240,10 +249,12 @@ class AtmosphericExtinction:
     >>> time = Time('2012-7-13 07:00:00')
     >>> target = SkyCoord.from_name('m33')
 
-    AtmosphericExtinction models require an observer location in order to
-    calculate the airmass via the local zenith angle of the target. We can do
-    this in several different ways. First, we can simply pass all of the
-    required information:
+    AtmosphericExtinction models calculate the extinction of a target spectrum
+    due to the atmosphere. In addition to target location and observing time,
+    this requires an observatory location in order to calculate the airmass via
+    the local zenith angle of the target. We can do this in several different
+    ways. First, we can simply pass all of the required information using
+    `at()`:
 
     >>> place = EarthLocation(lat=41.3*u.deg, lon=-74*u.deg, height=390*u.m)
     >>> airmass = Airmass(place)
@@ -251,9 +262,9 @@ class AtmosphericExtinction:
     >>> extn(3200*u.Angstrom)
     <Quantity 0.23643961>
 
-    Alternatively, we can define the object for a given observer location:
+    Alternatively, we can define the object for a given observer airmass:
 
-    >>> extn = AtmosphericExtinction.from_observer(place)
+    >>> extn = AtmosphericExtinction(airmass)
 
     However, this requires the use of `state` to fill in the
     target information:
@@ -263,26 +274,10 @@ class AtmosphericExtinction:
     ...     print(extn(3200*u.Angstrom))
     0.23643960524293295
 
-    `from_observer()` also has the capability to set the airmass model:
+    If we do not have a known observatory location, we can initialize a blank
+    state with `generic_observer()`:
 
-    >>> from m4opt.models.extinction import KastenYoungAirmass
-    >>> extn = AtmosphericExtinction.from_observer(place, \
-        airmass_class=KastenYoungAirmass)
-    >>> with state.set_observing(target_coord=target, obstime=time):
-    ...     print(extn(3200*u.Angstrom))
-    0.2369337657824151
-
-    If we already have an airmass object instantiated,
-    we can initialize with it instead:
-
-    >>> extn = AtmosphericExtinction.from_airmass(airmass)
-    >>> with state.set_observing(target_coord=target, obstime=time):
-    ...     print(extn(3200*u.Angstrom))
-    0.23643960524293295
-
-    Or we can initialize a blank state, and fill in the blanks later:
-
-    >>> extn = AtmosphericExtinction()
+    >>> extn = AtmosphericExtinction.generic_observer()
     >>> with state.set_observing(target_coord=target, obstime=time, \
                                  observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
@@ -290,7 +285,8 @@ class AtmosphericExtinction:
 
     You can also define the airmass model for this blank state:
 
-    >>> extn = AtmosphericExtinction(airmass_class=KastenYoungAirmass)
+    >>> extn = AtmosphericExtinction.generic_observer(airmass_class=\
+                                                      KastenYoungAirmass)
     >>> with state.set_observing(target_coord=target, obstime=time, \
                                  observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
@@ -314,7 +310,7 @@ class AtmosphericExtinction:
     >>> extn(3200*u.Angstrom)
     <Quantity 0.23643961>
 
-    >>> extn = AtmosphericExtinction(table_name='apo')
+    >>> extn = AtmosphericExtinction.generic_observer(table_name='apo')
     >>> with state.set_observing(target_coord=target, obstime=time, \
                                  observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
@@ -324,38 +320,29 @@ class AtmosphericExtinction:
     if finer control is needed. The default is 'linear', but other options can
     be selected (see `astropy.modeling.tabular.Tabular1D` for details).
 
-    >>> extn = AtmosphericExtinction(table_name='apo', table_method='nearest')
+    >>> extn = AtmosphericExtinction.generic_observer(table_name='apo', \
+                                                      table_method='nearest')
     >>> with state.set_observing(target_coord=target, obstime=time, \
                                  observatory_loc=place):
     ...     print(extn(3200*u.Angstrom))
     0.2727180718446889
     """
 
-    def __new__(cls, table_name=None, table_method="linear",
-                airmass_class=Airmass):
+    def __new__(cls, airmass, table_name=None, table_method='linear'):
+        airmass_state = KnownAirmassState(airmass)
+        return Const1D(10.)**(
+                              Const1D(-0.4)*airmass_state
+                              * cls.table(table_name, table_method)
+                              )
+
+    @classmethod
+    def generic_observer(cls, table_name=None, table_method="linear",
+                         airmass_class=Airmass):
         return Const1D(10.)**(
                               Const1D(-0.4)
                               * UnknownAirmassState(airmass_class)
                               * cls.table(table_name, table_method)
                              )
-
-    @classmethod
-    def from_observer(cls, earth_loc, table_name=None, table_method='linear',
-                      airmass_class=Airmass, **kwargs):
-        airmass = airmass_class(earth_loc, **kwargs)
-        airmass_state = KnownAirmassState(airmass)
-        return Const1D(10.)**(
-                              Const1D(-0.4)*airmass_state
-                              * cls.table(table_name, table_method)
-                              )
-
-    @classmethod
-    def from_airmass(cls, airmass, table_name=None, table_method='linear'):
-        airmass_state = KnownAirmassState(airmass)
-        return Const1D(10.)**(
-                              Const1D(-0.4)*airmass_state
-                              * cls.table(table_name, table_method)
-                              )
 
     @classmethod
     def at(cls, airmass, target_coord, obstime, table_name=None,
@@ -369,9 +356,6 @@ class AtmosphericExtinction:
     def table(cls, table_name, method='linear'):
         if table_name is None:
             return cls.default_table(method)
-        elif table_name.lower() not in cls.available_tables:
-            raise AttributeError("table name must be one of {0}".format(
-                                  cls.available_tables))
         else:
             return cls.extinction_table(table_name, method)
 
@@ -380,9 +364,11 @@ class AtmosphericExtinction:
         """Default Airmass Extinction Table"""
         return cls.extinction_table("kpno", method)
 
-    @staticmethod
-    def extinction_table(table_name, method="linear"):
-        result = Tabular1D(*read_extinction_table(table_name), method=method)
+    @classmethod
+    def extinction_table(cls, table_name, method="linear"):
+
+        result = Tabular1D(*read_extinction_table(table_name),
+                           method=method)
         result.input_units_equivalencies = (BaseExtinction.
                                             input_units_equivalencies)
         return result
