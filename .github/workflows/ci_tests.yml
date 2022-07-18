@@ -92,7 +92,7 @@ jobs:
 
     # FIXME: remove this step once project is public and readthedocs is turned on
     - name: Archive documentation
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       if: ${{ matrix.toxenv == 'build_docs' }}
       with:
         name: docs
