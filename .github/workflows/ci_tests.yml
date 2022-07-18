@@ -88,7 +88,7 @@ jobs:
 
     - name: Upload coverage to codecov
       if: "contains(matrix.toxenv, '-cov')"
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
 
     # FIXME: remove this step once project is public and readthedocs is turned on
     - name: Archive documentation
