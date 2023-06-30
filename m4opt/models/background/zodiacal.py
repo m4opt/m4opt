@@ -1,7 +1,4 @@
-try:
-    from functools import cache
-except ImportError:  # FIXME: drop once we require Python >= 3.9
-    from functools import lru_cache as cache
+from functools import cache
 from importlib import resources
 
 from astropy.coordinates import GeocentricTrueEcliptic, get_sun, SkyCoord
