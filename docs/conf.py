@@ -105,8 +105,6 @@ release = package.__version__
 # name of a builtin theme or the name of a custom theme in html_theme_path.
 #html_theme = None
 
-html_static_path = ['_static']
-
 html_css_files = ['css/risk_table.css', ]
 
 html_theme_options = {
