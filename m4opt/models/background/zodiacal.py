@@ -97,6 +97,13 @@ class ZodiacalBackground:
     .. _`Table 6.2`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-5-detector-and-sky-backgrounds#id-6.5DetectorandSkyBackgrounds-Table6.2
     .. _`Table 6.4`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-6-tabular-sky-backgrounds#id-6.6TabularSkyBackgrounds-Table6.4
 
+    Warnings
+    --------
+    This model should only be used for observers near Earth --- in Earth orbit,
+    as Hubble is, or on the Earth, or even on the Moon or in cislunar space. It
+    should NOT be used for observers in orbits around other planets, or in
+    distant solar orbits, or at Earth-Sun Lagrange points.
+
     References
     ----------
     .. [1] Prichard, L., Welty, D. and Jones, A., et al. 2022 "STIS Instrument
@@ -152,6 +159,64 @@ class ZodiacalBackground:
     >>> with state.set_observing(target_coord=coord, obstime=time):
     ...     background(3000 * u.angstrom).to(u.mag(u.AB / u.arcsec**2))
     <Magnitude 24.75100719 mag(AB / arcsec2)>
+
+    .. plot::
+        :caption: Mid, low, and high zodiacal light spectra
+
+        from matplotlib import pyplot as plt
+        import numpy as np
+        from astropy import units as u
+        from astropy.visualization import quantity_support
+
+        from m4opt.models.background import ZodiacalBackground
+
+        quantity_support()
+
+        wave = np.linspace(1000, 11000) * u.angstrom
+        ax = plt.axes()
+        for key in ['low', 'mid', 'high']:
+            surf = getattr(ZodiacalBackground, key)()(wave)
+            ax.plot(wave, surf, label=f'ZodiacalBackground.{key}()')
+        ax.legend()
+
+    .. plot::
+        :caption: Zodiacal light at 10000 Å observed at 2023-06-30T00:00:00
+
+        from astropy.coordinates import get_body, ICRS
+        from astropy.time import Time
+        from astropy import units as u
+        from astropy_healpix import HEALPix
+        from matplotlib import pyplot as plt
+        from matplotlib.colors import LogNorm
+        import numpy as np
+        import ligo.skymap.plot
+
+        from m4opt.models.background import ZodiacalBackground
+
+        wave = 10000 * u.angstrom
+        hpx = HEALPix(nside=512, frame=ICRS())
+        coord = hpx.healpix_to_skycoord(np.arange(hpx.npix))
+        obstime = Time('2023-06-30T00:00:00')
+        zodi = ZodiacalBackground.at(target_coord=coord, obstime=obstime)
+        surf = zodi(wave)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='astro hours mollweide')
+        im = ax.imshow_hpx(surf.value, norm=LogNorm(vmin=0.95e-18, vmax=1.1e-17), cmap='viridis')
+        fig.colorbar(im, extend='both', orientation='horizontal').set_label(surf.unit)
+
+        sun = get_body('sun', obstime)
+        transform = ax.get_transform('world')
+        ax.plot(
+            sun.ra, sun.dec, 'or', ms=1,
+            transform=transform)
+        ax.plot(
+            sun.ra, sun.dec, 'or', mfc='none',
+            transform=transform)
+        ax.text(sun.ra, sun.dec, '  Sun', color='red', transform=transform)
+
+        ax.grid()
+
      """  # noqa: E501
 
     def __new__(cls):
