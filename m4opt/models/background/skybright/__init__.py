@@ -6,8 +6,8 @@ import astropy.units as u
 from astropy.modeling.models import Tabular1D
 import numpy as np
 
+from ..core import Background
 from . import data
-from .core import Background
 
 kpno_sky_tables = {'low': '10JunZen.txt', 'medium': '10FebZen.txt',
                    'high': '10Phx.txt', 'veryhigh': '10Tuc.txt'}

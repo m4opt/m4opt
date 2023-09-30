@@ -9,9 +9,9 @@ from astropy import units as u
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-from ..core import state
+from ...core import state
+from ..core import Background
 from . import data
-from .core import Background
 
 mag_to_scale = u.mag(1).to_physical
 mag_low = 23.3
