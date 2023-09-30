@@ -1,18 +1,13 @@
-try:
-    from functools import cache
-except ImportError:  # FIXME: drop once we require Python >= 3.9
-    from functools import lru_cache as cache
-
+from functools import cache
 from importlib import resources
-import numpy as np
+
 from astropy.table import QTable
 import astropy.units as u
 from astropy.modeling.models import Tabular1D
-
+import numpy as np
 
 from . import data
 from .core import Background
-
 
 kpno_sky_tables = {'low': '10JunZen.txt', 'medium': '10FebZen.txt',
                    'high': '10Phx.txt', 'veryhigh': '10Tuc.txt'}
