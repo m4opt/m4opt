@@ -21,8 +21,8 @@ mag_high = 22.1
 
 @cache
 def read_stis_zodi_high():
-    with resources.path(data, 'stis_zodi_high.ecsv') as path:
-        table = QTable.read(path)
+    with resources.files(data).joinpath('stis_zodi_high.ecsv').open('rb') as f:
+        table = QTable.read(f, format='ascii.ecsv')
     x = table['wavelength'].to(
         Background.input_units['x'], equivalencies=u.spectral())
     y = table['surface_brightness'].to(
@@ -34,8 +34,8 @@ def read_stis_zodi_high():
 def read_leinert_angular_interp():
     # Zodiacal light angular dependence from Table 16 of
     # Leinert et al. (2017), https://doi.org/10.1051/aas:1998105.
-    with resources.path(data, 'leinert_zodi.txt') as p:
-        table = np.loadtxt(p)
+    with resources.files(data).joinpath('leinert_zodi.txt').open('rb') as f:
+        table = np.loadtxt(f)
     lat = table[0, 1:]
     lon = table[1:, 0]
     s10 = table[1:, 1:]

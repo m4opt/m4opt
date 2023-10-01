@@ -45,8 +45,8 @@ def read_kpno_sky_data(option="medium"):
         raise ValueError("option must be one of {0}".format(
                              kpno_sky_tables.keys()))
 
-    with resources.path(data, filename) as path:
-        table = QTable.read(path, format='ascii',
+    with resources.files(data).joinpath(filename).open('rb') as f:
+        table = QTable.read(f, format='ascii',
                             names=('wavelength', 'surface_brightness'))
 
     x = table['wavelength'] * u.Angstrom
