@@ -1,7 +1,6 @@
 from functools import cache
 from importlib import resources
 
-from astropy.table import QTable
 import astropy.units as u
 from astropy.modeling.models import Tabular1D
 import numpy as np
@@ -46,11 +45,10 @@ def read_kpno_sky_data(option="medium"):
                              kpno_sky_tables.keys()))
 
     with resources.files(data).joinpath(filename).open('rb') as f:
-        table = QTable.read(f, format='ascii',
-                            names=('wavelength', 'surface_brightness'))
+        x, y = np.loadtxt(f).T
 
-    x = table['wavelength'] * u.Angstrom
-    y = table['surface_brightness'] * u.mag(u.AB/u.arcsec**2)
+    x *= u.Angstrom
+    y *= u.mag(u.AB/u.arcsec**2)
 
     # convert to desired units
     x = x.to(Background.input_units['x'], equivalencies=u.spectral())
