@@ -174,9 +174,11 @@ class ZodiacalBackground:
 
         wave = np.linspace(1000, 11000) * u.angstrom
         ax = plt.axes()
-        for key in ['low', 'mid', 'high']:
-            surf = getattr(ZodiacalBackground, key)()(wave)
+        for key in ['high', 'mid', 'low']:
+            surf = getattr(ZodiacalBackground, key)()(wave).to(
+                u.mag(u.AB / u.arcsec**2))
             ax.plot(wave, surf, label=f'ZodiacalBackground.{key}()')
+        ax.invert_yaxis()
         ax.legend()
 
     .. plot::
