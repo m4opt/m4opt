@@ -13,31 +13,7 @@ kpno_sky_tables = {'low': '10JunZen.txt', 'medium': '10FebZen.txt',
 
 
 @cache
-def read_kpno_sky_data(option="medium"):
-    """
-    Data taken from Neugent & Massey(2010)[1]_; as per private communication
-    with P. Massey, sky brightness is given in units AB magnitudes/arcsec^2
-
-    Options include:
-    - "low"    : As measured at Zenith in June; lowest level of sky brightness
-    - "medium" : At Zenith in February
-    - "high"   : As measured at a zenith distance of 60 degrees towards Phoenix
-    - "veryhigh" : Measured at a zenith distance of 60 degrees towards Tucson
-
-    Notes
-    -----
-
-    Spectra is given only for B and V bands (~3750 - ~6875 Angstrom). This does
-    not yet include effect of lunar phase.
-
-    References
-    ----------
-    .. [1] Neugent, K. and Massey, P., 2010, "The Spectrum of the Night Sky
-           Over Kitt Peak: Changes Over Two Decades". PASP, 122, 1246-1253
-           doi:10.1086/656425
-    """
-
-    key = option.lower()
+def read_kpno_sky_data(key):
     try:
         filename = kpno_sky_tables[key]
     except KeyError:
@@ -47,14 +23,22 @@ def read_kpno_sky_data(option="medium"):
     with resources.files(data).joinpath(filename).open('rb') as f:
         x, y = np.loadtxt(f).T
 
+    # According to per private communication with P. Massey, sky brightness is
+    # given in units AB magnitudes/arcsec^2
     x *= u.Angstrom
     y *= u.mag(u.AB/u.arcsec**2)
 
-    # convert to desired units
+    # Convert to desired units
     x = x.to(Background.input_units['x'], equivalencies=u.spectral())
     y = y.to(Background.return_units['y'], equivalencies=u.spectral_density(x))
 
     return np.flipud(x), np.flipud(y)
+
+
+def _get(key):
+    result = Tabular1D(*read_kpno_sky_data(key))
+    result.input_units_equivalencies = Background.input_units_equivalencies
+    return result
 
 
 class SkyBackground:
@@ -62,7 +46,18 @@ class SkyBackground:
     Sky Brightness background: sky glow due to scattered and diffuse light
 
     Currently, only the Kitt Peak sky brightness observations from Neugent and
-    Massey (2010)[1]_ is supported. See `read_kpno_sky_data()` for discussion.
+    Massey (2010) [1]_ are supported. There are four methods, sampling a
+    selection of sky brightness conditions:
+
+    - :meth:`low`: At zenith in June
+    - :meth:`medium` : At zenith in February
+    - :meth:`high`: At a zenith angle of 60 degrees towards Phoenix
+    - :meth:`veryhigh`: At a zenith angle of 60 degrees towards Tucson
+
+    Notes
+    -----
+    Spectra are given only for B and V bands (~3750 - ~6875 Angstrom) and do
+    not include effect of lunar phase.
 
     References
     ----------
@@ -72,9 +67,6 @@ class SkyBackground:
 
     Examples
     --------
-    There are four options for getting a SkyBackground model: 'low', 'medium',
-    'high', and 'veryhigh':
-
     >>> from astropy import units as u
     >>> from m4opt.models.background import SkyBackground
 
@@ -85,28 +77,41 @@ class SkyBackground:
     >>> background = SkyBackground.veryhigh()
     >>> background(5890 * u.angstrom).to(u.mag(u.AB / u.arcsec**2))
     <Magnitude 19.09920111 mag(AB / arcsec2)>
+
+    .. plot::
+        :caption: Sky background spectra
+
+        from astropy import units as u
+        from astropy.visualization import quantity_support
+        from matplotlib import pyplot as plt
+        import numpy as np
+
+        from m4opt.models.background import SkyBackground
+
+        quantity_support()
+
+        wave = np.linspace(3750, 6868) * u.angstrom
+        ax = plt.axes()
+        for key in ['veryhigh', 'high', 'medium', 'low']:
+            surf = getattr(SkyBackground, key)()(wave).to(
+                u.mag(u.AB / u.arcsec**2))
+            ax.plot(wave, surf, label=f'SkyBackground.{key}')
+        ax.legend()
+        ax.invert_yaxis()
     """
 
     @staticmethod
     def low():
-        result = Tabular1D(*read_kpno_sky_data("low"))
-        result.input_units_equivalencies = Background.input_units_equivalencies
-        return result
+        return _get('low')
 
     @staticmethod
     def medium():
-        result = Tabular1D(*read_kpno_sky_data("medium"))
-        result.input_units_equivalencies = Background.input_units_equivalencies
-        return result
+        return _get('medium')
 
     @staticmethod
     def high():
-        result = Tabular1D(*read_kpno_sky_data("high"))
-        result.input_units_equivalencies = Background.input_units_equivalencies
-        return result
+        return _get('high')
 
     @staticmethod
     def veryhigh():
-        result = Tabular1D(*read_kpno_sky_data("veryhigh"))
-        result.input_units_equivalencies = Background.input_units_equivalencies
-        return result
+        return _get('veryhigh')
