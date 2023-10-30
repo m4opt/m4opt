@@ -40,6 +40,12 @@ __ https://www.ibm.com/academic
 
 4. Follow the download and installation instructions.
 
+   If installing on a remote system, be sure to copy the appropriate installer
+   file (e.g. `cplex_studio2211.linux_x86_64.bin`) to that system. Then,
+   update the permissions of the file to make it executable and run it 
+   with e.g. `./cplex_studio2211.linux_x86_64.bin`. The installation will
+   proceed in the command line.
+
 5. In the Python environment in which you have installed |M4OPT|, run this
    command::
 
