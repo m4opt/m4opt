@@ -40,11 +40,11 @@ __ https://www.ibm.com/academic
 
 4. Follow the download and installation instructions.
 
-   If running on a cluster like SDSC Expanse, copy the `linux_x86_64`_ installer
-   file (e.g. `cplex_studio2211.linux_x86_64.bin`_) to the cluster. Then,
+   If installing on a remote system, be sure to copy the appropriate installer
+   file (e.g. `cplex_studio2211.linux_x86_64.bin`) to that system. Then,
    update the permissions of the file to make it executable and run it 
-   with `./cplex_studio2211.linux_x86_64.bin`_. The installation will then
-   run in the command line.
+   with e.g. `./cplex_studio2211.linux_x86_64.bin`. The installation will
+   proceed in the command line.
 
 5. In the Python environment in which you have installed |M4OPT|, run this
    command::
