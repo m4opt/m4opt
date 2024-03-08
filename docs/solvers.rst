@@ -73,12 +73,14 @@ required. Follow these two steps:
 
 1. IBM will have sent you your CPLEX Studio API key by email. Find this key.
 
-2. Set the environment variable ``CPLEX_STUDIO_KEY`` by running this command,
-   replacing ``xxxxxxxxxx`` with your API key::
+2. Set the environment variables ``CPLEX_STUDIO_KEY`` and
+   ``CPLEX_STUDIO_KEY_SERVER`` by running these commands, replacing
+   ``xxxxxxxxxx`` with your API key::
 
        export CPLEX_STUDIO_KEY=xxxxxxxxxx
+       export CPLEX_STUDIO_KEY_SERVER=https://scx-cos.docloud.ibm.com/cos/query/v1/apikeys
 
-   Consider adding this command to your login shell's profile script.
+   Consider adding these commands to your login shell's profile script.
 
 Install Gurobi
 --------------
