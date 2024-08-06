@@ -5,6 +5,11 @@ from typing import Optional, Union
 from astropy.units.quantity import Quantity
 from astropy.modeling import Model, CompoundModel
 import numpy as np
+try:
+    from numpy import trapezoid
+except ImportError:
+    # FIXME: remove when we require Numpy >= 2.0.0
+    from numpy import trapz as trapezoid
 import portion.interval
 from scipy.integrate import quad_vec
 
@@ -239,7 +244,7 @@ def integrate(model: Model, *,
 
     if quick_and_dirty_npts is not None:
         x = np.linspace(a, b, quick_and_dirty_npts)
-        yint = np.trapz(func(x), x)
+        yint = trapezoid(func(x), x)
     else:
         yint, _ = quad_vec(func, a, b, points=points,
                            quadrature='trapezoid', **kwargs)
