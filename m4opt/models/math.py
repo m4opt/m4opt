@@ -14,6 +14,12 @@ import portion.interval
 from scipy.integrate import quad_vec
 
 
+def _unwrap_scalar(array):
+    if isinstance(array, np.generic) and np.isscalar(array):
+        array = array.item()
+    return array
+
+
 def _map_interval(func):
     """Apply a function to the bounds of an interval."""
 
@@ -162,7 +168,7 @@ def _get_intervals(model: Model) -> portion.Interval:
             return portion.open(-np.inf * unit, np.inf * unit)
         else:
             (lo, hi), = bbox
-            return portion.open(lo, hi)
+            return portion.open(_unwrap_scalar(lo), _unwrap_scalar(hi))
 
 
 def integrate(model: Model, *,
@@ -245,6 +251,8 @@ def integrate(model: Model, *,
     if quick_and_dirty_npts is not None:
         x = np.linspace(a, b, quick_and_dirty_npts)
         yint = trapezoid(func(x), x)
+        if np.isscalar(yint):
+            yint = _unwrap_scalar(yint.item())
     else:
         yint, _ = quad_vec(func, a, b, points=points,
                            quadrature='trapezoid', **kwargs)
