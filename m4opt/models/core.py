@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, EarthLocation
 from astropy.time import Time
 from astropy.utils.state import ScienceState
 
@@ -18,6 +18,7 @@ observing time in a `with:` statement, like this:
 class ObservingState:
     obstime: Optional[Time] = None
     target_coord: Optional[SkyCoord] = None
+    observatory_loc: Optional[EarthLocation] = None
 
 
 class state(ScienceState):
