@@ -1,8 +1,11 @@
 from .core import Background
-from .zodiacal import ZodiacalBackground
 from .skybright import SkyBackground
+from .zodiacal import ZodiacalBackground
 
-__all__ = ('ZodiacalBackground', 'SkyBackground',)
+__all__ = (
+    "ZodiacalBackground",
+    "SkyBackground",
+)
 
 __doc__ = f"""
 Sky background models: models of the surface brightness of the sky.

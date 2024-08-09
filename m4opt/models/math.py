@@ -2,9 +2,10 @@ from contextlib import contextmanager
 from itertools import chain
 from typing import Optional, Union
 
-from astropy.units.quantity import Quantity
-from astropy.modeling import Model, CompoundModel
 import numpy as np
+from astropy.modeling import CompoundModel, Model
+from astropy.units.quantity import Quantity
+
 try:
     from numpy import trapezoid
 except ImportError:
@@ -47,7 +48,7 @@ def _with_portion_float_inf():
     to calculate complement sets.
     """
     tmp = portion.interval.inf
-    portion.interval.inf = float('inf')
+    portion.interval.inf = float("inf")
     try:
         yield
     finally:
@@ -56,7 +57,7 @@ def _with_portion_float_inf():
 
 def _get_1d_units_for_dict(units: dict) -> Union[Quantity, float]:
     if units:
-        (_, units), = units.items()
+        ((_, units),) = units.items()
     if not units:
         units = 1
     return units
@@ -148,18 +149,19 @@ def _get_intervals(model: Model) -> portion.Interval:
     (<Quantity -2. m>,<Quantity -1. m>) | (<Quantity -1. m>,<Quantity 2. m>)
     """
     if isinstance(model, CompoundModel):
-        if model.op == '|':
+        if model.op == "|":
             return _get_intervals(model.left).apply(_map_interval(model.right))
-        elif model.op == '*':
+        elif model.op == "*":
             return _get_intervals(model.left) & _get_intervals(model.right)
-        elif model.op in {'+', '-', '/'}:
-            lhs = portion.IntervalDict({_get_intervals(model.left): 'lhs'})
-            rhs = portion.IntervalDict({_get_intervals(model.right): 'rhs'})
+        elif model.op in {"+", "-", "/"}:
+            lhs = portion.IntervalDict({_get_intervals(model.left): "lhs"})
+            rhs = portion.IntervalDict({_get_intervals(model.right): "rhs"})
             union = lhs | rhs
             return portion.Interval(
-                *(intervals.apply(_to_open_interval) for intervals in union))
+                *(intervals.apply(_to_open_interval) for intervals in union)
+            )
         else:
-            raise NotImplementedError(f'operation {model.op} not supported')
+            raise NotImplementedError(f"operation {model.op} not supported")
     else:
         try:
             bbox = model.bounding_box
@@ -167,13 +169,13 @@ def _get_intervals(model: Model) -> portion.Interval:
             unit = _get_1d_units_for_dict(model.input_units)
             return portion.open(-np.inf * unit, np.inf * unit)
         else:
-            (lo, hi), = bbox
+            ((lo, hi),) = bbox
             return portion.open(_unwrap_scalar(lo), _unwrap_scalar(hi))
 
 
-def integrate(model: Model, *,
-              quick_and_dirty_npts: Optional[int] = None,
-              **kwargs) -> Union[Quantity, float]:
+def integrate(
+    model: Model, *, quick_and_dirty_npts: Optional[int] = None, **kwargs
+) -> Union[Quantity, float]:
     """Integrate a 1D model using adaptive trapezoidal quadrature.
 
     Parameters
@@ -235,16 +237,19 @@ def integrate(model: Model, *,
     x_unit = _get_1d_units_for_dict(model.input_units)
 
     intervals = _get_intervals(model)
-    a, *points, b = np.unique(Quantity(list(chain.from_iterable(
-        (i.lower, i.upper) for i in intervals)), x_unit).value.ravel())
+    a, *points, b = np.unique(
+        Quantity(
+            list(chain.from_iterable((i.lower, i.upper) for i in intervals)), x_unit
+        ).value.ravel()
+    )
 
     # FIXME: Cannot rely on model.return_units because it is not set for all
     # models (e.g. Lorentz1D).
-    y_unit = getattr(model(a * x_unit), 'unit', None) or 1
+    y_unit = getattr(model(a * x_unit), "unit", None) or 1
 
     def func(x):
         result = model(x * x_unit)
-        if hasattr(result, 'to_value'):
+        if hasattr(result, "to_value"):
             result = result.to_value()
         return result
 
@@ -254,7 +259,6 @@ def integrate(model: Model, *,
         if np.isscalar(yint):
             yint = _unwrap_scalar(yint.item())
     else:
-        yint, _ = quad_vec(func, a, b, points=points,
-                           quadrature='trapezoid', **kwargs)
+        yint, _ = quad_vec(func, a, b, points=points, quadrature="trapezoid", **kwargs)
 
     return yint * x_unit * y_unit

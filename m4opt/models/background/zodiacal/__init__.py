@@ -1,12 +1,12 @@
 from functools import cache
 from importlib import resources
 
-from astropy.coordinates import GeocentricTrueEcliptic, get_sun, SkyCoord
+import numpy as np
+from astropy import units as u
+from astropy.coordinates import GeocentricTrueEcliptic, SkyCoord, get_sun
 from astropy.modeling import custom_model
 from astropy.modeling.models import Const1D, Tabular1D
 from astropy.table import QTable
-from astropy import units as u
-import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
 from ...core import state
@@ -21,12 +21,12 @@ mag_high = 22.1
 
 @cache
 def read_stis_zodi_high():
-    with resources.files(data).joinpath('stis_zodi_high.ecsv').open('rb') as f:
-        table = QTable.read(f, format='ascii.ecsv')
-    x = table['wavelength'].to(
-        Background.input_units['x'], equivalencies=u.spectral())
-    y = table['surface_brightness'].to(
-        Background.return_units['y'], equivalencies=u.spectral_density(x))
+    with resources.files(data).joinpath("stis_zodi_high.ecsv").open("rb") as f:
+        table = QTable.read(f, format="ascii.ecsv")
+    x = table["wavelength"].to(Background.input_units["x"], equivalencies=u.spectral())
+    y = table["surface_brightness"].to(
+        Background.return_units["y"], equivalencies=u.spectral_density(x)
+    )
     return np.flipud(x), np.flipud(y)  # reversed, for frequency -> wavelength
 
 
@@ -34,7 +34,7 @@ def read_stis_zodi_high():
 def read_leinert_angular_interp():
     # Zodiacal light angular dependence from Table 16 of
     # Leinert et al. (2017), https://doi.org/10.1051/aas:1998105.
-    with resources.files(data).joinpath('leinert_zodi.txt').open('rb') as f:
+    with resources.files(data).joinpath("leinert_zodi.txt").open("rb") as f:
         table = np.loadtxt(f)
     lat = table[0, 1:]
     lon = table[1:, 0]
@@ -76,8 +76,10 @@ def get_scale(target_coord, obstime):
 @custom_model
 def ZodiacalScale(x):
     observing_state = state.get()
-    return get_scale(observing_state.target_coord,
-                     observing_state.obstime) * u.dimensionless_unscaled
+    return (
+        get_scale(observing_state.target_coord, observing_state.obstime)
+        * u.dimensionless_unscaled
+    )
 
 
 class ZodiacalBackground:

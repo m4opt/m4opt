@@ -2,14 +2,18 @@ from functools import cache
 from importlib import resources
 
 import astropy.units as u
-from astropy.modeling.models import Tabular1D
 import numpy as np
+from astropy.modeling.models import Tabular1D
 
 from ..core import Background
 from . import data
 
-kpno_sky_tables = {'low': '10JunZen.txt', 'medium': '10FebZen.txt',
-                   'high': '10Phx.txt', 'veryhigh': '10Tuc.txt'}
+kpno_sky_tables = {
+    "low": "10JunZen.txt",
+    "medium": "10FebZen.txt",
+    "high": "10Phx.txt",
+    "veryhigh": "10Tuc.txt",
+}
 
 
 @cache
@@ -17,20 +21,19 @@ def read_kpno_sky_data(key):
     try:
         filename = kpno_sky_tables[key]
     except KeyError:
-        raise ValueError("option must be one of {0}".format(
-                             kpno_sky_tables.keys()))
+        raise ValueError("option must be one of {0}".format(kpno_sky_tables.keys()))
 
-    with resources.files(data).joinpath(filename).open('rb') as f:
+    with resources.files(data).joinpath(filename).open("rb") as f:
         x, y = np.loadtxt(f).T
 
     # According to per private communication with P. Massey, sky brightness is
     # given in units AB magnitudes/arcsec^2
     x *= u.Angstrom
-    y *= u.mag(u.AB/u.arcsec**2)
+    y *= u.mag(u.AB / u.arcsec**2)
 
     # Convert to desired units
-    x = x.to(Background.input_units['x'], equivalencies=u.spectral())
-    y = y.to(Background.return_units['y'], equivalencies=u.spectral_density(x))
+    x = x.to(Background.input_units["x"], equivalencies=u.spectral())
+    y = y.to(Background.return_units["y"], equivalencies=u.spectral_density(x))
 
     return np.flipud(x), np.flipud(y)
 
@@ -102,16 +105,16 @@ class SkyBackground:
 
     @staticmethod
     def low():
-        return _get('low')
+        return _get("low")
 
     @staticmethod
     def medium():
-        return _get('medium')
+        return _get("medium")
 
     @staticmethod
     def high():
-        return _get('high')
+        return _get("high")
 
     @staticmethod
     def veryhigh():
-        return _get('veryhigh')
+        return _get("veryhigh")

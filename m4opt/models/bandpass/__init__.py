@@ -1,6 +1,9 @@
 from .bandpass import Bandpass, tynt_filters
 
-__all__ = ('Bandpass', 'tynt_filters',)
+__all__ = (
+    "Bandpass",
+    "tynt_filters",
+)
 
 __doc__ = """
 Bandpass models: models of instrument bandpasses.

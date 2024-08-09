@@ -1,21 +1,20 @@
-from astropy.coordinates import SkyCoord, ITRS
-from astropy.time import Time
-from astropy import units as u
-from astropy.utils.data import download_files_in_parallel
 import numpy as np
 import spiceypy as spice
+from astropy import units as u
+from astropy.coordinates import ITRS, SkyCoord
+from astropy.time import Time
+from astropy.utils.data import download_files_in_parallel
 
 from .base import Orbit
 
 
 def _time_to_et(time):
     """Convert an Astropy time to a SPICE elapsed time since epoch."""
-    return (time.tdb - Time('J2000')).sec
+    return (time.tdb - Time("J2000")).sec
 
 
 # SPICE routines vectorized over time argument
-_spkgps = np.vectorize(
-    spice.spkgps, excluded=[0, 2, 3], signature='()->(m),()')
+_spkgps = np.vectorize(spice.spkgps, excluded=[0, 2, 3], signature="()->(m),()")
 
 
 class Spice(Orbit):
@@ -55,9 +54,9 @@ class Spice(Orbit):
             for filename in download_files_in_parallel(kernels, cache=True):
                 spice.furnsh(filename)
         self._target = spice.bodn2c(target)
-        self._body = spice.bodn2c('EARTH')
+        self._body = spice.bodn2c("EARTH")
 
     def __call__(self, time):
         et = _time_to_et(time)
-        pos, _ = _spkgps(self._target, et, 'IAU_EARTH', self._body)
+        pos, _ = _spkgps(self._target, et, "IAU_EARTH", self._body)
         return SkyCoord(pos, unit=u.km, frame=ITRS(obstime=time))
