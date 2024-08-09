@@ -1,7 +1,7 @@
 Acknowledgements
 ----------------
 
-Kitt Peak Sky Brightness data 10####.txt provided courtesy of P. Massey. 
+Kitt Peak Sky Brightness data 10####.txt provided courtesy of P. Massey.
 Data is associated with Neugent and Massey (2010) [1]_.
 
 References

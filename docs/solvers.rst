@@ -42,7 +42,7 @@ __ https://www.ibm.com/academic
 
    If installing on a remote system, be sure to copy the appropriate installer
    file (e.g. `cplex_studio2211.linux_x86_64.bin`) to that system. Then,
-   update the permissions of the file to make it executable and run it 
+   update the permissions of the file to make it executable and run it
    with e.g. `./cplex_studio2211.linux_x86_64.bin`. The installation will
    proceed in the command line.
 

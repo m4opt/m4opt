@@ -1,9 +1,9 @@
-from astropy.coordinates import SkyCoord, TEME
-from astropy import units as u
-from astropy.utils.data import get_readable_fileobj
 import numpy as np
+from astropy import units as u
+from astropy.coordinates import TEME, SkyCoord
+from astropy.utils.data import get_readable_fileobj
 from satellite_tle import fetch_tle_from_celestrak
-from sgp4.api import Satrec, SGP4_ERRORS
+from sgp4.api import SGP4_ERRORS, Satrec
 
 from .base import Orbit
 
@@ -113,10 +113,15 @@ class TLE(Orbit):
         if e.size > 0:
             raise RuntimeError(SGP4_ERRORS[e[0]])
 
-        coord = SkyCoord(x=x*u.km, v_x=vx*u.km/u.s,
-                         y=y*u.km, v_y=vy*u.km/u.s,
-                         z=z*u.km, v_z=vz*u.km/u.s,
-                         frame=TEME(obstime=time)).itrs
+        coord = SkyCoord(
+            x=x * u.km,
+            v_x=vx * u.km / u.s,
+            y=y * u.km,
+            v_y=vy * u.km / u.s,
+            z=z * u.km,
+            v_z=vz * u.km / u.s,
+            frame=TEME(obstime=time),
+        ).itrs
         if shape:
             coord = coord.reshape(shape)
         else:

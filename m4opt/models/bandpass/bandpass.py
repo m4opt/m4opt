@@ -1,5 +1,5 @@
-from astropy.modeling.models import Tabular1D
 from astropy import units as u
+from astropy.modeling.models import Tabular1D
 from astropy.units.physical import get_physical_type
 
 from .core import BaseBandpass
@@ -8,6 +8,7 @@ from .core import BaseBandpass
 # and add tynt to required dependencies
 try:
     from tynt import FilterGenerator
+
     tynt_filters = FilterGenerator().available_filters()
 except ImportError:
     tynt_filters = None
@@ -82,13 +83,14 @@ class Bandpass:
 
         unit_type = get_physical_type(points)
         if unit_type != "length" and unit_type != "frequency":
-            raise AttributeError("Input array points does not have " +
-                                 "appropriate wavelength or frequency " +
-                                 "units.")
+            raise AttributeError(
+                "Input array points does not have "
+                + "appropriate wavelength or frequency "
+                + "units."
+            )
 
-        result = Tabular1D(points, lookup_table*u.dimensionless_unscaled)
-        result.input_units_equivalencies = (BaseBandpass.
-                                            input_units_equivalencies)
+        result = Tabular1D(points, lookup_table * u.dimensionless_unscaled)
+        result.input_units_equivalencies = BaseBandpass.input_units_equivalencies
         return result
 
     @classmethod
@@ -100,18 +102,22 @@ class Bandpass:
         """
         if tynt_filters is not None:
             if filter_name not in tynt_filters:
-                raise ValueError("Invalid filter {0}. ".format(filter_name) +
-                                 "See 'm4opt.bandpass.tynt_filters' for " +
-                                 "available options.")
+                raise ValueError(
+                    "Invalid filter {0}. ".format(filter_name)
+                    + "See 'm4opt.bandpass.tynt_filters' for "
+                    + "available options."
+                )
 
             filter = FilterGenerator().reconstruct(filter_name)
-            result = Tabular1D(filter.wavelength,
-                               filter.transmittance*u.dimensionless_unscaled)
-            result.input_units_equivalencies = (BaseBandpass.
-                                                input_units_equivalencies)
+            result = Tabular1D(
+                filter.wavelength, filter.transmittance * u.dimensionless_unscaled
+            )
+            result.input_units_equivalencies = BaseBandpass.input_units_equivalencies
             return result
 
         else:
-            raise ImportError("optional dependency 'tynt' is not installed. "
-                              "To install it, do `pip install "
-                              "git+https://github.com/bmorris3/tynt.git@master`") # noqa
+            raise ImportError(
+                "optional dependency 'tynt' is not installed. "
+                "To install it, do `pip install "
+                "git+https://github.com/bmorris3/tynt.git@master`"
+            )  # noqa
