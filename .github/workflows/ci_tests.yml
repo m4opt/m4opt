@@ -96,12 +96,3 @@ jobs:
     - name: Upload coverage to codecov
       if: "contains(matrix.toxenv, '-cov')"
       uses: codecov/codecov-action@v4
-
-    # FIXME: remove this step once project is public and readthedocs is turned on
-    - name: Archive documentation
-      uses: actions/upload-artifact@v4
-      if: ${{ matrix.toxenv == 'build_docs' }}
-      with:
-        name: docs
-        path: |
-          docs/_build/html
