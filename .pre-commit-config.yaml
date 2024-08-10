@@ -37,3 +37,18 @@ repos:
         args: ["--extend-select", "I", "--fix"]
       # Run the formatter.
       - id: ruff-format
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.1
+    hooks:
+    - id: mypy
+      additional_dependencies:
+        - astropy
+        - docplex
+        - gurobipy
+        - portion
+        - satellitetle
+        - scipy
+        - sgp4
+        - spiceypy
+        - pytest
+      exclude: ^docs/conf.py$
