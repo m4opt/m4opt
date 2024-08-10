@@ -62,7 +62,7 @@ class TLE(Orbit):
         return cls(line1, line2)
 
     @classmethod
-    def from_id(cls, norad_id):
+    def from_id(cls, norad_id: int):
         """Get the latest TLE for a satellite from Celestrak.
 
         Examples
