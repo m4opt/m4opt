@@ -3,7 +3,8 @@ from importlib import resources
 
 import astropy.units as u
 import numpy as np
-from astropy.modeling.models import Model, Tabular1D
+from astropy.modeling import Model
+from astropy.modeling.models import Tabular1D
 
 from ..core import Background
 from . import data
