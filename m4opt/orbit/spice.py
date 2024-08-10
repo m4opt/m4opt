@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 import spiceypy as spice
 from astropy import units as u
 from astropy.coordinates import ITRS, SkyCoord
@@ -8,7 +9,7 @@ from astropy.utils.data import download_files_in_parallel
 from .base import Orbit
 
 
-def _time_to_et(time):
+def _time_to_et(time: Time) -> float | npt.NDArray[np.floating]:
     """Convert an Astropy time to a SPICE elapsed time since epoch."""
     return (time.tdb - Time("J2000")).sec
 
@@ -49,7 +50,7 @@ class Spice(Orbit):
 
     """  # noqa: E501
 
-    def __init__(self, target, *kernels):
+    def __init__(self, target: str, *kernels: str):
         if kernels:
             for filename in download_files_in_parallel(kernels, cache=True):
                 spice.furnsh(filename)

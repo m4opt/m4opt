@@ -1,3 +1,3 @@
 from ._astropy_init import *  # noqa
 
-__all__ = []
+__all__ = ()

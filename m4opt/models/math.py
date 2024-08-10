@@ -7,10 +7,14 @@ from astropy.modeling import CompoundModel, Model
 from astropy.units.quantity import Quantity
 
 try:
-    from numpy import trapezoid
+    from numpy import (  # type: ignore[attr-defined]  # Remove once we require Numpy >= 2.2.0. See https://github.com/numpy/numpy/pull/26983
+        trapezoid,
+    )
 except ImportError:
     # FIXME: remove when we require Numpy >= 2.0.0
-    from numpy import trapz as trapezoid
+    from numpy import (  # type: ignore[attr-defined]  # Remove once we require Numpy >= 2.2.0. See https://github.com/numpy/numpy/pull/26983
+        trapz as trapezoid,
+    )
 import portion.interval
 from scipy.integrate import quad_vec
 
@@ -55,9 +59,9 @@ def _with_portion_float_inf():
         portion.interval.inf = tmp
 
 
-def _get_1d_units_for_dict(units: dict) -> Union[Quantity, float]:
+def _get_1d_units_for_dict(units) -> Union[Quantity, float]:
     if units:
-        ((_, units),) = units.items()
+        (units,) = units.values()
     if not units:
         units = 1
     return units
@@ -255,9 +259,7 @@ def integrate(
 
     if quick_and_dirty_npts is not None:
         x = np.linspace(a, b, quick_and_dirty_npts)
-        yint = trapezoid(func(x), x)
-        if np.isscalar(yint):
-            yint = _unwrap_scalar(yint.item())
+        yint = _unwrap_scalar(trapezoid(func(x), x))
     else:
         yint, _ = quad_vec(func, a, b, points=points, quadrature="trapezoid", **kwargs)
 
