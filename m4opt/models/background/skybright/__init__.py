@@ -3,7 +3,7 @@ from importlib import resources
 
 import astropy.units as u
 import numpy as np
-from astropy.modeling.models import Tabular1D
+from astropy.modeling.models import Model, Tabular1D
 
 from ..core import Background
 from . import data
@@ -38,7 +38,7 @@ def read_kpno_sky_data(key):
     return np.flipud(x), np.flipud(y)
 
 
-def _get(key):
+def _get(key: str) -> Model:
     result = Tabular1D(*read_kpno_sky_data(key))
     result.input_units_equivalencies = Background.input_units_equivalencies
     return result

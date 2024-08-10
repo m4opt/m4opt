@@ -7,6 +7,7 @@ from astropy.coordinates import GeocentricTrueEcliptic, SkyCoord, get_sun
 from astropy.modeling import custom_model
 from astropy.modeling.models import Const1D, Tabular1D
 from astropy.table import QTable
+from astropy.time import Time
 from scipy.interpolate import RegularGridInterpolator
 
 from ...core import state
@@ -227,7 +228,7 @@ class ZodiacalBackground:
         return cls.high() * ZodiacalScale()
 
     @classmethod
-    def at(cls, target_coord, obstime):
+    def at(cls, target_coord: SkyCoord, obstime: Time):
         """Get the model for a fixed sky position and time.
 
         Parameters
