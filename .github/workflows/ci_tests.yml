@@ -94,5 +94,5 @@ jobs:
         tox -e ${{ matrix.toxenv }}
 
     - name: Upload coverage to codecov
-      if: "contains(matrix.toxenv, '-cov')"
-      uses: codecov/codecov-action@v4
+      if: contains(matrix.toxenv, '-cov')
+      uses: codecov/codecov-action@v3
