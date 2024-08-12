@@ -16,6 +16,9 @@ try:
 except ImportError:
     ASTROPY_HEADER = False
 
+import numpy as np
+from packaging.version import Version
+
 from .tests.plugins.problem_size_limits import pytest_runtest_call  # noqa: F401
 
 
@@ -27,6 +30,10 @@ def pytest_configure(config):
     config : pytest configuration
 
     """
+    # FIXME: Remove once we require Numpy >= 2.0.0.
+    # See https://github.com/astropy/astropy/issues/15095
+    config.option.doctest_plus = Version(np.__version__) >= Version("2.0.0")
+
     if ASTROPY_HEADER:
         config.option.astropy_header = True
 
