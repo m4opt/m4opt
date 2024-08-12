@@ -19,12 +19,6 @@ import portion.interval
 from scipy.integrate import quad_vec
 
 
-def _unwrap_scalar(array):
-    if isinstance(array, np.generic) and np.isscalar(array):
-        array = array.item()
-    return array
-
-
 def _map_interval(func):
     """Apply a function to the bounds of an interval."""
 
@@ -100,7 +94,7 @@ def _get_intervals(model: Model) -> portion.Interval:
     For a simple, bounded model, `_get_intervals` returns a single interval:
 
     >>> _get_intervals(models.Box1D(width=3))
-    (-1.5,1.5)
+    (np.float64(-1.5),np.float64(1.5))
 
     This also works with models that have dimensionful input:
 
@@ -127,11 +121,11 @@ def _get_intervals(model: Model) -> portion.Interval:
     >>> model1 = models.Box1D(x_0=-0.5, width=3)
     >>> model2 = models.Box1D(x_0=0.5, width=3)
     >>> _get_intervals(model1)
-    (-2.0,1.0)
+    (np.float64(-2.0),np.float64(1.0))
     >>> _get_intervals(model2)
-    (-1.0,2.0)
+    (np.float64(-1.0),np.float64(2.0))
     >>> _get_intervals(model1 * model2)
-    (-1.0,1.0)
+    (np.float64(-1.0),np.float64(1.0))
     >>> model1 = models.Box1D(x_0=-0.5*u.m, width=3*u.m)
     >>> model2 = models.Box1D(x_0=0.5*u.m, width=3*u.m)
     >>> _get_intervals(model1 * model2)
@@ -142,9 +136,9 @@ def _get_intervals(model: Model) -> portion.Interval:
     >>> model1 = models.Box1D(x_0=-0.5, width=3)
     >>> model2 = models.Box1D(x_0=0.5, width=3)
     >>> _get_intervals(model1 + model2)
-    (-2.0,-1.0) | (-1.0,2.0)
+    (np.float64(-2.0),np.float64(-1.0)) | (np.float64(-1.0),np.float64(2.0))
     >>> _get_intervals(model1 - model2)
-    (-2.0,-1.0) | (-1.0,2.0)
+    (np.float64(-2.0),np.float64(-1.0)) | (np.float64(-1.0),np.float64(2.0))
     >>> model1 = models.Box1D(x_0=-0.5*u.m, width=3*u.m)
     >>> model2 = models.Box1D(x_0=0.5*u.m, width=3*u.m)
     >>> _get_intervals(model1 + model2)
@@ -174,7 +168,7 @@ def _get_intervals(model: Model) -> portion.Interval:
             return portion.open(-np.inf * unit, np.inf * unit)
         else:
             ((lo, hi),) = bbox
-            return portion.open(_unwrap_scalar(lo), _unwrap_scalar(hi))
+            return portion.open(lo, hi)
 
 
 def integrate(
@@ -221,12 +215,12 @@ def integrate(
     >>> integrate(model)
     3.0
     >>> integrate(model, quick_and_dirty_npts=10000)
-    3.0
+    np.float64(3.0)
     >>> model = models.Gaussian1D() * models.Const1D(1 / np.sqrt(2 * np.pi))
     >>> integrate(model, epsrel=1e-7)
     0.9999999648585338
     >>> integrate(model, quick_and_dirty_npts=10000)
-    0.9999999620207557
+    np.float64(0.9999999620207557)
 
     Or models with dimensions:
 
@@ -259,7 +253,7 @@ def integrate(
 
     if quick_and_dirty_npts is not None:
         x = np.linspace(a, b, quick_and_dirty_npts)
-        yint = _unwrap_scalar(trapezoid(func(x), x))
+        yint = trapezoid(func(x), x)
     else:
         yint, _ = quad_vec(func, a, b, points=points, quadrature="trapezoid", **kwargs)
 
