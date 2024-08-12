@@ -211,6 +211,14 @@ linkcheck_anchors = False
 #     nitpick_ignore.append((dtype, six.u(target)))
 
 
+# -- Options for extlinks extension ------------------------------------------
+extensions.append("sphinx.ext.extlinks")
+extlinks = {
+    "arxiv": ("https://arxiv.org/abs/%s", "arXiv:%s"),
+    "doi": ("https://doi.org/%s", "doi:%s"),
+}
+
+
 # -- Options for intersphinx --------------------------------------------------
 intersphinx_mapping.update(  # noqa: F405
     {

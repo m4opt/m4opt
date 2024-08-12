@@ -49,6 +49,7 @@ User Documentation
 
    constraints
    models
+   skygrid
 
 ***********************
 Developer Documentation

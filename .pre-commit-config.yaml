@@ -42,9 +42,11 @@ repos:
     hooks:
     - id: mypy
       additional_dependencies:
-        - astropy
+        - antiprism-python
+        - astropy >= 6.1.0
         - docplex
         - gurobipy
+        - ligo.skymap >= 2.0.2.dev0
         - numpy >= 2.1.0rc1
         - portion
         - satellitetle
