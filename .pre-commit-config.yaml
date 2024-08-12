@@ -45,6 +45,7 @@ repos:
         - astropy
         - docplex
         - gurobipy
+        - numpy >= 2.1.0rc1
         - portion
         - satellitetle
         - scipy

@@ -3,19 +3,9 @@ from itertools import chain
 from typing import Optional, Union
 
 import numpy as np
+import portion.interval
 from astropy.modeling import CompoundModel, Model
 from astropy.units.quantity import Quantity
-
-try:
-    from numpy import (  # type: ignore[attr-defined]  # Remove once we require Numpy >= 2.2.0. See https://github.com/numpy/numpy/pull/26983
-        trapezoid,
-    )
-except ImportError:
-    # FIXME: remove when we require Numpy >= 2.0.0
-    from numpy import (  # type: ignore[attr-defined]  # Remove once we require Numpy >= 2.2.0. See https://github.com/numpy/numpy/pull/26983
-        trapz as trapezoid,
-    )
-import portion.interval
 from scipy.integrate import quad_vec
 
 
@@ -253,7 +243,7 @@ def integrate(
 
     if quick_and_dirty_npts is not None:
         x = np.linspace(a, b, quick_and_dirty_npts)
-        yint = trapezoid(func(x), x)
+        yint = np.trapezoid(func(x), x)
     else:
         yint, _ = quad_vec(func, a, b, points=points, quadrature="trapezoid", **kwargs)
 
