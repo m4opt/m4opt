@@ -1,5 +1,4 @@
 import numpy as np
-import numpy.typing as npt
 from astropy import units as u
 from astropy.constants import R_earth
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
@@ -54,5 +53,5 @@ class EarthLimbConstraint(Constraint):
     def __init__(self, min: u.Quantity[u.deg]):
         self.min = min
 
-    def __call__(self, *args) -> bool | npt.NDArray[np.bool_]:
+    def __call__(self, *args):
         return _get_angle_from_earth_limb(*args) >= self.min

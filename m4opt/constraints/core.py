@@ -10,5 +10,5 @@ class Constraint(ABC):
     @abstractmethod
     def __call__(
         self, observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
-    ) -> bool | npt.NDArray[np.bool_]:
+    ) -> npt.NDArray[np.bool_]:
         raise NotImplementedError
