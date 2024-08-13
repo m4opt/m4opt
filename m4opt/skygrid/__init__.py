@@ -17,8 +17,8 @@ or equal to 4 pi / area.
     healpix
     sinusoidal
 
-Example
--------
+Examples
+--------
 >>> from astropy import units as u
 >>> from m4opt import skygrid
 >>> points = skygrid.sinusoidal(100 * u.deg**2)
