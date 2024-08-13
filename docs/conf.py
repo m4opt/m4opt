@@ -226,6 +226,12 @@ intersphinx_mapping.update(  # noqa: F405
     }
 )
 
+# -- Options for plot_directive -----------------------------------------------
+plot_include_source = True
+plot_formats = [("svg", 300), ("pdf", 300)]
+plot_html_show_formats = False
+
+
 # -- Options for the sphinx.ext.todo exception --------------------------------
 # extensions += ['sphinx.ext.todo']
 todo_include_todos = True
