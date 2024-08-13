@@ -6,21 +6,6 @@ from .core import Constraint
 
 class BodySeparationConstraint(Constraint):
     def __init__(self, min: u.Quantity[u.deg], body: str):
-        """
-        Example
-        -------
-
-        >>> from astropy.coordinates import EarthLocation, SkyCoord
-        >>> from astropy.time import Time
-        >>> from astropy import units as u
-        >>> from m4opt.constraints import SunSeparationConstraint
-        >>> time = Time("2017-08-17T12:41:04Z")
-        >>> target = SkyCoord.from_name("NGC 4993")
-        >>> location = EarthLocation.of_site("Las Campanas Observatory")
-        >>> constraint = SunSeparationConstraint(20 * u.deg)
-        >>> constraint(location, target, time)
-        np.True_
-        """
         self._body = body
         self.min = min
 
@@ -45,8 +30,8 @@ class MoonSeparationConstraint(BodySeparationConstraint):
         min : :class:`astropy.units.Quantity`
             Minimum angular separation from the Moon.
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from astropy.coordinates import EarthLocation, SkyCoord
         >>> from astropy.time import Time
@@ -74,8 +59,8 @@ class SunSeparationConstraint(BodySeparationConstraint):
         min : :class:`astropy.units.Quantity`
             Minimum angular separation from the Sun.
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from astropy.coordinates import EarthLocation, SkyCoord
         >>> from astropy.time import Time
