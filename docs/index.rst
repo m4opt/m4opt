@@ -50,6 +50,7 @@ User Documentation
    constraints
    fov
    models
+   orbit
    skygrid
 
 ***********************
