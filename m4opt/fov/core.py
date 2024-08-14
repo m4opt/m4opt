@@ -1,0 +1,272 @@
+import healpy as hp
+import numpy as np
+from astropy import units as u
+from astropy.coordinates import SkyCoord, SkyOffsetFrame
+from regions import CircleSkyRegion, PolygonSkyRegion, Region, Regions
+
+query_disc = np.vectorize(hp.query_disc, signature="(),(3),()->()", otypes=[object])
+query_polygon = np.vectorize(
+    hp.query_polygon, signature="(),(n,3)->()", otypes=[object]
+)
+
+ArrayOfCircleSkyRegion = np.vectorize(CircleSkyRegion, signature="(),()->()")
+
+
+def ArrayOfPolygonSkyRegion(vertices):
+    shape = vertices.shape[:-1]
+    regions = np.empty(shape, dtype=object)
+    for i in np.ndindex(shape):
+        regions[i] = PolygonSkyRegion(vertices[i])
+    return regions
+
+
+def ArrayOfRegions(first, *rest):
+    regions = np.empty_like(first)
+    for i in np.ndindex(regions.shape):
+        regions[i] = Regions([arg[i] for arg in (first, *rest)])
+    return regions
+
+
+def concat_healpix(first, *rest):
+    regions = np.empty_like(first)
+    for i in np.ndindex(regions.shape):
+        regions[i] = np.unique(np.concatenate([arg[i] for arg in (first, *rest)]))
+    return regions
+
+
+def unwrap_scalar(a):
+    if isinstance(a, np.ndarray) and a.ndim == 0:
+        a = a.item()
+    return a
+
+
+def to_frame(coord: SkyCoord, frame: SkyOffsetFrame):
+    return SkyCoord(coord.icrs.data, frame=frame).icrs
+
+
+def to_healpy_vec(coord: SkyCoord):
+    return np.moveaxis(coord.cartesian.xyz.value, 0, -1)
+
+
+def footprint_inner(region: Region | Regions, frame: SkyOffsetFrame):
+    match region:
+        case Regions():
+            return ArrayOfRegions(
+                *(footprint_inner(subregion, frame) for subregion in region.regions)
+            )
+        case CircleSkyRegion():
+            return ArrayOfCircleSkyRegion(to_frame(region.center, frame), region.radius)
+        case PolygonSkyRegion():
+            return ArrayOfPolygonSkyRegion(
+                to_frame(region.vertices, frame[..., np.newaxis])
+            )
+        case _:
+            raise NotImplementedError(
+                f"Footprint transformations are not implemented for {region.__class__.__name__}"
+            )
+
+
+def footprint(
+    region: Region | Regions,
+    target_coord: SkyCoord,
+    rotation: u.Quantity[u.deg] | None = None,
+):
+    """
+    Transform a region to the desired target coordinate and optional rotation.
+
+    The region is expected to represent the field of view of an instrument at
+    a standard orientation of R.A.=0, Dec.=0, P.A.=0. This function rotates the
+    region as if the instrument is pointed at the given target coordinate and
+    optional rotation.
+
+    The target coorinate and rotation may be arrays; in that case the return
+    value is a Numpy array of regions.
+
+    Examples
+    --------
+
+    First, some imports:
+
+    >>> from regions import CircleSkyRegion, EllipseSkyRegion, PolygonSkyRegion, Regions
+    >>> from astropy.coordinates import SkyCoord
+    >>> from astropy import units as u
+    >>> from m4opt.fov import footprint
+    >>> import numpy as np
+
+    We support circular FOVs:
+
+    >>> region = CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg)
+    >>> target_coord = SkyCoord(5 * u.deg, -5 * u.deg)
+    >>> footprint(region, target_coord)
+    <CircleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+        (5., -5., 1.)>, radius=3.0 deg)>
+
+    We can compute the footprints for an array of target coordinates:
+
+    >>> ras, decs = np.meshgrid([0, 1], [2, 3]) * u.deg
+    >>> target_coords = SkyCoord(ras, decs)
+    >>> footprint(region, target_coords)
+    array([[<CircleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+                (0., 2., 1.)>, radius=3.0 deg)>                                          ,
+            <CircleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+                (1., 2., 1.)>, radius=3.0 deg)>                                          ],
+           [<CircleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+                (0., 3., 1.)>, radius=3.0 deg)>                                          ,
+            <CircleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+                (1., 3., 1.)>, radius=3.0 deg)>                                          ]],
+          dtype=object)
+
+    We support polygon regions:
+
+    >>> region = PolygonSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))
+    >>> footprint(region, target_coord)
+    <PolygonSkyRegion(vertices=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+        [(2.99236656, -4.99694639, 1.), (7.00763344, -4.99694639, 1.),
+         (5.        , -3.        , 1.)]>)>
+
+    And arrays of target coordinates:
+
+    >>> footprint(region, target_coords)
+    array([[<PolygonSkyRegion(vertices=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+                [(357.9987819, 1.99878116, 1.), (  2.0012181, 1.99878116, 1.),
+                 (  0.       , 4.        , 1.)]>)>                                          ,
+            <PolygonSkyRegion(vertices=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+                [(358.9987819, 1.99878116, 1.), (  3.0012181, 1.99878116, 1.),
+                 (  1.       , 4.        , 1.)]>)>                                          ],
+           [<PolygonSkyRegion(vertices=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+                [(357.99725754, 2.99817081, 1.), (  2.00274246, 2.99817081, 1.),
+                 (  0.        , 5.        , 1.)]>)>                                         ,
+            <PolygonSkyRegion(vertices=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+                [(358.99725754, 2.99817081, 1.), (  3.00274246, 2.99817081, 1.),
+                 (  1.        , 5.        , 1.)]>)>                                         ]],
+          dtype=object)
+
+    Compound regions are also fine:
+
+    >>> regions = Regions([
+    ...     CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg),
+    ...     PolygonSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))])
+    >>> footprint(regions, target_coord)
+    <Regions([<CircleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+        (5., -5., 1.)>, radius=3.0 deg)>, <PolygonSkyRegion(vertices=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+        [(2.99236656, -4.99694639, 1.), (7.00763344, -4.99694639, 1.),
+         (5.        , -3.        , 1.)]>)>])>
+
+    Not all region types are supported:
+
+    >>> region = EllipseSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 5 * u.deg, 2 * u.deg)
+    >>> footprint(region, target_coord)
+    Traceback (most recent call last):
+      ...
+    NotImplementedError: Footprint transformations are not implemented for EllipseSkyRegion
+    """
+    return unwrap_scalar(
+        footprint_inner(region, target_coord.skyoffset_frame(rotation))
+    )
+
+
+def footprint_healpix_inner(
+    nside: int, region: Region | Regions, frame: SkyOffsetFrame
+):
+    match region:
+        case Regions():
+            return concat_healpix(
+                *(
+                    footprint_healpix_inner(nside, subregion, frame)
+                    for subregion in region.regions
+                )
+            )
+        case CircleSkyRegion():
+            return query_disc(
+                nside,
+                to_healpy_vec(to_frame(region.center, frame)),
+                region.radius.to_value(u.rad),
+            )
+        case PolygonSkyRegion():
+            return query_polygon(
+                nside, to_healpy_vec(to_frame(region.vertices, frame[..., np.newaxis]))
+            )
+        case _:
+            raise NotImplementedError(
+                f"Footprint transformations are not implemented for {region.__class__.__name__}"
+            )
+
+
+def footprint_healpix(
+    nside: int,
+    region: Region | Regions,
+    target_coord: SkyCoord,
+    rotation: u.Quantity[u.deg] | None = None,
+):
+    """
+    Calculate the HEALPix pixels inside an observing footprint.
+
+    The region is expected to represent the field of view of an instrument at
+    a standard orientation of R.A.=0, Dec.=0, P.A.=0. This function rotates the
+    region as if the instrument is pointed at the given target coordinate and
+    optional rotation.
+
+    The target coorinate and rotation may be arrays; in that case the return
+    value is a Numpy array of arrays of uneven length.
+
+    Examples
+    --------
+
+    First, some imports:
+
+    >>> from regions import CircleSkyRegion, EllipseSkyRegion, PolygonSkyRegion, Regions
+    >>> from astropy.coordinates import SkyCoord
+    >>> from astropy import units as u
+    >>> from m4opt.fov import footprint_healpix
+    >>> import numpy as np
+
+    We support circular FOVs:
+
+    >>> nside = 32
+    >>> region = CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg)
+    >>> target_coord = SkyCoord(5 * u.deg, -5 * u.deg)
+    >>> footprint_healpix(nside, region, target_coord)
+    array([6337, 6465, 6466, 6593, 6594, 6721, 6722, 6849, 6850])
+
+    We can compute the footprints for an array of target coordinates:
+
+    >>> ras, decs = np.meshgrid([0, 1], [2, 3]) * u.deg
+    >>> target_coords = SkyCoord(ras, decs)
+    >>> footprint_healpix(nside, region, target_coords)
+    array([[array([5696, 5824, 5951, 5952, 5953, 6079, 6080, 6207]),
+            array([5568, 5696, 5697, 5824, 5951, 5952, 5953, 6080])],
+           [array([5440, 5568, 5695, 5696, 5697, 5823, 5824, 5951, 5952]),
+            array([5568, 5695, 5696, 5697, 5824, 5951, 5952, 5953])]],
+          dtype=object)
+
+    We support polygon regions:
+
+    >>> region = PolygonSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))
+    >>> footprint_healpix(nside, region, target_coord)
+    array([6593])
+
+    And arrays of target coordinates:
+
+    >>> footprint_healpix(nside, region, target_coords)
+    array([[array([5696, 5824, 5951]), array([5824])],
+           [array([5696]), array([5696])]], dtype=object)
+
+    Compound regions are also fine:
+
+    >>> regions = Regions([
+    ...     CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg),
+    ...     PolygonSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))])
+    >>> footprint_healpix(nside, regions, target_coord)
+    array([6337, 6465, 6466, 6593, 6594, 6721, 6722, 6849, 6850])
+
+    Not all region types are supported:
+
+    >>> region = EllipseSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 5 * u.deg, 2 * u.deg)
+    >>> footprint_healpix(nside, region, target_coord)
+    Traceback (most recent call last):
+      ...
+    NotImplementedError: Footprint transformations are not implemented for EllipseSkyRegion
+    """
+    return unwrap_scalar(
+        footprint_healpix_inner(nside, region, target_coord.skyoffset_frame(rotation))
+    )

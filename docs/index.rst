@@ -48,6 +48,7 @@ User Documentation
    :maxdepth: 1
 
    constraints
+   fov
    models
    skygrid
 
