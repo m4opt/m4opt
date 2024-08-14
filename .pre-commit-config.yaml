@@ -49,6 +49,7 @@ repos:
         - ligo.skymap >= 2.0.2.dev0
         - numpy >= 2.1.0rc1
         - portion
+        - regions
         - satellitetle
         - scipy
         - sgp4
