@@ -7,7 +7,7 @@ class Orbit:
     """Base class for an Earth satellite with a specified orbit."""
 
     @property
-    def period(self) -> u.Quantity[u.s]:
+    def period(self) -> u.Quantity[u.physical.time]:
         """The orbital period."""
         raise NotImplementedError
 

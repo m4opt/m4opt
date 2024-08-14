@@ -5,7 +5,7 @@ from .core import Constraint
 
 
 class BodySeparationConstraint(Constraint):
-    def __init__(self, min: u.Quantity[u.deg], body: str):
+    def __init__(self, min: u.Quantity[u.physical.angle], body: str):
         self._body = body
         self.min = min
 
@@ -21,7 +21,7 @@ class BodySeparationConstraint(Constraint):
 class MoonSeparationConstraint(BodySeparationConstraint):
     _body = "moon"
 
-    def __init__(self, min: u.Quantity[u.deg]):
+    def __init__(self, min: u.Quantity[u.physical.angle]):
         """
         Constrain the minimum separation from the Moon.
 
@@ -50,7 +50,7 @@ class MoonSeparationConstraint(BodySeparationConstraint):
 class SunSeparationConstraint(BodySeparationConstraint):
     _body = "sun"
 
-    def __init__(self, min: u.Quantity[u.deg]):
+    def __init__(self, min: u.Quantity[u.physical.angle]):
         """
         Constrain the minimum separation from the Sun.
 

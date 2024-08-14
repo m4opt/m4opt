@@ -30,7 +30,7 @@ earth_locations = st.tuples(
 )
 
 
-def earth_locations_at_geocentric_radius(radius: u.Quantity[u.m]):
+def earth_locations_at_geocentric_radius(radius: u.Quantity[u.physical.length]):
     return radecs.map(
         lambda lonlat: EarthLocation.from_geocentric(
             *SphericalRepresentation(lonlat[0] * u.rad, lonlat[1] * u.rad, radius)

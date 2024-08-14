@@ -69,7 +69,7 @@ def footprint_inner(region: Region | Regions, frame: SkyOffsetFrame):
 def footprint(
     region: Region | Regions,
     target_coord: SkyCoord,
-    rotation: u.Quantity[u.deg] | None = None,
+    rotation: u.Quantity[u.physical.angle] | None = None,
 ):
     """
     Transform a region to the desired target coordinate and optional rotation.
@@ -196,7 +196,7 @@ def footprint_healpix(
     nside: int,
     region: Region | Regions,
     target_coord: SkyCoord,
-    rotation: u.Quantity[u.deg] | None = None,
+    rotation: u.Quantity[u.physical.angle] | None = None,
 ):
     """
     Calculate the HEALPix pixels inside an observing footprint.

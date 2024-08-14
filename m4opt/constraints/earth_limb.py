@@ -9,7 +9,7 @@ from .core import Constraint
 
 def _get_angle_from_earth_limb(
     observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
-) -> u.Quantity[u.deg]:
+) -> u.Quantity[u.physical.angle]:
     alt = target_coord.transform_to(
         AltAz(location=observer_location, obstime=obstime)
     ).alt
@@ -50,7 +50,7 @@ class EarthLimbConstraint(Constraint):
     np.True_
     """
 
-    def __init__(self, min: u.Quantity[u.deg]):
+    def __init__(self, min: u.Quantity[u.physical.angle]):
         self.min = min
 
     def __call__(self, *args):
