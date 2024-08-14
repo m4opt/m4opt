@@ -18,7 +18,7 @@ Related Projects
   graviational-wave follow-up, for which an MILP-based ToO scheduler was
   developed. This scheduler makes use of IBM's CPLEX Optimization Studio.
 * `MUSHROOMS`_: MUSHROOMS is a MILP-based gravitational-wave follow-up
-  scheduler designed with ZTF in mind. It developed for an REU project and
+  scheduler designed with ZTF in mind. It was developed for an REU project and
   makes use of Gurobi for optimization.
 * `Spike`_: Spike is an observation planning and scheduling software released
   by the Space Telescope Science Institute that makes use of Constraint
