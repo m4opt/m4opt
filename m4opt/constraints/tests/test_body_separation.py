@@ -9,8 +9,8 @@ from astropy.coordinates import NonRotationTransformationWarning
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from ...tests.hypothesis import earth_locations, obstimes, skycoords
 from ..body_separation import MoonSeparationConstraint, SunSeparationConstraint
-from .conftest import earth_locations, obstimes, skycoords
 
 
 @settings(deadline=None)
