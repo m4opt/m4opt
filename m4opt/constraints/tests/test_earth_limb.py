@@ -5,8 +5,12 @@ from astropy.constants import R_earth
 from astropy.coordinates import AltAz
 from hypothesis import given, settings
 
+from ...tests.hypothesis import (
+    earth_locations_at_geocentric_radius,
+    obstimes,
+    skycoords,
+)
 from ..earth_limb import _get_angle_from_earth_limb
-from .conftest import earth_locations_at_geocentric_radius, obstimes, skycoords
 
 
 @settings(deadline=None)

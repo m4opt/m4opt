@@ -45,6 +45,8 @@ repos:
         - antiprism-python
         - astropy >= 6.1.0
         - docplex
+        - dust-extinction
+        - dustmaps
         - gurobipy
         - ligo.skymap >= 2.0.2.dev0
         - numpy >= 2.1.0rc1
@@ -56,4 +58,5 @@ repos:
         - spiceypy
         - pytest
         - tynt
+        - xdg-base-dirs
       exclude: ^docs/conf.py$
