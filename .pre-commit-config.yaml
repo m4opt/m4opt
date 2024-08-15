@@ -55,5 +55,5 @@ repos:
         - sgp4
         - spiceypy
         - pytest
-        - tynt @ git+https://github.com/bmorris3/tynt.git
+        - tynt
       exclude: ^docs/conf.py$
