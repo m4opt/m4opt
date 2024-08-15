@@ -1,3 +1,106 @@
+[project]
+name = "m4opt"
+dynamic = ["version"]
+authors = [{name = "M4OPT Developers", email = "leo.singer@ligo.org"}]
+license = {text = "BSD-3-Clause"}
+description = "Multi-Mission Multi-Messenger Observation Planning Toolkit"
+readme = "README.rst"
+requires-python = ">=3.10"
+dependencies = [
+    "antiprism-python",
+    "astropy >= 6.1.0",
+    "cplex",
+    "docplex",
+    "gurobipy",
+    "ligo.skymap >= 2.0.2.dev0",
+    "numpy >= 2.1.0rc1",
+    "portion",
+    "regions",
+    "satellitetle",
+    "scipy",
+    "sgp4",
+    "spiceypy",
+]
+
+[project.optional-dependencies]
+test = [
+    "astroplan",
+    "hypothesis",
+    "pytest-astropy",
+]
+docs = [
+    "sphinx-astropy",
+]
+
+[project.urls]
+homepage = "https://m4opt.readthedocs.io/"
+"Bug Tracker" = "https://github.com/m4opt/m4opt/issues"
+"Change Log" = "https://m4opt.readthedocs.io/en/latest/changes.html"
+"Documentation" = "https://m4opt.readthedocs.io/"
+"GitHub" = "https://github.com/m4opt/m4opt"
+"Source Code" = "https://github.com/m4opt/m4opt"
+
+[tool.setuptools.packages.find]
+
+[tool.setuptools.package-data]
+"*" = [
+    "py.typed",
+    "*.txt",
+    "*.ecsv",
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "m4opt",
+    "docs",
+]
+astropy_header = true
+doctest_plus = "enabled"
+text_file_format = "rst"
+addopts = [
+    "--doctest-rst",
+    "--ignore=docs/_build",
+]
+doctest_optionflags = [
+    "FLOAT_CMP",
+    "IGNORE_EXCEPTION_DETAIL",
+]
+
+[tool.coverage.run]
+omit = [
+    "m4opt/_astropy_init*",
+    "m4opt/conftest.py",
+    "m4opt/*setup_package*",
+    "m4opt/tests/*",
+    "m4opt/*/tests/*",
+    "m4opt/extern/*",
+    "m4opt/version*",
+    "*/m4opt/_astropy_init*",
+    "*/m4opt/conftest.py",
+    "*/m4opt/*setup_package*",
+    "*/m4opt/tests/*",
+    "*/m4opt/*/tests/*",
+    "*/m4opt/extern/*",
+    "*/m4opt/version*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+    # Don't complain about packages we have installed
+    "except ImportError",
+    # Don't complain if tests don't hit assertions
+    "raise AssertionError",
+    "raise NotImplementedError",
+    # Don't complain about script hooks
+    "def main\\(.*\\):",
+    # Ignore branches that don't pertain to this version of Python
+    "pragma: py{ignore_python_version}",
+    # Don't complain about IPython completion helper
+    "def _ipython_key_completions_",
+]
+
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
