@@ -20,6 +20,7 @@ dependencies = [
     "scipy",
     "sgp4",
     "spiceypy",
+    "tynt @ git+https://github.com/bmorris3/tynt.git",
 ]
 
 [project.optional-dependencies]
