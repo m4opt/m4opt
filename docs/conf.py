@@ -38,13 +38,16 @@ except ImportError:
     )
     sys.exit(1)
 
-# Get configuration information from setup.cfg
-from configparser import ConfigParser
+# Get configuration information from pyproject.toml
 
-conf = ConfigParser()
+try:
+    import tomllib
+except ImportError:
+    # FIXME: remove when we require Python >= 3.11
+    import tomli as tomllib
 
-conf.read([os.path.join(os.path.dirname(__file__), "..", "setup.cfg")])
-setup_cfg = dict(conf.items("metadata"))
+with open(os.path.join(os.path.dirname(__file__), "..", "pyproject.toml"), "rb") as f:
+    project_metadata = tomllib.load(f)["project"]
 
 # -- General configuration ----------------------------------------------------
 
@@ -71,16 +74,16 @@ rst_epilog += r"""
 # -- Project information ------------------------------------------------------
 
 # This does not *have* to match the package name, but typically does
-project = setup_cfg["name"]
-author = setup_cfg["author"]
-copyright = "{0}, {1}".format(datetime.datetime.now().year, setup_cfg["author"])
+project = project_metadata["name"]
+author = project_metadata["authors"][0]["name"]
+copyright = "{0}, {1}".format(datetime.datetime.now().year, author)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
-import_module(setup_cfg["name"])
-package = sys.modules[setup_cfg["name"]]
+import_module(project_metadata["name"])
+package = sys.modules[project_metadata["name"]]
 
 # The short X.Y version.
 version = package.__version__.split("-", 1)[0]
@@ -163,17 +166,16 @@ man_pages = [("index", project.lower(), project + " Documentation", [author], 1)
 
 # -- Options for the edit_on_github extension ---------------------------------
 
-if setup_cfg.get("edit_on_github").lower() == "true":
-    extensions += ["sphinx_astropy.ext.edit_on_github"]  # noqa: F405
+extensions += ["sphinx_astropy.ext.edit_on_github"]  # noqa: F405
 
-    edit_on_github_project = setup_cfg["github_project"]
-    edit_on_github_branch = "main"
+edit_on_github_project = "m4opt/m4opt"
+edit_on_github_branch = "main"
 
-    edit_on_github_source_root = ""
-    edit_on_github_doc_root = "docs"
+edit_on_github_source_root = ""
+edit_on_github_doc_root = "docs"
 
 # -- Resolving issue number to links in changelog -----------------------------
-github_issues_url = "https://github.com/{0}/issues/".format(setup_cfg["github_project"])
+github_issues_url = "https://github.com/{0}/issues/".format(edit_on_github_project)
 
 
 # -- Options for linkcheck output -------------------------------------------
