@@ -34,46 +34,12 @@ Getting Started
 ***************
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    install
-   solvers
    scenarios/index
-
-******************
-User Documentation
-******************
-
-.. toctree::
-   :maxdepth: 1
-
-   constraints
-   fov
-   models
-   orbit
-   skygrid
-
-***********************
-Developer Documentation
-***********************
-
-.. toctree::
-   :maxdepth: 1
-
-   changes
-   contributing
-   testing
-   related
-
-***************
-Project Details
-***************
-
-.. toctree::
-   :maxdepth: 1
-
-   npr7150
-   risk_assessment
+   guide/index
+   dev/index
 
 *****
 Index
@@ -82,6 +48,3 @@ Index
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-.. _feedback@astropy.org: mailto:feedback@astropy.org
-.. _affiliated packages: https://www.astropy.org/affiliated/

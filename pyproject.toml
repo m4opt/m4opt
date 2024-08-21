@@ -33,7 +33,7 @@ test = [
     "pytest-astropy",
 ]
 docs = [
-    "sphinx-astropy",
+    "sphinx-astropy[confv2]",
 ]
 
 [project.urls]

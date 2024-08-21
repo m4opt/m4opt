@@ -1,9 +1,6 @@
 *********************************
-Constraints (`m4opt.constraints`)
+Orbit Propagation (`m4opt.orbit`)
 *********************************
 
-Reference/API
-=============
-
-.. automodapi:: m4opt.constraints
+.. automodapi:: m4opt.orbit
     :no-inheritance-diagram:
