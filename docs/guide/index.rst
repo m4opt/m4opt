@@ -11,3 +11,4 @@ User Guide
    orbit
    skygrid
    misc
+   missions

@@ -23,7 +23,7 @@ class ModelSymbol(sympy.Dummy):
 
 def countrate(
     spectrum: SourceSpectrum, bandpass: SpectralElement
-) -> u.Quantity[u.count / (u.s * u.cm**2)]:
+) -> u.Quantity[1 / (u.s * u.cm**2)]:
     """
     >>> from astropy.coordinates import EarthLocation, SkyCoord
     >>> from astropy.time import Time
@@ -53,9 +53,9 @@ def countrate(
                [1.23148237e+14, 1.21034114e+14, 1.18647710e+14, ...,
                 1.18545557e+14, 1.21294547e+14, 1.23148237e+14],
                [1.06308797e+14, 1.06308797e+14, 1.06308797e+14, ...,
-                1.06308797e+14, 1.06308797e+14, 1.06308797e+14]] ct / (s cm2)>
+                1.06308797e+14, 1.06308797e+14, 1.06308797e+14]] 1 / (s cm2)>
     """
-    count_rate_unit = u.count / (u.s * u.cm**2)
+    count_rate_unit = 1 / (u.s * u.cm**2)
     extrinsic_scale_factors = []
     dust_extinction = None
 
@@ -90,13 +90,10 @@ def countrate(
 
     def base_countrate_no_extinction(spectrum):
         area = 1 * u.cm**2
-        return (
-            Observation(spectrum, bandpass).countrate(
-                wavelengths=bandpass.waveset,
-                area=area,
-            )
-            / area
-        )
+        return Observation(spectrum, bandpass).countrate(
+            wavelengths=bandpass.waveset,
+            area=area,
+        ) / (area * u.count)
 
     def base_countrate(spectrum):
         @np.vectorize
