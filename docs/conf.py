@@ -31,7 +31,7 @@ import sys
 from importlib import import_module
 
 try:
-    from sphinx_astropy.conf.v1 import *  # noqa
+    from sphinx_astropy.conf.v2 import *  # noqa
 except ImportError:
     print(
         "ERROR: the documentation requires the sphinx-astropy package to be installed"
@@ -90,6 +90,9 @@ version = package.__version__.split("-", 1)[0]
 # The full version, including alpha/beta/rc tags.
 release = package.__version__
 
+# Only include dev docs in dev version.
+dev = "dev" in release
+
 
 # -- Options for HTML output --------------------------------------------------
 
@@ -114,12 +117,6 @@ html_css_files = [
     "css/risk_table.css",
 ]
 
-html_theme_options = {
-    "logotext1": "m4opt",  # white,  semi-bold
-    "logotext2": "",  # orange, light
-    "logotext3": ":docs",  # white,  light
-}
-
 
 # Custom sidebar templates, maps document names to template names.
 # html_sidebars = {}
@@ -139,7 +136,7 @@ html_theme_options = {
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-html_title = "{0} v{1}".format(project, release)
+html_title = "M⁴OPT"
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = project + "doc"
@@ -147,6 +144,22 @@ htmlhelp_basename = project + "doc"
 # Prefixes that are ignored for sorting the Python module index
 modindex_common_prefix = ["m4opt."]
 
+html_theme_options.update(  # noqa: F405
+    {
+        "github_url": "https://github.com/m4opt/m4opt",
+        "use_edit_page_button": True,
+    }
+)
+
+html_context = {
+    "default_mode": "light",
+    "to_be_indexed": ["stable", "latest"],
+    "is_development": dev,
+    "github_user": "m4opt",
+    "github_repo": "m4opt",
+    "github_version": "main",
+    "doc_path": "docs",
+}
 
 # -- Options for LaTeX output -------------------------------------------------
 

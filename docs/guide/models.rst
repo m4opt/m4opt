@@ -1,6 +1,6 @@
-*************************
-Modeling (`m4opt.models`)
-*************************
+*************************************
+Sensitivity Modeling (`m4opt.models`)
+*************************************
 
 |M4OPT| can adaptively adjust the exposure times of planned observations in
 order to obtain a desired signal-to-noise, given a model of the foreground
@@ -41,9 +41,6 @@ can specify their values within a code block using a ``with:`` statement::
 
 See also the Examples section for
 :class:`~m4opt.models.background.ZodiacalBackground`.
-
-Reference/API
-=============
 
 .. automodapi:: m4opt.models
     :no-inheritance-diagram:
