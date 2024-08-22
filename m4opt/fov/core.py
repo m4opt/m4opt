@@ -2,7 +2,13 @@ import healpy as hp
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord, SkyOffsetFrame
-from regions import CircleSkyRegion, PolygonSkyRegion, Region, Regions
+from regions import (
+    CircleSkyRegion,
+    PolygonSkyRegion,
+    RectangleSkyRegion,
+    Region,
+    Regions,
+)
 
 query_disc = np.vectorize(hp.query_disc, signature="(),(3),()->()", otypes=[object])
 query_polygon = np.vectorize(
@@ -10,6 +16,9 @@ query_polygon = np.vectorize(
 )
 
 ArrayOfCircleSkyRegion = np.vectorize(CircleSkyRegion, signature="(),()->()")
+ArrayOfRectangleSkyRegion = np.vectorize(
+    RectangleSkyRegion, signature="(),(),(),()->()"
+)
 
 
 def ArrayOfPolygonSkyRegion(vertices):
@@ -60,6 +69,13 @@ def footprint_inner(region: Region | Regions, frame: SkyOffsetFrame):
             return ArrayOfPolygonSkyRegion(
                 to_frame(region.vertices, frame[..., np.newaxis])
             )
+        case RectangleSkyRegion():
+            return ArrayOfRectangleSkyRegion(
+                to_frame(region.center, frame),
+                region.width,
+                region.height,
+                frame.rotation + region.angle,
+            )
         case _:
             raise NotImplementedError(
                 f"Footprint transformations are not implemented for {region.__class__.__name__}"
@@ -87,7 +103,7 @@ def footprint(
 
     First, some imports:
 
-    >>> from regions import CircleSkyRegion, EllipseSkyRegion, PolygonSkyRegion, Regions
+    >>> from regions import CircleSkyRegion, EllipseSkyRegion, PolygonSkyRegion, RectangleSkyRegion, Regions
     >>> from astropy.coordinates import SkyCoord
     >>> from astropy import units as u
     >>> from m4opt.fov import footprint
@@ -100,6 +116,14 @@ def footprint(
     >>> footprint(region, target_coord)
     <CircleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
         (5., -5., 1.)>, radius=3.0 deg)>
+
+    and rectangular FOVs:
+
+    >>> region2 = RectangleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 6 * u.deg, 8 * u.deg)
+    >>> target_coord = SkyCoord(5 * u.deg, -5 * u.deg)
+    >>> footprint(region2, target_coord)
+    <RectangleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+        (5., -5., 1.)>, width=6.0 deg, height=8.0 deg, angle=0.0 deg)>
 
     We can compute the footprints for an array of target coordinates:
 
@@ -186,6 +210,16 @@ def footprint_healpix_inner(
             return query_polygon(
                 nside, to_healpy_vec(to_frame(region.vertices, frame[..., np.newaxis]))
             )
+        case RectangleSkyRegion():
+            x = 0.5 * region.width
+            y = 0.5 * region.height
+            polygon = PolygonSkyRegion(
+                to_frame(
+                    SkyCoord([-x, x, x, -x], [-y, -y, y, y]),
+                    region.center.skyoffset_frame(region.angle),
+                )
+            )
+            return footprint_healpix_inner(nside, polygon, frame)
         case _:
             raise NotImplementedError(
                 f"Footprint transformations are not implemented for {region.__class__.__name__}"
@@ -214,7 +248,7 @@ def footprint_healpix(
 
     First, some imports:
 
-    >>> from regions import CircleSkyRegion, EllipseSkyRegion, PolygonSkyRegion, Regions
+    >>> from regions import CircleSkyRegion, EllipseSkyRegion, PolygonSkyRegion, RectangleSkyRegion, Regions
     >>> from astropy.coordinates import SkyCoord
     >>> from astropy import units as u
     >>> from m4opt.fov import footprint_healpix
@@ -227,6 +261,14 @@ def footprint_healpix(
     >>> target_coord = SkyCoord(5 * u.deg, -5 * u.deg)
     >>> footprint_healpix(nside, region, target_coord)
     array([6337, 6465, 6466, 6593, 6594, 6721, 6722, 6849, 6850])
+
+    and rectangular FOVs:
+
+    >>> region2 = RectangleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 6 * u.deg, 8 * u.deg)
+    >>> target_coord = SkyCoord(5 * u.deg, -5 * u.deg)
+    >>> footprint_healpix(nside, region2, target_coord)
+    array([6209, 6210, 6337, 6338, 6465, 6466, 6593, 6594, 6721, 6722, 6849,
+           6850, 6977, 6978])
 
     We can compute the footprints for an array of target coordinates:
 
