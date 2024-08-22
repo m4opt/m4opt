@@ -251,6 +251,6 @@ plot_formats = [("svg", 300), ("pdf", 300)]
 plot_html_show_formats = False
 
 
-# -- Options for the sphinx.ext.todo exception --------------------------------
+# -- Options for the sphinx.ext.todo extension --------------------------------
 # extensions += ['sphinx.ext.todo']
 todo_include_todos = True
