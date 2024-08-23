@@ -1,6 +1,19 @@
 """
 Calculate footprints of an instrument at arbitrary orientations.
 
+This module provides functions to compute the footprint of the field of view of
+a detector on the sky when oriented toward arbitary coordinates. We provide two
+functions: :meth:`footprint` which transforms the field of view to any sky
+coordinate (and optional positional angle), and :meth:`footprint_healpix` which
+computes the HEALPix pixels contained within the field of view.
+
+You supply the field of view of the detector using
+:doc:`Astropy regions <regions:index>`. The following region types are
+supported: :class:`~regions.CircleSkyRegion`,
+:class:`~regions.PolygonSkyRegion`, :class:`~regions.RectangleSkyRegion`, and
+any :class:`~regions.Regions` object consisting regions of the aforementioned
+types.
+
 .. plot::
     :include-source: False
 
