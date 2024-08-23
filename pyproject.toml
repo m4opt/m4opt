@@ -33,6 +33,7 @@ test = [
     "pytest-astropy",
 ]
 docs = [
+    "pysiaf",
     "sphinx-astropy[confv2]",
 ]
 
