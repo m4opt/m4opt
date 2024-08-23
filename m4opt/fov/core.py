@@ -65,6 +65,22 @@ def skycoord_to_healpy_vec(coord: SkyCoord):
     return np.moveaxis(coord.cartesian.xyz.value, 0, -1)
 
 
+def rectangle_to_polygon(region: RectangleSkyRegion):
+    """Convert a rectangle region to a polygon.
+
+    Rotated rectangle regions do not correctly account for spherical geometry,
+    but polygon regions do.
+    """
+    x = 0.5 * region.width
+    y = 0.5 * region.height
+    return PolygonSkyRegion(
+        skycoord_to_offset(
+            SkyCoord([-x, x, x, -x], [-y, -y, y, y]),
+            region.center.skyoffset_frame(region.angle),
+        )
+    )
+
+
 def footprint_inner(region: Region | Regions, frame: SkyOffsetFrame):
     match region:
         case Regions():
@@ -80,12 +96,7 @@ def footprint_inner(region: Region | Regions, frame: SkyOffsetFrame):
                 skycoord_to_offset(region.vertices, frame[..., np.newaxis])
             )
         case RectangleSkyRegion():
-            return ArrayOfRectangleSkyRegion(
-                skycoord_to_offset(region.center, frame),
-                region.width,
-                region.height,
-                frame.rotation + region.angle,
-            )
+            return footprint_inner(rectangle_to_polygon(region), frame)
         case _:
             raise NotImplementedError(
                 f"Footprint transformations are not implemented for {region.__class__.__name__}"
@@ -132,8 +143,9 @@ def footprint(
     >>> region2 = RectangleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 6 * u.deg, 8 * u.deg)
     >>> target_coord = SkyCoord(5 * u.deg, -5 * u.deg)
     >>> footprint(region2, target_coord)
-    <RectangleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
-        (5., -5., 1.)>, width=6.0 deg, height=8.0 deg, angle=0.0 deg)>
+    <PolygonSkyRegion(vertices=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+        [(1.97003363, -8.99308801, 1.), (8.02996637, -8.99308801, 1.),
+         (7.99313556, -0.99317201, 1.), (2.00686444, -0.99317201, 1.)]>)>
 
     We can compute the footprints for an array of target coordinates:
 
@@ -224,15 +236,7 @@ def footprint_healpix_inner(
                 ),
             )
         case RectangleSkyRegion():
-            x = 0.5 * region.width
-            y = 0.5 * region.height
-            polygon = PolygonSkyRegion(
-                skycoord_to_offset(
-                    SkyCoord([-x, x, x, -x], [-y, -y, y, y]),
-                    region.center.skyoffset_frame(region.angle),
-                )
-            )
-            return footprint_healpix_inner(nside, polygon, frame)
+            return footprint_healpix_inner(nside, rectangle_to_polygon(region), frame)
         case _:
             raise NotImplementedError(
                 f"Footprint transformations are not implemented for {region.__class__.__name__}"
