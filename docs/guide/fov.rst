@@ -8,6 +8,9 @@ functions: :meth:`footprint` which transforms the field of view to any sky
 coordinate (and optional positional angle), and :meth:`footprint_healpix` which
 computes the HEALPix pixels contained within the field of view.
 
+Supported region types
+----------------------
+
 You supply the field of view of the detector using
 :doc:`Astropy regions <regions:index>`. The following region types are
 supported: :class:`~regions.CircleSkyRegion`,
@@ -16,6 +19,7 @@ any :class:`~regions.Regions` object consisting regions of the aforementioned
 types.
 
 .. plot::
+    :caption: Gallery of supported region types
     :include-source: False
 
     import numpy as np
@@ -98,6 +102,75 @@ types.
     for ax in axs[:, 1:].ravel():
         ax.coords["dec"].set_ticklabel_visible(False)
         ax.coords["dec"].set_axislabel("", visible=False)
+
+Regions from files
+------------------
+
+You can also read field of view shapes from common region files using
+:meth:`~regions.Region.read`. For example, here is a
+`DS9 region file <https://ds9.si.edu/doc/ref/region.html>`_ describing the
+field of view of the `Wide-Field Instrument <https://roman.gsfc.nasa.gov/science/WFI_technical.html>`_
+on the `Nancy Grace Roman Space Telescope <https://roman.gsfc.nasa.gov>`_:
+
+.. plot::
+    :include-source: False
+    :show-source-link: False
+    :nofigs:
+
+    from astropy.coordinates import SkyCoord
+    from astropy import units as u
+    import pysiaf
+    from regions import PolygonSkyRegion, Regions
+    import re
+
+    attmat = pysiaf.utils.rotations.attitude_matrix(0, 0, 0, 0, 0)
+    roman = pysiaf.Siaf('roman')
+    regions = Regions()
+    for aper_name, aper in roman.apertures.items():
+        if re.match('^WFI\d\d_FULL$', aper_name):
+            aper.set_attitude_matrix(attmat)
+            regions.append(PolygonSkyRegion(SkyCoord(*aper.corners('sky'), unit=u.deg)))
+    regions.write('roman_wfi.ds9', overwrite=True)
+
+.. literalinclude:: roman_wfi.ds9
+    :caption: roman_wfi.ds9
+    :language: text
+
+The following example code reads the region file and plots a grid of footprints:
+
+.. plot::
+
+    from astropy.coordinates import SkyCoord
+    from astropy import units as u
+    import ligo.skymap.plot
+    from matplotlib import pyplot as plt
+    from m4opt.fov import footprint
+    import numpy as np
+    from regions import Regions
+
+    # Read shapes from a DS9 region file
+    roman_wfi = Regions.read('roman_wfi.ds9')
+
+    # Create a grid of target coordinates
+    ra, dec = np.meshgrid(
+        np.linspace(-1.5, 0.5, 4) * u.deg,
+        np.linspace(-1, 1, 3) * u.deg
+    )
+    target_coords = SkyCoord(ra, dec).ravel()
+
+    # Transform shapes to target coordinates
+    footprints = footprint(roman_wfi, target_coords, -30 * u.deg)
+
+    # Plot footprints
+    ax = plt.axes(
+        projection='astro zoom',
+        center=SkyCoord(0 * u.deg, 0 * u.deg),
+        radius=2 * u.deg)
+    for regions in footprints:
+        for region in regions:
+            ax.add_patch(region.to_pixel(ax.wcs).as_artist())
+    ax.grid()
+
 
 .. automodapi:: m4opt.fov
     :no-inheritance-diagram:

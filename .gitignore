@@ -22,6 +22,7 @@ MANIFEST
 # Sphinx
 docs/api
 docs/_build
+docs/guide/roman_wfi.ds9
 
 # Eclipse editor project files
 .project
