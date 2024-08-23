@@ -48,7 +48,7 @@ repos:
         - dust-extinction
         - dustmaps
         - gurobipy
-        - ligo.skymap >= 2.0.2.dev0
+        - ligo.skymap >= 2.1.0
         - numpy >= 2.1.0
         - portion
         - regions
