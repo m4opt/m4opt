@@ -11,17 +11,24 @@ from regions import (
 )
 
 query_disc = np.vectorize(hp.query_disc, signature="(),(3),()->()", otypes=[object])
+"""Vectorized version of :meth:`healpy.query_disc`."""
+
 query_polygon = np.vectorize(
     hp.query_polygon, signature="(),(n,3)->()", otypes=[object]
 )
+"""Vectorized version of :meth:`healpy.query_polygon`."""
 
 ArrayOfCircleSkyRegion = np.vectorize(CircleSkyRegion, signature="(),()->()")
+"""Construct a Numpy array of :class:`regions.CircularSkyRegion` instances."""
+
 ArrayOfRectangleSkyRegion = np.vectorize(
     RectangleSkyRegion, signature="(),(),(),()->()"
 )
+"""Construct a Numpy array of :class:`regions.RectangleSkyRegion` instances."""
 
 
 def ArrayOfPolygonSkyRegion(vertices):
+    """Construct a Numpy array of :class:`regions.PolygonSkyRegion` instances."""
     shape = vertices.shape[:-1]
     regions = np.empty(shape, dtype=object)
     for i in np.ndindex(shape):
@@ -30,6 +37,7 @@ def ArrayOfPolygonSkyRegion(vertices):
 
 
 def ArrayOfRegions(first, *rest):
+    """Construct a Numpy array of :class:`regions.Regions` instances."""
     regions = np.empty_like(first)
     for i in np.ndindex(regions.shape):
         regions[i] = Regions([arg[i] for arg in (first, *rest)])
