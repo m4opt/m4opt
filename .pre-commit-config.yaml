@@ -51,6 +51,7 @@ repos:
         - ligo.skymap >= 2.0.2.dev0
         - numpy >= 2.1.0
         - portion
+        - progressbar2<4.4.3  # FIXME: remove once https://github.com/wolph/python-progressbar/issues/299 is fixed
         - regions
         - satellitetle
         - scipy
