@@ -49,11 +49,11 @@ def unwrap_scalar(a):
     return a
 
 
-def to_frame(coord: SkyCoord, frame: SkyOffsetFrame):
+def skycoord_to_offset(coord: SkyCoord, frame: SkyOffsetFrame):
     return SkyCoord(coord.icrs.data, frame=frame).icrs
 
 
-def to_healpy_vec(coord: SkyCoord):
+def skycoord_to_healpy_vec(coord: SkyCoord):
     return np.moveaxis(coord.cartesian.xyz.value, 0, -1)
 
 
@@ -64,14 +64,16 @@ def footprint_inner(region: Region | Regions, frame: SkyOffsetFrame):
                 *(footprint_inner(subregion, frame) for subregion in region.regions)
             )
         case CircleSkyRegion():
-            return ArrayOfCircleSkyRegion(to_frame(region.center, frame), region.radius)
+            return ArrayOfCircleSkyRegion(
+                skycoord_to_offset(region.center, frame), region.radius
+            )
         case PolygonSkyRegion():
             return ArrayOfPolygonSkyRegion(
-                to_frame(region.vertices, frame[..., np.newaxis])
+                skycoord_to_offset(region.vertices, frame[..., np.newaxis])
             )
         case RectangleSkyRegion():
             return ArrayOfRectangleSkyRegion(
-                to_frame(region.center, frame),
+                skycoord_to_offset(region.center, frame),
                 region.width,
                 region.height,
                 frame.rotation + region.angle,
@@ -203,18 +205,21 @@ def footprint_healpix_inner(
         case CircleSkyRegion():
             return query_disc(
                 nside,
-                to_healpy_vec(to_frame(region.center, frame)),
+                skycoord_to_healpy_vec(skycoord_to_offset(region.center, frame)),
                 region.radius.to_value(u.rad),
             )
         case PolygonSkyRegion():
             return query_polygon(
-                nside, to_healpy_vec(to_frame(region.vertices, frame[..., np.newaxis]))
+                nside,
+                skycoord_to_healpy_vec(
+                    skycoord_to_offset(region.vertices, frame[..., np.newaxis])
+                ),
             )
         case RectangleSkyRegion():
             x = 0.5 * region.width
             y = 0.5 * region.height
             polygon = PolygonSkyRegion(
-                to_frame(
+                skycoord_to_offset(
                     SkyCoord([-x, x, x, -x], [-y, -y, y, y]),
                     region.center.skyoffset_frame(region.angle),
                 )
