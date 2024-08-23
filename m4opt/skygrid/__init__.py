@@ -28,50 +28,56 @@ Gallery
 .. plot::
     :include-source: False
 
+    import numpy as np
     from astropy import units as u
-    from m4opt import skygrid
     from matplotlib import pyplot as plt
-    import ligo.skymap.plot
+
+    from m4opt import skygrid
 
     areas = np.asarray([1000, 500, 100, 50]) * u.deg**2
-    methods = [skygrid.geodesic,
-               skygrid.golden_angle_spiral,
-               skygrid.healpix,
-               skygrid.sinusoidal]
+    methods = [
+        skygrid.geodesic,
+        skygrid.golden_angle_spiral,
+        skygrid.healpix,
+        skygrid.sinusoidal,
+    ]
 
-    fig = plt.figure(figsize=(8, 6))
-    gridspecs = fig.add_gridspec(len(methods) + 1, len(areas) + 1,
-                                 left=0, right=1, bottom=0, top=1,
-                                 height_ratios=(1, *[10] * len(methods)),
-                                 width_ratios=(1, *[10] * len(areas)))
+    fig, axs = plt.subplots(
+        len(methods),
+        len(areas),
+        figsize=(8, 6),
+        tight_layout=True,
+        gridspec_kw=dict(wspace=0.1, hspace=0.1),
+        subplot_kw=dict(projection="astro globe", center="0d 25d"),
+    )
 
-    for i, method in enumerate(methods):
-        ax = fig.add_subplot(gridspecs[i + 1, 0], frameon=False)
-        ax.text(0.5, 0.5,
-                method.__name__, rotation=90,
-                ha='center', va='center',
-                transform=ax.transAxes)
-        ax.set_xticks([])
-        ax.set_yticks([])
+    for method, ax in zip(methods, axs[:, 0]):
+        ax.text(
+            -0.2,
+            0.5,
+            method.__name__,
+            rotation=90,
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+        )
 
-    for j, area in enumerate(areas):
-        ax = fig.add_subplot(gridspecs[0, j + 1], frameon=False)
-        ax.text(0.5, 0.5,
-                area.to_string(format='latex'),
-                ha='center', va='center',
-                transform=ax.transAxes)
-        ax.set_xticks([])
-        ax.set_yticks([])
+    for area, ax in zip(areas, axs[0, :]):
+        ax.text(
+            0.5,
+            1.2,
+            area.to_string(format="latex"),
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+        )
 
-    for i, method in enumerate(methods):
-        for j, area in enumerate(areas):
-            ax = fig.add_subplot(gridspecs[i + 1, j + 1],
-                                 projection='astro globe',
-                                 center='0d 25d')
-            for key in ['ra', 'dec']:
-                ax.coords[key].set_ticklabel_visible(False)
-                ax.coords[key].set_ticks_visible(False)
-            ax.plot_coord(method(area), '.')
+    for method, axrow in zip(methods, axs):
+        for area, ax in zip(areas, axrow):
+            for coord in ax.coords:
+                coord.set_ticklabel_visible(False)
+                coord.set_ticks_visible(False)
+            ax.plot_coord(method(area), ".")
             ax.grid()
 
 """
