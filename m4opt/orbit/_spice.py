@@ -6,7 +6,7 @@ from astropy.coordinates import ITRS, SkyCoord
 from astropy.time import Time
 from astropy.utils.data import download_files_in_parallel
 
-from .core import Orbit
+from ._core import Orbit
 
 
 def _time_to_et(time: Time) -> float | npt.NDArray[np.floating]:

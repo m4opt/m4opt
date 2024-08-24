@@ -5,7 +5,7 @@ from astropy.utils.data import get_readable_fileobj
 from satellite_tle import fetch_tle_from_celestrak
 from sgp4.api import SGP4_ERRORS, Satrec
 
-from .core import Orbit
+from ._core import Orbit
 
 
 class TLE(Orbit):
