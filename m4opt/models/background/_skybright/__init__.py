@@ -6,7 +6,7 @@ import numpy as np
 from astropy.modeling import Model
 from astropy.modeling.models import Tabular1D
 
-from ..core import Background
+from .._core import Background
 from . import data
 
 kpno_sky_tables = {

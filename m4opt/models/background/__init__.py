@@ -1,6 +1,6 @@
-from .core import Background
-from .skybright import SkyBackground
-from .zodiacal import ZodiacalBackground
+from ._core import Background
+from ._skybright import SkyBackground
+from ._zodiacal import ZodiacalBackground
 
 __all__ = (
     "ZodiacalBackground",

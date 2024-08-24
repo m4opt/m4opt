@@ -11,7 +11,7 @@ from astropy.time import Time
 from scipy.interpolate import RegularGridInterpolator
 
 from ...core import state
-from ..core import Background
+from .._core import Background
 from . import data
 
 mag_to_scale = u.mag(1).to_physical
