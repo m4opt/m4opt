@@ -18,6 +18,19 @@ supported: :class:`~regions.CircleSkyRegion`,
 any :class:`~regions.Regions` object consisting regions of the aforementioned
 types.
 
+.. note:: All of these region types are treated as true spherical geometry.
+    :class:`~regions.CircleSkyRegion` is treated as a
+    `spherical cap <https://mathworld.wolfram.com/SphericalCap.html>`_.
+    :class:`~regions.PolygonSkyRegion` and :class:`~regions.RectangleSkyRegion`
+    are treated as `spherical polygons <https://mathworld.wolfram.com/SphericalPolygon.html>`_
+    whose edges are great circles.
+
+    Some other astronomy software (for example,
+    `DS9 <https://sites.google.com/cfa.harvard.edu/saoimageds9>`_) does not
+    distinguish between planar and spherical geometry, and the Astropy regions
+    package itself has some ambiguity here as well (see
+    `astropy/regions#276 <https://github.com/astropy/regions/issues/276>`_).
+
 .. plot::
     :caption: Gallery of supported region types
     :include-source: False
