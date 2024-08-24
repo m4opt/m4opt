@@ -1,4 +1,4 @@
-from .base import Orbit
+from .core import Orbit
 from .spice import Spice
 from .tle import TLE
 
