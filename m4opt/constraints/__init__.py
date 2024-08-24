@@ -1,6 +1,6 @@
-from .body_separation import MoonSeparationConstraint, SunSeparationConstraint
-from .core import Constraint
-from .earth_limb import EarthLimbConstraint
+from ._body_separation import MoonSeparationConstraint, SunSeparationConstraint
+from ._core import Constraint
+from ._earth_limb import EarthLimbConstraint
 
 __all__ = (
     "Constraint",

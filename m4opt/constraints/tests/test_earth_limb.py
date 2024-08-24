@@ -10,7 +10,7 @@ from ...tests.hypothesis import (
     obstimes,
     skycoords,
 )
-from ..earth_limb import _get_angle_from_earth_limb
+from .._earth_limb import _get_angle_from_earth_limb
 
 
 @settings(deadline=None)

@@ -10,7 +10,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from ...tests.hypothesis import earth_locations, obstimes, skycoords
-from ..body_separation import MoonSeparationConstraint, SunSeparationConstraint
+from .._body_separation import MoonSeparationConstraint, SunSeparationConstraint
 
 
 @settings(deadline=None)

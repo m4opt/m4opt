@@ -1,7 +1,7 @@
 from astropy import units as u
 from astropy.coordinates import get_body
 
-from .core import Constraint
+from ._core import Constraint
 
 
 class BodySeparationConstraint(Constraint):

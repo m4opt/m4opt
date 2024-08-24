@@ -4,7 +4,7 @@ from astropy.constants import R_earth
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
 from astropy.time import Time
 
-from .core import Constraint
+from ._core import Constraint
 
 
 def _get_angle_from_earth_limb(
