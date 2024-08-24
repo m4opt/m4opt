@@ -79,14 +79,14 @@ omit = [
     "m4opt/tests/*",
     "m4opt/*/tests/*",
     "m4opt/extern/*",
-    "m4opt/version*",
+    "m4opt/_version*",
     "*/m4opt/_astropy_init*",
     "*/m4opt/conftest.py",
     "*/m4opt/*setup_package*",
     "*/m4opt/tests/*",
     "*/m4opt/*/tests/*",
     "*/m4opt/extern/*",
-    "*/m4opt/version*",
+    "*/m4opt/_version*",
 ]
 
 [tool.coverage.report]
@@ -109,4 +109,4 @@ requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "m4opt/version.py"
+write_to = "m4opt/_version.py"
