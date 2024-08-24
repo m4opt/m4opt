@@ -1,5 +1,5 @@
-from .core import Orbit
-from .spice import Spice
-from .tle import TLE
+from ._core import Orbit
+from ._spice import Spice
+from ._tle import TLE
 
 __all__ = ("Orbit", "Spice", "TLE")
