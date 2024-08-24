@@ -107,7 +107,7 @@ Regions from files
 ------------------
 
 You can also read field of view shapes from common region files using
-:meth:`~regions.Region.read`. For example, here is a
+:meth:`regions.Regions.read`. For example, here is a
 `DS9 region file <https://ds9.si.edu/doc/ref/region.html>`_ describing the
 field of view of the `Wide-Field Instrument <https://roman.gsfc.nasa.gov/science/WFI_technical.html>`_
 on the `Nancy Grace Roman Space Telescope <https://roman.gsfc.nasa.gov>`_:
