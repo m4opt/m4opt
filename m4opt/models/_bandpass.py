@@ -17,7 +17,7 @@ class Bandpass(Model):
 
     >>> import numpy as np
     >>> from astropy import units as u
-    >>> from m4opt.models.bandpass import Bandpass
+    >>> from m4opt.models import Bandpass
     >>> wavelengths = np.linspace(6000, 8000, 100)
     >>> transmission = 0.5 * np.exp(-(wavelengths - 7000)**2 / 500**2)
     >>> bp = Bandpass.from_table(wavelengths * u.Angstrom, transmission)

@@ -8,7 +8,7 @@ from astropy.utils.data import download_file
 from dust_extinction.parameter_averages import G23
 from dustmaps.planck import PlanckGNILCQuery
 
-from .core import state
+from ._core import state
 
 axav = G23(Rv=3.1)
 axav.input_units_equivalencies = {"x": u.spectral()}

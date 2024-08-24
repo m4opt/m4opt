@@ -4,8 +4,8 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from ...tests.hypothesis import skycoords
-from ..core import state
-from ..extinction import Extinction, axav, dust_map
+from .._core import state
+from .._extinction import Extinction, axav, dust_map
 
 
 @settings(deadline=None)

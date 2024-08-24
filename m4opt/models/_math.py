@@ -79,7 +79,7 @@ def _get_intervals(model: Model) -> portion.Interval:
 
     >>> from astropy.modeling import models
     >>> from astropy import units as u
-    >>> from m4opt.models.math import _get_intervals
+    >>> from m4opt.models._math import _get_intervals
 
     For a simple, bounded model, `_get_intervals` returns a single interval:
 

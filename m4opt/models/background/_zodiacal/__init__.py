@@ -10,7 +10,7 @@ from astropy.table import QTable
 from astropy.time import Time
 from scipy.interpolate import RegularGridInterpolator
 
-from ...core import state
+from ..._core import state
 from .._core import Background
 from . import data
 
