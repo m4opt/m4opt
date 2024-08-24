@@ -18,14 +18,8 @@ Observing State
 ===============
 
 Some models (particularly sky background models) vary with sky position and
-time. You can construct such models by explicitly passing a fixed sky position
-and time using the ``.at()`` class method. For example::
-
-    from m4opt.models.background import ZodiacalBackground
-    model = ZodiacalBackground.at(target_coord=coord, obstime=time)
-
-However, sometimes you may want to leave the sky position and time unspecified
-when you are the model, to be specified at a later point in your code, or to be
+time. You may want to leave the sky position and time unspecified when you are
+constructing the model, to be specified at a later point in your code, or to be
 specified implicitly by the scheduler. To do that, simply construct the model
 components directly, without any target coordinate or time. For example::
 
@@ -35,8 +29,8 @@ components directly, without any target coordinate or time. For example::
 Then, when you need to evaluate the model for a _specific_ target and time, you
 can specify their values within a code block using a ``with:`` statement::
 
-    from m4opt.models import state
-    with state.set_observing(target_coord=coord, obstime=time):
+    from m4opt.models import observing
+    with observing(observer_location=loc, target_coord=coord, obstime=time):
         model_value = model(1000 * u.angstrom)
 
 See also the Examples section for

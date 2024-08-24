@@ -1,11 +1,11 @@
 from ._bandpass import Bandpass
-from ._core import state
-from ._extinction import Extinction
-from ._math import integrate
+from ._extinction import DustExtinction
+from ._extrinsic import observing
+from ._math import effstim
 
 __all__ = (
     "Bandpass",
-    "Extinction",
-    "integrate",
-    "state",
+    "DustExtinction",
+    "effstim",
+    "observing",
 )

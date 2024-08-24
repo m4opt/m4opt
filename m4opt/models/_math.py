@@ -1,250 +1,154 @@
-from contextlib import contextmanager
-from itertools import chain
-from typing import Optional, Union
+from functools import reduce
+from operator import mul
 
 import numpy as np
-import portion.interval
+import sympy
 from astropy.modeling import CompoundModel, Model
-from astropy.units.quantity import Quantity
-from scipy.integrate import quad_vec
+from scipy.interpolate import interp1d
+from synphot import Observation, SourceSpectrum
+
+from ._extinction import DustExtinction, DustExtinctionForSkyCoord, dust_map
+from ._extrinsic import ExtrinsicScaleFactor, state
 
 
-def _map_interval(func):
-    """Apply a function to the bounds of an interval."""
+class ModelSymbol(sympy.Dummy):
+    """A SymPy model to keep track of Astropy models in an expression."""
 
-    def wrapper(interval):
-        lower = func(interval.lower)
-        upper = func(interval.upper)
-        if lower > upper:
-            lower, upper = upper, lower
-        return portion.open(lower, upper)
-
-    return wrapper
+    def __new__(cls, model: Model):
+        obj = super().__new__(cls, name=repr(model), real=True)
+        obj.model = model
+        return obj
 
 
-def _to_open_interval(interval: portion.Interval) -> portion.Interval:
-    """Convert any interval to an open interval."""
-    return portion.open(interval.lower, interval.upper)
-
-
-@contextmanager
-def _with_portion_float_inf():
-    """Temporarily set infinity used by the portion library to `float('inf')`.
-
-    `float('inf')` is comparable with any Astropy quantity, but `portion.inf`
-    is not. The portion uses its representation of infinity internally in order
-    to calculate complement sets.
+def effstim(
+    spectrum, bandpass, flux_unit=None, wavelengths=None, area=None, vegaspec=None
+):
     """
-    tmp = portion.interval.inf
-    portion.interval.inf = float("inf")
-    try:
-        yield
-    finally:
-        portion.interval.inf = tmp
-
-
-def _get_1d_units_for_dict(units) -> Union[Quantity, float]:
-    if units:
-        (units,) = units.values()
-    if not units:
-        units = 1
-    return units
-
-
-@_with_portion_float_inf()
-def _get_intervals(model: Model) -> portion.Interval:
-    """Calculate the model breakpoints for a 1D Model by combining
-    the bounding box endpoints of the submodels
-
-    Parameters
-    ----------
-    model : :class:`astropy.modeling.Model`
-        The model.
-
-    Returns
-    -------
-    points : list, float
-        Model breakpoints to facilitate model integration, sorted from low
-        to high. The range for integration will be from the first to the last
-        entry in the list.
-
-    Notes
-    -----
-    Models without bounding boxes are valid in full domain, so breakpoints are
-    given as +/- `numpy.inf`. However, infinities will be discarded if
-    at least one submodel has a bounding box.
-
-    Examples
-    --------
-
-    >>> from astropy.modeling import models
-    >>> from astropy import units as u
-    >>> from m4opt.models._math import _get_intervals
-
-    For a simple, bounded model, `_get_intervals` returns a single interval:
-
-    >>> _get_intervals(models.Box1D(width=3))
-    (np.float64(-1.5),np.float64(1.5))
-
-    This also works with models that have dimensionful input:
-
-    >>> _get_intervals(models.Box1D(width=3*u.m))
-    (<Quantity -1.5 m>,<Quantity 1.5 m>)
-
-    For unbounded models, `_get_intervals` returns an infinite interval:
-
-    >>> _get_intervals(models.Exponential1D())
-    (-inf,inf)
-    >>> _get_intervals(models.Exponential1D(tau=1*u.m))
-    (<Quantity -inf m>,<Quantity inf m>)
-
-    Compound models are supported too. Supported operations include function
-    composition (`|`):
-
-    >>> _get_intervals(models.Box1D(width=3) | models.Shift(offset=2))
-    (0.5,3.5)
-    >>> _get_intervals(models.Box1D(width=3*u.m) | models.Shift(offset=2*u.m))
-    (<Quantity 0.5 m>,<Quantity 3.5 m>)
-
-    Multiplication (`*`) results in an intersection:
-
-    >>> model1 = models.Box1D(x_0=-0.5, width=3)
-    >>> model2 = models.Box1D(x_0=0.5, width=3)
-    >>> _get_intervals(model1)
-    (np.float64(-2.0),np.float64(1.0))
-    >>> _get_intervals(model2)
-    (np.float64(-1.0),np.float64(2.0))
-    >>> _get_intervals(model1 * model2)
-    (np.float64(-1.0),np.float64(1.0))
-    >>> model1 = models.Box1D(x_0=-0.5*u.m, width=3*u.m)
-    >>> model2 = models.Box1D(x_0=0.5*u.m, width=3*u.m)
-    >>> _get_intervals(model1 * model2)
-    (<Quantity -1. m>,<Quantity 1. m>)
-
-    Addition (`+`) and subtraction (`-`) result in a union, but holes are kept.
-
-    >>> model1 = models.Box1D(x_0=-0.5, width=3)
-    >>> model2 = models.Box1D(x_0=0.5, width=3)
-    >>> _get_intervals(model1 + model2)
-    (np.float64(-2.0),np.float64(-1.0)) | (np.float64(-1.0),np.float64(2.0))
-    >>> _get_intervals(model1 - model2)
-    (np.float64(-2.0),np.float64(-1.0)) | (np.float64(-1.0),np.float64(2.0))
-    >>> model1 = models.Box1D(x_0=-0.5*u.m, width=3*u.m)
-    >>> model2 = models.Box1D(x_0=0.5*u.m, width=3*u.m)
-    >>> _get_intervals(model1 + model2)
-    (<Quantity -2. m>,<Quantity -1. m>) | (<Quantity -1. m>,<Quantity 2. m>)
-    >>> _get_intervals(model1 - model2)
-    (<Quantity -2. m>,<Quantity -1. m>) | (<Quantity -1. m>,<Quantity 2. m>)
-    """
-    if isinstance(model, CompoundModel):
-        if model.op == "|":
-            return _get_intervals(model.left).apply(_map_interval(model.right))
-        elif model.op == "*":
-            return _get_intervals(model.left) & _get_intervals(model.right)
-        elif model.op in {"+", "-", "/"}:
-            lhs = portion.IntervalDict({_get_intervals(model.left): "lhs"})
-            rhs = portion.IntervalDict({_get_intervals(model.right): "rhs"})
-            union = lhs | rhs
-            return portion.Interval(
-                *(intervals.apply(_to_open_interval) for intervals in union)
-            )
-        else:
-            raise NotImplementedError(f"operation {model.op} not supported")
-    else:
-        try:
-            bbox = model.bounding_box
-        except NotImplementedError:
-            unit = _get_1d_units_for_dict(model.input_units)
-            return portion.open(-np.inf * unit, np.inf * unit)
-        else:
-            ((lo, hi),) = bbox
-            return portion.open(lo, hi)
-
-
-def integrate(
-    model: Model, *, quick_and_dirty_npts: Optional[int] = None, **kwargs
-) -> Union[Quantity, float]:
-    """Integrate a 1D model using adaptive trapezoidal quadrature.
-
-    Parameters
-    ----------
-    model : :class:`astropy.modeling.Model`
-        The model to integrate.
-    quick_and_dirty_npts : int, optional
-        Number of sample points. If provided, disable adaptive quadrature and
-        instead use fixed-order quadrature with the specified number of
-        regularly spaced sample points.
-    **kwargs : dict
-        Additional keyword arguments passed to
-        :meth:`scipy.integrate.quad_vec`.
-
-    Returns
-    -------
-    integral : float, :class:`astropy.units.Quantity`
-        The integral over the bounding box of the model's inputs.
-
-    Notes
-    -----
-    When integrating compound models, the domain of integration is subdivided
-    using the bounding box endpoints of all of the submodels. The integrator
-    minimizes the error by tracking the error contributions from all of the
-    subdivisions. The integrator can be slow; passing lower tolerances can
-    speed up the calculation with a loss of accuracy. For a faster version
-    without convergence checking, try the `quick_and_dirty_npts` option.
-
-    Examples
-    --------
-
-    You can integrate dimensionless models:
-
-    >>> from astropy.modeling import models
-    >>> from astropy import units as u
-    >>> from m4opt.models import integrate
+    >>> from astropy.coordinates import EarthLocation, SkyCoord
+    >>> from astropy.time import Time
+    >>> from m4opt.models.background import ZodiacalBackground
+    >>> from m4opt.models import DustExtinction
+    >>> from m4opt.models import observing
+    >>> from m4opt.models._math import effstim
     >>> import numpy as np
-    >>> model = models.Box1D(width=3)
-    >>> integrate(model)
-    3.0
-    >>> integrate(model, quick_and_dirty_npts=10000)
-    np.float64(3.0)
-    >>> model = models.Gaussian1D() * models.Const1D(1 / np.sqrt(2 * np.pi))
-    >>> integrate(model, epsrel=1e-7)
-    0.9999999648585338
-    >>> integrate(model, quick_and_dirty_npts=10000)
-    np.float64(0.9999999620207557)
-
-    Or models with dimensions:
-
-    >>> model = models.Lorentz1D(x_0=1 * u.micron, fwhm=0.1 * u.micron,
-    ...                          amplitude=1 * u.erg / u.micron)
-    >>> integrate(model, epsrel=1e-7)
-    <Quantity 0.1550799 erg>
-    >>> integrate(model, quick_and_dirty_npts=10000)
-    <Quantity 0.1550799 erg>
-
+    >>> import synphot
+    >>> from astropy import units as u
+    >>> spectrum = synphot.SourceSpectrum(synphot.BlackBody1D, temperature=1000 * u.Kelvin) * synphot.SpectralElement(DustExtinction())
+    >>> band = synphot.SpectralElement.from_filter('johnson_r')
+    >>> with observing(EarthLocation.of_site('Palomar'), SkyCoord(0 * u.deg, 0 * u.deg), Time('2024-01-01')):
+    ...     (spectrum * band)(2000 * u.angstrom)
+    <Quantity 6.25485842e-18 PHOTLAM>
+    >>> with observing(EarthLocation.of_site('Palomar'), SkyCoord(*np.meshgrid(np.linspace(0, 360, 100), np.linspace(-90, 90, 200)), unit=u.deg), Time('2024-01-01')):
+    ...     effstim(spectrum, band)
+    <Quantity [[5.56548638e+10, 5.56548638e+10, 5.56548638e+10, ...,
+                5.56548638e+10, 5.56548638e+10, 5.56548638e+10],
+               [6.02847758e+10, 6.07662430e+10, 6.13964602e+10, ...,
+                6.00166956e+10, 6.01319796e+10, 6.02847758e+10],
+               [6.37149606e+10, 6.36491559e+10, 6.34114654e+10, ...,
+                6.16670282e+10, 6.28588841e+10, 6.37149606e+10],
+               ...,
+               [4.77455317e+10, 4.21534149e+10, 4.54415136e+10, ...,
+                5.44657755e+10, 5.28081993e+10, 4.77455317e+10],
+               [5.86405552e+10, 5.76323220e+10, 5.64942641e+10, ...,
+                5.64455489e+10, 5.77565225e+10, 5.86405552e+10],
+               [5.06104299e+10, 5.06104299e+10, 5.06104299e+10, ...,
+                5.06104299e+10, 5.06104299e+10, 5.06104299e+10]] PHOTLAM>
     """
-    x_unit = _get_1d_units_for_dict(model.input_units)
 
-    intervals = _get_intervals(model)
-    a, *points, b = np.unique(
-        Quantity(
-            list(chain.from_iterable((i.lower, i.upper) for i in intervals)), x_unit
-        ).value.ravel()
-    )
+    if flux_unit is None:
+        flux_unit = Observation._internal_flux_unit
+    flux_unit = Observation._validate_flux_unit(flux_unit)
 
-    # FIXME: Cannot rely on model.return_units because it is not set for all
-    # models (e.g. Lorentz1D).
-    y_unit = getattr(model(a * x_unit), "unit", None) or 1
+    extrinsic_scale_factors = []
+    dust_extinction = None
 
-    def func(x):
-        result = model(x * x_unit)
-        if hasattr(result, "to_value"):
-            result = result.to_value()
-        return result
+    def model_to_expr(model):
+        match model:
+            case CompoundModel(op="+"):
+                return model_to_expr(model.left) + model_to_expr(model.right)
+            case CompoundModel(op="*"):
+                return model_to_expr(model.left) * model_to_expr(model.right)
+            case ExtrinsicScaleFactor():
+                symbol = ModelSymbol(model)
+                extrinsic_scale_factors.append(symbol)
+                return symbol
+            case DustExtinctionForSkyCoord():
+                symbol = ModelSymbol(model)
+                nonlocal dust_extinction
+                dust_extinction = symbol
+                return symbol
+            case _:
+                return ModelSymbol(model)
 
-    if quick_and_dirty_npts is not None:
-        x = np.linspace(a, b, quick_and_dirty_npts)
-        yint = np.trapezoid(func(x), x)
+    def evaluate_coef(coef):
+        match coef:
+            case sympy.core.numbers.One():
+                return 1
+            case sympy.Symbol():
+                return coef.model.value
+            case _:
+                raise NotImplementedError(
+                    f"Don't know how to evaluate coefficient symbol: {coef}"
+                )
+
+    def base_effstim_no_extinction(spectrum):
+        return Observation(spectrum, bandpass).effstim(
+            flux_unit=flux_unit,
+            wavelengths=bandpass.waveset,
+            area=area,
+            vegaspec=vegaspec,
+        )
+
+    def base_effstim(spectrum):
+        @np.vectorize
+        def base_effstim_extinction_for_Ebv(Ebv):
+            return base_effstim_no_extinction(spectrum * DustExtinction(Ebv)).to_value(
+                flux_unit
+            )
+
+        if dust_extinction is not None:
+            xp = dust_map().query(state.get().target_coord)
+            n_samples = 512
+            if np.size(xp) >= n_samples:
+                x = np.linspace(0, dust_extinction.model.Ebv_max, n_samples)
+                y = base_effstim_extinction_for_Ebv(x)
+                xp = dust_map().query(state.get().target_coord)
+                return (
+                    interp1d(x, y, kind="cubic", copy=False, assume_sorted=True)(xp)
+                    * flux_unit
+                )
+            else:
+                return base_effstim_extinction_for_Ebv(xp) * flux_unit
+        else:
+            return base_effstim_no_extinction(spectrum)
+
+    def evaluate_term(term):
+        match term:
+            case sympy.Add():
+                return sum(evaluate_term(arg) for arg in term.args)
+            case sympy.Mul():
+                return base_effstim(
+                    SourceSpectrum(reduce(mul, (arg.model for arg in term.args)))
+                )
+            case sympy.Symbol():
+                return base_effstim(SourceSpectrum(term.model))
+            case _:
+                raise NotImplementedError(
+                    f"Don't know how to evaluate term symbol: {term}"
+                )
+
+    expr = model_to_expr(spectrum.model)
+    if (
+        dust_extinction is not None
+        and (new_expr := expr.extract_multiplicatively(dust_extinction)) is not None
+    ):
+        expr = new_expr
     else:
-        yint, _ = quad_vec(func, a, b, points=points, quadrature="trapezoid", **kwargs)
+        dust_extinction = None
 
-    return yint * x_unit * y_unit
+    return sum(
+        evaluate_coef(coef) * evaluate_term(term)
+        for coef, term in expr.expand()
+        .collect(extrinsic_scale_factors, evaluate=False)
+        .items()
+    )

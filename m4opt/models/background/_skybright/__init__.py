@@ -3,10 +3,8 @@ from importlib import resources
 
 import astropy.units as u
 import numpy as np
-from astropy.modeling import Model
-from astropy.modeling.models import Tabular1D
+from synphot import Empirical1D, SourceSpectrum
 
-from .._core import Background
 from . import data
 
 kpno_sky_tables = {
@@ -30,19 +28,9 @@ def read_kpno_sky_data(key):
     # According to per private communication with P. Massey, sky brightness is
     # given in units AB magnitudes/arcsec^2
     x *= u.Angstrom
-    y *= u.mag(u.AB / u.arcsec**2)
+    y *= u.ABmag
 
-    # Convert to desired units
-    x = x.to(Background.input_units["x"], equivalencies=u.spectral())
-    y = y.to(Background.return_units["y"], equivalencies=u.spectral_density(x))
-
-    return np.flipud(x), np.flipud(y)
-
-
-def _get(key: str) -> Model:
-    result = Tabular1D(*read_kpno_sky_data(key))
-    result.input_units_equivalencies = Background.input_units_equivalencies
-    return result
+    return SourceSpectrum(Empirical1D, points=x, lookup_table=y)
 
 
 class SkyBackground:
@@ -75,12 +63,12 @@ class SkyBackground:
     >>> from m4opt.models.background import SkyBackground
 
     >>> background = SkyBackground.low()
-    >>> background(5890 * u.angstrom).to(u.mag(u.AB / u.arcsec**2))
-    <Magnitude 20.66945113 mag(AB / arcsec2)>
+    >>> background(5890 * u.angstrom, flux_unit=u.ABmag)
+    <Magnitude 20.66945113 mag(AB)>
 
     >>> background = SkyBackground.veryhigh()
-    >>> background(5890 * u.angstrom).to(u.mag(u.AB / u.arcsec**2))
-    <Magnitude 19.09920111 mag(AB / arcsec2)>
+    >>> background(5890 * u.angstrom, flux_unit=u.ABmag)
+    <Magnitude 19.09920111 mag(AB)>
 
     .. plot::
         :caption: Sky background spectra
@@ -97,8 +85,7 @@ class SkyBackground:
         wave = np.linspace(3750, 6868) * u.angstrom
         ax = plt.axes()
         for key in ['veryhigh', 'high', 'medium', 'low']:
-            surf = getattr(SkyBackground, key)()(wave).to(
-                u.mag(u.AB / u.arcsec**2))
+            surf = getattr(SkyBackground, key)()(wave, flux_unit=u.ABmag)
             ax.plot(wave, surf, label=f'SkyBackground.{key}')
         ax.legend()
         ax.invert_yaxis()
@@ -106,16 +93,16 @@ class SkyBackground:
 
     @staticmethod
     def low():
-        return _get("low")
+        return read_kpno_sky_data("low")
 
     @staticmethod
     def medium():
-        return _get("medium")
+        return read_kpno_sky_data("medium")
 
     @staticmethod
     def high():
-        return _get("high")
+        return read_kpno_sky_data("high")
 
     @staticmethod
     def veryhigh():
-        return _get("veryhigh")
+        return read_kpno_sky_data("veryhigh")

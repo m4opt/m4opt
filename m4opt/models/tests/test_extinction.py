@@ -3,23 +3,29 @@ from astropy import units as u
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from ...tests.hypothesis import skycoords
-from .._core import state
-from .._extinction import Extinction, axav, dust_map
+from ...tests.hypothesis import earth_locations, obstimes, skycoords
+from .._extinction import DustExtinction, dust_map, reddening_law
+from .._extrinsic import observing
 
 
 @settings(deadline=None)
-@given(skycoords, st.floats(0.0912, 32.0).map(lambda _: _ * u.micron))
-def test_extinction(target_coord, wavelength):
+@given(
+    earth_locations,
+    skycoords,
+    obstimes,
+    st.floats(0.0912, 32.0).map(lambda _: _ * u.micron),
+)
+def test_extinction(observer_location, target_coord, obstime, wavelength):
     Ebv = dust_map().query(target_coord)
-    expected = axav.extinguish(wavelength, Ebv=Ebv)
+    expected = reddening_law.extinguish(wavelength, Ebv=Ebv)
 
-    with state.set_observing(target_coord=target_coord):
-        result = Extinction()(wavelength)
-    assert expected == pytest.approx(result)
+    with observing(
+        observer_location=observer_location, target_coord=target_coord, obstime=obstime
+    ):
+        result = DustExtinction()(wavelength)
+    assert result.unit == u.dimensionless_unscaled
+    assert expected == pytest.approx(result.value)
 
-    result = Extinction(Ebv)(wavelength)
-    assert expected == pytest.approx(result)
-
-    result = Extinction.at(target_coord)(wavelength)
-    assert expected == pytest.approx(result)
+    result = DustExtinction(Ebv)(wavelength)
+    assert result.unit == u.dimensionless_unscaled
+    assert expected == pytest.approx(result.value)
