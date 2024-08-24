@@ -1,17 +1,16 @@
 from functools import cache
 
+import numpy as np
 from astropy import units as u
-from astropy.coordinates import SkyCoord
-from astropy.modeling import Model, custom_model
-from astropy.modeling.models import Const1D
+from astropy.modeling import Model, Parameter
 from astropy.utils.data import download_file
 from dust_extinction.parameter_averages import G23
 from dustmaps.planck import PlanckGNILCQuery
+from synphot.spectrum import BaseSpectrum, SpectralElement
 
-from ._core import state
+from ._extrinsic import state
 
-axav = G23(Rv=3.1)
-axav.input_units_equivalencies = {"x": u.spectral()}
+reddening_law = G23()
 
 
 @cache
@@ -23,29 +22,87 @@ def dust_map():
     return PlanckGNILCQuery(download_file(sources[-1], cache=True, sources=sources))
 
 
-@custom_model
-def EbvScale(x):
-    return dust_map().query(state.get().target_coord)
-
-
-class Extinction:
+def DustExtinction(Ebv: float | None = None):
     """Milky Way dust extinction.
 
     Notes
     -----
     We use :class:`dust_extinction.parameter_averages.G23` because of its broad
     wavelength coverage from ultraviolet to infrared.
+
+    Examples
+    --------
+
+    You can create an extinction model with an explicitly set value of E(B-V):
+
+    >>> from astropy import units as u
+    >>> from m4opt.models import DustExtinction
+    >>> extinction = DustExtinction(Ebv=1.0)
+    >>> extinction(10 * u.micron)
+    <Quantity 0.7903132>
+
+    Or you can leave it unspecified, to evaluate later for a given sky location
+    using :meth:`m4opt.models.observing`:
+
+    >>> from astropy.coordinates import EarthLocation, SkyCoord
+    >>> from astropy.time import Time
+    >>> from m4opt.models import observing
+    >>> extinction = DustExtinction()
+    >>> with observing(EarthLocation.of_site("Las Campanas Observatory"), SkyCoord.from_name("NGC 4993"), Time("2017-08-17")):
+    ...     extinction(10 * u.micron)
+    <Quantity 0.97517859>
     """
 
-    def __new__(cls, Ebv=None):
-        if Ebv is None:
-            Ebv = EbvScale()
-        if isinstance(Ebv, Model):
-            factor = Const1D(-0.4 * axav.Rv) * Ebv
-        else:
-            factor = Const1D(-0.4 * axav.Rv * Ebv)
-        return Const1D(10) ** (factor * axav)
+    if Ebv is None:
+        return SpectralElement(DustExtinctionForSkyCoord())
+    else:
+        return SpectralElement(DustExtinctionForEbv(Ebv=Ebv))
+
+
+class DustExtinctionBase(Model):
+    n_inputs = 1
+    n_outputs = 1
+    input_units = {"x": BaseSpectrum._internal_wave_unit}
+    return_units = {"y": u.dimensionless_unscaled}
+    input_units_equivalencies = {"x": u.spectral()}
+
+    # argh, why!! synphot.BaseSpectrum passes unitless quantities to the underlying model.
+    _input_units_allow_dimensionless = True
 
     @classmethod
-    def at(cls, target_coord: SkyCoord):
-        return cls(Ebv=dust_map().query(target_coord))
+    def evaluate(cls, x, Ebv):
+        # Handle dimensionless units
+        if (
+            not hasattr(x, "unit")
+            or u.unit is None
+            or u.unit is u.dimensionless_unscaled
+        ):
+            x = x * cls.input_units["x"]
+
+        # Convert to internal units used by dust_extinction package:
+        # wavenumber in units of inverse microns.
+        x = x.to(1 / u.micron, equivalencies=u.spectral())
+
+        shape = np.shape(x)
+        x = np.atleast_1d(x)
+        lo, hi = reddening_law.x_range
+        good = (x.value >= lo) & (x.value <= hi)
+        result = np.empty(x.shape)
+        result[good] = reddening_law.extinguish(x[good], Ebv=Ebv)
+        result[~good] = np.nan
+        return result.reshape(shape)
+
+
+class DustExtinctionForEbv(DustExtinctionBase):
+    Ebv = Parameter(description="E(B-V)")
+
+
+class DustExtinctionForSkyCoord(DustExtinctionBase):
+    @property
+    def Ebv_max(self):
+        """Maximum value of E(B-V) for the assumed dust model."""
+        return dust_map()._pix_val.max()
+
+    @classmethod
+    def evaluate(cls, x):
+        return super().evaluate(x, dust_map().query(state.get().target_coord))

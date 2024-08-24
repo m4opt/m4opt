@@ -1,4 +1,10 @@
-from ._core import Background
+"""
+Sky background models: models of the surface brightness of the sky.
+
+By convention, these models return the flux density integrated over a solid
+angle of 1 square arcsecond.
+"""
+
 from ._skybright import SkyBackground
 from ._zodiacal import ZodiacalBackground
 
@@ -6,11 +12,3 @@ __all__ = (
     "ZodiacalBackground",
     "SkyBackground",
 )
-
-__doc__ = f"""
-Sky background models: models of the surface brightness of the sky.
-
-Sky background models are 1D models that take spectral frequency or wavelength
-as input, and return the surface brightness in units of
-{Background.return_units['y']} as output.
-"""
