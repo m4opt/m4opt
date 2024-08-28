@@ -53,7 +53,7 @@ def nominal_roll(
         obstime = Time('2024-01-1') + np.linspace(0, 1, 1000) * u.year
 
         fig, ax = plt.subplots()
-        for lat in np.arange(0, 90, 10) * u.deg:
+        for lat in np.arange(0, 100, 10) * u.deg:
             target_coord = SkyCoord(0 * u.deg, lat, frame=GeocentricMeanEcliptic)
             roll = nominal_roll(observer_location, target_coord, obstime)
             ax.plot(
