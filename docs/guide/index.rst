@@ -10,3 +10,4 @@ User Guide
    models
    orbit
    skygrid
+   misc
