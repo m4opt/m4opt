@@ -110,3 +110,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 write_to = "m4opt/_version.py"
+
+[tool.mypy]
+exclude = ["^docs/"]
+ignore_missing_imports = true

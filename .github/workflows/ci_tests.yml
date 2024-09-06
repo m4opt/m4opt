@@ -9,8 +9,8 @@ on:
   - pull_request
 
 jobs:
-  pre-commit:
-    name: Run pre-commit checks
+  types:
+    name: Python type checking
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -20,12 +20,9 @@ jobs:
       - name: Set up python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-      - name: Install tools
-        run: pip install pre-commit
-      - name: Run pre-commit checks
-        run: pre-commit run --all-files
-
+          python-version: "3.11"
+      - name: Run mypy
+        uses: python/mypy@v1.11.2
   # Github Actions supports ubuntu, windows, and macos virtual environments:
   # https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners
   ci_tests:
