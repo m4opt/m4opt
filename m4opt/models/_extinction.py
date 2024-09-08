@@ -1,4 +1,5 @@
 from functools import cache
+from urllib.error import URLError
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -14,11 +15,21 @@ axav = G23(Rv=3.1)
 axav.input_units_equivalencies = {"x": u.spectral()}
 
 
+def download_file_from_mirrors(mirror, *more_mirrors, **kwargs):
+    try:
+        return download_file(mirror, **kwargs)
+    except URLError:
+        if not more_mirrors:
+            raise
+        return download_file_from_mirrors(*more_mirrors, **kwargs)
+
+
 @cache
 def dust_map():
     return PlanckGNILCQuery(
-        download_file(
+        download_file_from_mirrors(
             "https://pla.esac.esa.int/pla/aio/product-action?MAP.MAP_ID=COM_CompMap_Dust-GNILC-Model-Opacity_2048_R2.01.fits",
+            "https://irsa.ipac.caltech.edu/data/Planck/release_2/all-sky-maps/maps/component-maps/foregrounds/COM_CompMap_Dust-GNILC-Model-Opacity_2048_R2.01.fits",
             cache=True,
         )
     )
