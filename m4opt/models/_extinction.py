@@ -20,7 +20,7 @@ def dust_map():
         "https://pla.esac.esa.int/pla/aio/product-action?MAP.MAP_ID=COM_CompMap_Dust-GNILC-Model-Opacity_2048_R2.01.fits",
         "https://irsa.ipac.caltech.edu/data/Planck/release_2/all-sky-maps/maps/component-maps/foregrounds/COM_CompMap_Dust-GNILC-Model-Opacity_2048_R2.01.fits",
     ]
-    return PlanckGNILCQuery(download_file(sources[0], cache=True, sources=sources))
+    return PlanckGNILCQuery(download_file(sources[-1], cache=True, sources=sources))
 
 
 @custom_model
