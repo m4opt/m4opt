@@ -71,6 +71,11 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    - name: Cache Astropy data
+      uses: actions/cache@v4
+      with:
+        key: ${{ matrix.toxenv }}
+        path: ~/.astropy/cache
     - name: Set up python ${{ matrix.python }} on ${{ matrix.os }}
       uses: actions/setup-python@v5
       with:
