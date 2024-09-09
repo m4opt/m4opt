@@ -4,6 +4,7 @@ from astropy.coordinates import SkyCoord
 from regions import RectangleSkyRegion
 from synphot import Box1D, SpectralElement
 
+from .. import skygrid
 from ..constraints import (
     EarthLimbConstraint,
     MoonSeparationConstraint,
@@ -61,6 +62,10 @@ uvex = Mission(
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_latest_high_prec.bpc",
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00010.tpc",
     ),
+    # Sky grid optimized for full coverage of the sky by circles circumscribed
+    # within the square field of view (so that each field is fully covered
+    # at all roll angles).
+    skygrid=skygrid.geodesic(7.7 * u.deg**2, class_="III", base="icosahedron"),
 )
 uvex.__doc__ = """UVEX, the UltraViolet EXplorer.
 
