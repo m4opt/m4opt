@@ -1,6 +1,7 @@
 from collections.abc import Collection
 from dataclasses import dataclass
 
+from astropy.coordinates import SkyCoord
 from regions import Region, Regions
 
 from ..constraints import Constraint
@@ -23,3 +24,6 @@ class Mission:
 
     orbit: Orbit
     """Orbit of spacecraft."""
+
+    skygrid: SkyCoord
+    """Grid of reference pointings."""
