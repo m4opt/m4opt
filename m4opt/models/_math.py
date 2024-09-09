@@ -33,7 +33,7 @@ def effstim(
     >>> import numpy as np
     >>> import synphot
     >>> from astropy import units as u
-    >>> spectrum = synphot.SourceSpectrum(synphot.BlackBody1D, temperature=1000 * u.Kelvin) * synphot.SpectralElement(DustExtinction())
+    >>> spectrum = synphot.SourceSpectrum(synphot.BlackBody1D, temperature=1000 * u.Kelvin) * DustExtinction()
     >>> band = synphot.SpectralElement.from_filter('johnson_r')
     >>> with observing(EarthLocation.of_site('Palomar'), SkyCoord(0 * u.deg, 0 * u.deg), Time('2024-01-01')):
     ...     (spectrum * band)(2000 * u.angstrom)
