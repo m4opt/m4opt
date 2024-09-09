@@ -4,7 +4,7 @@ import spiceypy as spice
 from astropy import units as u
 from astropy.coordinates import ITRS, SkyCoord
 from astropy.time import Time
-from astropy.utils.data import download_files_in_parallel
+from astropy.utils.data import download_file
 
 from ._core import Orbit
 
@@ -56,9 +56,8 @@ class Spice(Orbit):
     """  # noqa: E501
 
     def __init__(self, target: str, *kernels: str):
-        if kernels:
-            for filename in download_files_in_parallel(kernels, cache=True):
-                spice.furnsh(filename)
+        for kernel in kernels:
+            spice.furnsh(download_file(kernel, cache=True))
         self._target = spice.bodn2c(target)
         self._body = spice.bodn2c("EARTH")
 
