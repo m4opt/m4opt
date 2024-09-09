@@ -23,6 +23,7 @@ dependencies = [
     "sgp4",
     "spiceypy",
     "tynt",
+    "typer",
     "xdg-base-dirs",
 ]
 
@@ -44,6 +45,9 @@ homepage = "https://m4opt.readthedocs.io/"
 "Documentation" = "https://m4opt.readthedocs.io/"
 "GitHub" = "https://github.com/m4opt/m4opt"
 "Source Code" = "https://github.com/m4opt/m4opt"
+
+[project.scripts]
+m4opt = "m4opt._cli:app"
 
 [tool.setuptools.packages.find]
 
