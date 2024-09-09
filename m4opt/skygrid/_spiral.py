@@ -5,7 +5,7 @@ from astropy.coordinates import SkyCoord
 GOLDEN_ANGLE = np.pi * (3 - np.sqrt(5)) * u.rad
 
 
-def golden_angle_spiral(area):
+def golden_angle_spiral(area: u.Quantity[u.physical.solid_angle]):
     """Generate a tile grid from a spiral employing the golden angle.
 
     This is a spiral-based spherical packing scheme that was used by GRANDMA
