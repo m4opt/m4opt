@@ -1,7 +1,8 @@
 from math import gcd
+from typing import Literal, Tuple
 
 import numpy as np
-from anti_lib_progs.geodesic import get_poly, grid_to_points, make_grid
+from anti_lib_progs.geodesic import Vec, get_poly, grid_to_points, make_grid
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -37,7 +38,11 @@ def solve_number_of_vertices(n, base, class_):
     return base_count * t + 2, t, b, c
 
 
-def geodesic(area, base="icosahedron", class_="I"):
+def geodesic(
+    area: u.Quantity[u.physical.solid_angle],
+    base: Literal["icosahedron", "octahedron", "tetrahedron"] | str = "icosahedron",
+    class_: Literal["I", "II", "III"] | str = "I",
+):
     """Generate a geodesic polyhedron with the fewest vertices >= `n`.
 
     Parameters
@@ -115,9 +120,9 @@ def geodesic(area, base="icosahedron", class_="I"):
 
     # Adapted from
     # https://github.com/antiprism/antiprism_python/blob/master/anti_lib_progs/geodesic.py
-    verts = []
-    edges = {}
-    faces = []
+    verts: list[Vec] = []
+    edges: dict[Tuple[int, int], int] = {}
+    faces: list[Tuple[int, int]] = []
     get_poly(base[0], verts, edges, faces)
 
     n, t, b, c = solve_number_of_vertices(n, base, class_)

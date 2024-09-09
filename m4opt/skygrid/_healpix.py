@@ -5,7 +5,7 @@ from astropy_healpix import HEALPix
 from ligo.skymap.bayestar.filter import ceil_pow_2
 
 
-def healpix(area):
+def healpix(area: u.Quantity[u.physical.solid_angle]):
     """Generate a grid in HEALPix coordinates.
 
     Parameters

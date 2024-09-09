@@ -3,7 +3,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 
-def sinusoidal(area):
+def sinusoidal(area: u.Quantity[u.physical.solid_angle]):
     """Generate a uniform grid on a sinusoidal equal area projection.
 
     This is similar to what was used for GRANDMA follow-up in LIGO/Virgo
