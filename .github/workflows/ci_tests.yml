@@ -20,6 +20,7 @@ jobs:
       - name: Set up python
         uses: actions/setup-python@v5
         with:
+          cache: pip
           python-version: "3.11"
       - name: Run mypy
         uses: python/mypy@v1.11.2
@@ -79,6 +80,7 @@ jobs:
     - name: Set up python ${{ matrix.python }} on ${{ matrix.os }}
       uses: actions/setup-python@v5
       with:
+        cache: pip
         python-version: ${{ matrix.python }}
     - name: Install base dependencies
       run: |
