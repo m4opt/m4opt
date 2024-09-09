@@ -34,6 +34,7 @@ jobs:
     - name: Set up python ${{ matrix.python }}
       uses: actions/setup-python@v5
       with:
+        cache: pip
         python-version: ${{ matrix.python }}
     - name: Install base dependencies
       run: |
