@@ -12,7 +12,9 @@ dependencies = [
     "cplex",
     "docplex",
     "dust-extinction",
-    "dustmaps",
+    # FIXME: use dev version of dustmaps until
+    # https://github.com/gregreen/dustmaps/pull/58 is merged
+    "dustmaps @ git+https://github.com/gregreen/dustmaps.git",
     "gurobipy",
     "ligo.skymap >= 2.1.0",
     "numpy >= 2.1.0",
