@@ -19,7 +19,7 @@ _spkgps = np.vectorize(spice.spkgps, excluded=[0, 2, 3], signature="()->(m),()")
 
 
 class Spice(Orbit):
-    """An Earth satellite whose orbit is specified by its TLE.
+    """A satellite whose orbit is specified by Spice kernels.
 
     Parameters
     ----------
