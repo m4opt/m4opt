@@ -10,5 +10,6 @@ User Guide
    models
    orbit
    skygrid
+   milp
    misc
    missions
