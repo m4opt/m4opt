@@ -12,7 +12,7 @@ from ..constraints import (
 )
 from ..models import Detector, DustExtinction
 from ..models.background import ZodiacalBackground
-from ..orbit import Spice
+from ..orbit import TLE
 from ._core import Mission
 
 
@@ -56,11 +56,10 @@ uvex = Mission(
         extinction=DustExtinction(),
     ),
     # UVEX will be in a highly elliptical TESS-like orbit.
-    orbit=Spice(
-        "MGS SIMULATION",
-        "https://archive.stsci.edu/missions/tess/models/TESS_EPH_PRE_LONG_2021252_21.bsp",
-        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_latest_high_prec.bpc",
-        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00010.tpc",
+    # This is the TESS TLE downloaded from Celestrak at 2024-09-10T00:43:57Z.
+    orbit=TLE(
+        "1 43435U 18038A   24262.33225493 -.00001052  00000+0  00000+0 0  9993",
+        "2 43435  51.7454  60.8303 4593193 124.3403   0.2501  0.07594463  1386",
     ),
     # Sky grid optimized for full coverage of the sky by circles circumscribed
     # within the square field of view (so that each field is fully covered

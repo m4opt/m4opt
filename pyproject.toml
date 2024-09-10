@@ -9,6 +9,7 @@ requires-python = ">=3.10"
 dependencies = [
     "antiprism-python",
     "astropy >= 6.1.0",
+    "astropy-healpix",
     "cplex",
     "docplex",
     "dust-extinction",
