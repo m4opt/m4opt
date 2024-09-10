@@ -1,3 +1,5 @@
+from typing import IO
+
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import TEME, SkyCoord
@@ -52,11 +54,11 @@ class TLE(Orbit):
 
     """  # noqa: E501
 
-    def __init__(self, line1, line2):
+    def __init__(self, line1: str, line2: str):
         self._tle = Satrec.twoline2rv(line1, line2)
 
     @classmethod
-    def from_file(cls, name_or_obj):
+    def from_file(cls, name_or_obj: str | IO):
         with get_readable_fileobj(name_or_obj) as f:
             *_, line1, line2 = f.readlines()
         return cls(line1, line2)
