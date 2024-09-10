@@ -97,7 +97,7 @@ Examples
     source_spectrum = SourceSpectrum(ConstFlux1D, amplitude=25 * u.ABmag)
     exptime = np.linspace(0, 900) * u.s
     obstime = Time("2021-10-31")
-    with observing(observer_location=uvex.orbit(obstime), target_coord=SkyCoord("0deg 0deg"), obstime=obstime):
+    with observing(observer_location=uvex.orbit(obstime).earth_location, target_coord=SkyCoord("0deg 0deg"), obstime=obstime):
         snr = uvex.detector.get_snr(exptime, source_spectrum, "NUV")
 
     ax = plt.axes()
