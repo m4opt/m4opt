@@ -1,3 +1,4 @@
+import warnings
 from functools import cache
 
 import numpy as np
@@ -5,7 +6,12 @@ from astropy import units as u
 from astropy.modeling import Model, Parameter
 from astropy.utils.data import download_file
 from dust_extinction.parameter_averages import G23
-from dustmaps.planck import PlanckGNILCQuery
+
+with warnings.catch_warnings():
+    # Suppress configuration file warnings from the dustmaps package.
+    # We are not using the configuration file.
+    warnings.simplefilter("ignore", UserWarning)
+    from dustmaps.planck import PlanckGNILCQuery
 from synphot.spectrum import BaseSpectrum, SpectralElement
 
 from ._extrinsic import state
