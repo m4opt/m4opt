@@ -4,7 +4,11 @@ from typing import Literal, Tuple
 import numpy as np
 from anti_lib_progs.geodesic import Vec, get_poly, grid_to_points, make_grid
 from astropy import units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import (
+    CartesianRepresentation,
+    SkyCoord,
+    UnitSphericalRepresentation,
+)
 
 
 def triangulation_number(b, c):
@@ -142,7 +146,8 @@ def geodesic(
 
     assert len(points) == n
     coords = SkyCoord(
-        *zip(*(point.v for point in points)), representation_type="cartesian"
+        *zip(*(point.v for point in points)),
+        representation_type=CartesianRepresentation,
     )
-    coords = SkyCoord(coords, representation_type="unitspherical")
+    coords.representation_type = UnitSphericalRepresentation
     return coords
