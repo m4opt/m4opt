@@ -1,13 +1,11 @@
 """Mixed integer linear programs (MILP)"""
 
-import logging
-
 import numpy as np
 from docplex.mp.model import Model as _Model
 
-__all__ = ("Model",)
+from ._tui import status
 
-log = logging.getLogger(__name__)
+__all__ = ("Model",)
 
 
 class Model(_Model):
@@ -16,13 +14,13 @@ class Model(_Model):
 
 def add_var_array_method(cls, tp):
     def func(self, shape=(), *args, **kwargs):
-        vartype = getattr(self, f"{tp}_vartype")
         size = np.prod(shape, dtype=int)
-        vars = np.reshape(self.var_list(size, vartype, *args, **kwargs), shape)
-        if vars.ndim == 0:
-            vars = vars.item()
-        log.debug("Added %d %s variables", size, tp)
-        return vars
+        with status(f"adding {size} {tp} variables"):
+            vartype = getattr(self, f"{tp}_vartype")
+            vars = np.reshape(self.var_list(size, vartype, *args, **kwargs), shape)
+            if vars.ndim == 0:
+                vars = vars.item()
+            return vars
 
     func.__doc__ = f"""Create a Numpy array of {tp} decision variables.
 
