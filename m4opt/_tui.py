@@ -3,14 +3,14 @@ from contextlib import contextmanager
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 from rich.text import Text
 
-__all__ = ("status",)
+__all__ = ("progress", "status")
 
 _progress = None
 _depth = 0
 
 
 @contextmanager
-def get_current_progress():
+def progress():
     global _progress
     if _progress is None:
         with Progress(
@@ -35,7 +35,7 @@ class IndentedSpinnerColumn(SpinnerColumn):
                 else super().render(task)
             )
             + Text(" ")
-            + Text(task.description, style="progress.description")
+            + Text(task.description, style=None if task.completed else "bold")
         )
 
 
@@ -43,17 +43,18 @@ class IndentedSpinnerColumn(SpinnerColumn):
 def status(description: str):
     """Display nested progress bars."""
     global _depth
-    with get_current_progress() as progress:
-        task = progress.add_task(description, total=1, depth=_depth, failed=False)
+    with progress() as pg:
+        task = pg.add_task(description, total=1, depth=_depth, failed=False)
         _depth += 1
         try:
             yield
         except:
-            progress.update(task, failed=True)
+            pg.update(task, failed=True)
             raise
+        else:
+            pg.update(task, advance=1, completed=True)
         finally:
             _depth -= 1
-        progress.update(task, advance=1, completed=True)
 
 
 if __name__ == "__main__":
