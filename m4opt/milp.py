@@ -3,7 +3,7 @@
 import numpy as np
 from docplex.mp.model import Model as _Model
 
-from ._tui import status
+from .utils.console import status
 
 __all__ = ("Model",)
 
