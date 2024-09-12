@@ -7,8 +7,8 @@ from astropy.coordinates import (
 )
 from hypothesis import given, settings
 
+from ....tests.hypothesis import earth_locations, obstimes, skycoords
 from .._roll import nominal_roll
-from .hypothesis import earth_locations, obstimes, skycoords
 
 
 @settings(deadline=None)

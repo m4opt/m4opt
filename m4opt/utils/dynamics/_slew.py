@@ -54,7 +54,7 @@ def slew_separation(center1, center2, roll1=0 * u.rad, roll2=0 * u.rad):
     --------
     >>> from astropy.coordinates import SkyCoord
     >>> from astropy import units as u
-    >>> from m4opt._slew import slew_separation
+    >>> from m4opt.utils.dynamics import slew_separation
     >>> c1 = SkyCoord(0 * u.deg, 20 * u.deg)
     >>> c2 = SkyCoord(0 * u.deg, 40 * u.deg)
     >>> roll1 = 20 * u.deg

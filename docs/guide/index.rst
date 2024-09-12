@@ -11,5 +11,5 @@ User Guide
    orbit
    skygrid
    milp
-   misc
    missions
+   utils
