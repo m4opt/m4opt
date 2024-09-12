@@ -40,7 +40,7 @@ def clump_nonzero(a):
     >>> clump_nonzero([[1, 1, 1, 1, 1, 1]])
     [array([[0, 6]])]
     >>> clump_nonzero([[0, 0, 0, 0, 0, 0]])
-    [array([], dtype=int64)]
+    [array([], shape=(0, 2), dtype=int64)]
 
     See also
     --------
@@ -52,6 +52,6 @@ def clump_nonzero(a):
         np.asarray(
             [(slice.start, slice.stop) for slice in np.ma.clump_masked(row)],
             dtype=np.intp,
-        )
+        ).reshape((-1, 2))
         for row in masked_array
     ]
