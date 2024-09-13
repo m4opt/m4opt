@@ -6,6 +6,7 @@ import click
 import numpy as np
 import typer
 from astropy import units as u
+from astropy.coordinates import ICRS
 from astropy.table import QTable
 from astropy.time import Time
 from astropy_healpix import HEALPix
@@ -125,7 +126,7 @@ def schedule(
 ):
     """Schedule a target of opportunity observation."""
     with status("loading sky map"):
-        hpx = HEALPix(nside, order="nested")
+        hpx = HEALPix(nside, frame=ICRS(), order="nested")
         skymap_moc = read_sky_map(skymap, moc=True)
         probs = rasterize(skymap_moc["UNIQ", "PROBDENSITY"], hpx.level)["PROB"]
         event_time = Time(
