@@ -7,6 +7,6 @@ this package is more organized.
 """
 
 from ._roll import nominal_roll
-from ._slew import slew_separation, slew_time
+from ._slew import Slew
 
-__all__ = ("nominal_roll", "slew_separation", "slew_time")
+__all__ = ("nominal_roll", "Slew")

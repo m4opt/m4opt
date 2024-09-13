@@ -13,6 +13,7 @@ from ..constraints import (
 from ..models import Detector, DustExtinction
 from ..models.background import ZodiacalBackground
 from ..orbit import TLE
+from ..utils.dynamics import Slew
 from ._core import Mission
 
 
@@ -66,6 +67,11 @@ uvex = Mission(
     # within the square field of view (so that each field is fully covered
     # at all roll angles).
     skygrid=skygrid.geodesic(7.7 * u.deg**2, class_="III", base="icosahedron"),
+    # Made up slew model.
+    slew=Slew(
+        max_angular_velocity=0.1 * u.deg / u.s,
+        max_angular_acceleration=0.2 * u.deg / u.s**2,
+    ),
 )
 uvex.__doc__ = """UVEX, the UltraViolet EXplorer.
 
