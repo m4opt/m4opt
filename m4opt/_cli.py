@@ -121,7 +121,7 @@ def schedule(
         ),
     ] = 0,
 ):
-    """Schedule a ToO observation."""
+    """Schedule a target of opportunity observation."""
     with status("loading sky map"):
         hpx = HEALPix(nside, order="nested")
         skymap_table = read_sky_map(skymap, moc=True)
