@@ -89,7 +89,7 @@ types.
 
         ax = axrow[2]
         pixels = np.unique(
-            np.concatenate(footprint_healpix(hpx.nside, region, target_coords).ravel())
+            np.concatenate(footprint_healpix(hpx, region, target_coords).ravel())
         )
         for verts in hpx.boundaries_skycoord(pixels, 1):
             ax.add_patch(

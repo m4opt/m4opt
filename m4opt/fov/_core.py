@@ -2,6 +2,7 @@ import healpy as hp
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord, SkyOffsetFrame
+from astropy_healpix import HEALPix
 from regions import (
     CircleSkyRegion,
     PolygonSkyRegion,
@@ -10,11 +11,13 @@ from regions import (
     Regions,
 )
 
-query_disc = np.vectorize(hp.query_disc, signature="(),(3),()->()", otypes=[object])
+query_disc = np.vectorize(
+    hp.query_disc, signature="(3),()->()", excluded=[0, "nest"], otypes=[object]
+)
 """Vectorized version of :meth:`healpy.query_disc`."""
 
 query_polygon = np.vectorize(
-    hp.query_polygon, signature="(),(n,3)->()", otypes=[object]
+    hp.query_polygon, signature="(n,3)->()", excluded=[0, "nest"], otypes=[object]
 )
 """Vectorized version of :meth:`healpy.query_polygon`."""
 
@@ -212,31 +215,33 @@ def footprint(
 
 
 def footprint_healpix_inner(
-    nside: int, region: Region | Regions, frame: SkyOffsetFrame
+    hpx: HEALPix, region: Region | Regions, frame: SkyOffsetFrame
 ):
     match region:
         case Regions():
             return concat_healpix(
                 *(
-                    footprint_healpix_inner(nside, subregion, frame)
+                    footprint_healpix_inner(hpx, subregion, frame)
                     for subregion in region.regions
                 )
             )
         case CircleSkyRegion():
             return query_disc(
-                nside,
+                hpx.nside,
                 skycoord_to_healpy_vec(skycoord_to_offset(region.center, frame)),
                 region.radius.to_value(u.rad),
+                nest=hpx.order == "nested",
             )
         case PolygonSkyRegion():
             return query_polygon(
-                nside,
+                hpx.nside,
                 skycoord_to_healpy_vec(
                     skycoord_to_offset(region.vertices, frame[..., np.newaxis])
                 ),
+                nest=hpx.order == "nested",
             )
         case RectangleSkyRegion():
-            return footprint_healpix_inner(nside, rectangle_to_polygon(region), frame)
+            return footprint_healpix_inner(hpx, rectangle_to_polygon(region), frame)
         case _:
             raise NotImplementedError(
                 f"Footprint transformations are not implemented for {region.__class__.__name__}"
@@ -244,7 +249,7 @@ def footprint_healpix_inner(
 
 
 def footprint_healpix(
-    nside: int,
+    hpx: HEALPix,
     region: Region | Regions,
     target_coord: SkyCoord,
     rotation: u.Quantity[u.physical.angle] | None = None,
@@ -265,25 +270,26 @@ def footprint_healpix(
 
     First, some imports:
 
-    >>> from regions import CircleSkyRegion, EllipseSkyRegion, PolygonSkyRegion, RectangleSkyRegion, Regions
-    >>> from astropy.coordinates import SkyCoord
+    >>> from astropy.coordinates import ICRS, SkyCoord
     >>> from astropy import units as u
+    >>> from astropy_healpix import HEALPix
     >>> from m4opt.fov import footprint_healpix
     >>> import numpy as np
+    >>> from regions import CircleSkyRegion, EllipseSkyRegion, PolygonSkyRegion, RectangleSkyRegion, Regions
 
     We support circular FOVs:
 
-    >>> nside = 32
+    >>> hpx = HEALPix(nside=32, frame=ICRS())
     >>> region = CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg)
     >>> target_coord = SkyCoord(5 * u.deg, -5 * u.deg)
-    >>> footprint_healpix(nside, region, target_coord)
+    >>> footprint_healpix(hpx, region, target_coord)
     array([6337, 6465, 6466, 6593, 6594, 6721, 6722, 6849, 6850])
 
     and rectangular FOVs:
 
     >>> region2 = RectangleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 6 * u.deg, 8 * u.deg)
     >>> target_coord = SkyCoord(5 * u.deg, -5 * u.deg)
-    >>> footprint_healpix(nside, region2, target_coord)
+    >>> footprint_healpix(hpx, region2, target_coord)
     array([6209, 6210, 6337, 6338, 6465, 6466, 6593, 6594, 6721, 6722, 6849,
            6850, 6977, 6978])
 
@@ -291,7 +297,7 @@ def footprint_healpix(
 
     >>> ras, decs = np.meshgrid([0, 1], [2, 3]) * u.deg
     >>> target_coords = SkyCoord(ras, decs)
-    >>> footprint_healpix(nside, region, target_coords)
+    >>> footprint_healpix(hpx, region, target_coords)
     array([[array([5696, 5824, 5951, 5952, 5953, 6079, 6080, 6207]),
             array([5568, 5696, 5697, 5824, 5951, 5952, 5953, 6080])],
            [array([5440, 5568, 5695, 5696, 5697, 5823, 5824, 5951, 5952]),
@@ -301,12 +307,12 @@ def footprint_healpix(
     We support polygon regions:
 
     >>> region = PolygonSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))
-    >>> footprint_healpix(nside, region, target_coord)
+    >>> footprint_healpix(hpx, region, target_coord)
     array([6593])
 
     And arrays of target coordinates:
 
-    >>> footprint_healpix(nside, region, target_coords)
+    >>> footprint_healpix(hpx, region, target_coords)
     array([[array([5696, 5824, 5951]), array([5824])],
            [array([5696]), array([5696])]], dtype=object)
 
@@ -315,17 +321,17 @@ def footprint_healpix(
     >>> regions = Regions([
     ...     CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg),
     ...     PolygonSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))])
-    >>> footprint_healpix(nside, regions, target_coord)
+    >>> footprint_healpix(hpx, regions, target_coord)
     array([6337, 6465, 6466, 6593, 6594, 6721, 6722, 6849, 6850])
 
     Not all region types are supported:
 
     >>> region = EllipseSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 5 * u.deg, 2 * u.deg)
-    >>> footprint_healpix(nside, region, target_coord)
+    >>> footprint_healpix(hpx, region, target_coord)
     Traceback (most recent call last):
       ...
     NotImplementedError: Footprint transformations are not implemented for EllipseSkyRegion
     """
     return unwrap_scalar(
-        footprint_healpix_inner(nside, region, target_coord.skyoffset_frame(rotation))
+        footprint_healpix_inner(hpx, region, target_coord.skyoffset_frame(rotation))
     )

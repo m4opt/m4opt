@@ -190,7 +190,7 @@ def schedule(
         # does not change much over the duration.
         rolls = nominal_roll(observer_locations[0], target_coords, event_time)
         footprints = footprint_healpix(
-            nside,
+            hpx,
             mission.fov,
             target_coords,
             rolls,
