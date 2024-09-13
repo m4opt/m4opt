@@ -1,10 +1,14 @@
 import numpy as np
 from astropy import units as u
-from astropy.coordinates import Angle
+from astropy.coordinates import Angle, SkyCoord
 from astropy.coordinates.matrix_utilities import rotation_matrix
 
 
-def slew_time(x, v, a):
+def slew_time(
+    x: u.Quantity[u.physical.angle],
+    v: u.Quantity[u.physical.angular_velocity],
+    a: u.Quantity[u.physical.angular_acceleration],
+) -> u.Quantity[u.physical.time]:
     """Calculate the time to execute an optimal slew of a given distance.
 
     The optimal slew consists of an acceleration phase at the maximum
@@ -35,7 +39,12 @@ def matrix_trace(matrix):
     return np.trace(matrix, axis1=-2, axis2=-1)
 
 
-def slew_separation(center1, center2, roll1=0 * u.rad, roll2=0 * u.rad):
+def slew_separation(
+    center1: SkyCoord,
+    center2: SkyCoord,
+    roll1: u.Quantity[u.physical.angle] = 0 * u.rad,
+    roll2: u.Quantity[u.physical.angle] = 0 * u.rad,
+) -> u.Quantity[u.physical.angle]:
     """
     Determine the smallest angle to slew between two attitudes.
 
