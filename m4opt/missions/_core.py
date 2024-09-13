@@ -7,6 +7,7 @@ from regions import Region, Regions
 from ..constraints import Constraint
 from ..models import Detector
 from ..orbit import Orbit
+from ..utils.dynamics import Slew
 
 
 @dataclass
@@ -27,6 +28,9 @@ class Mission:
 
     orbit: Orbit
     """Orbit of spacecraft."""
+
+    slew: Slew
+    """Slew time model."""
 
     skygrid: SkyCoord
     """Grid of reference pointings."""

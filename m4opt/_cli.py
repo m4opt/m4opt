@@ -238,6 +238,18 @@ def schedule(
 
         pixels_to_fields_map = invert_footprints(footprints, n_pixels)
 
+    with status("calculating slew times"):
+        slew_i, slew_j = np.triu_indices(n_fields, 1)
+        timediff_s = (
+            exptime
+            + mission.slew.time(
+                target_coords[slew_i],
+                target_coords[slew_j],
+                rolls[slew_i],
+                rolls[slew_j],
+            )
+        ).to_value(u.s)
+
     with status("assembling MILP model"):
         model = Model(timelimit=timelimit, jobs=jobs)
         pixel_vars = model.binary_vars(n_pixels)
@@ -264,25 +276,34 @@ def schedule(
                         model.add_indicator(interval_var, start_time_var >= begin)
                         model.add_indicator(interval_var, start_time_var <= end)
 
-        # Add no overlap constraints
-        with status("adding no overlap constraints"):
-            sequence_vars = model.binary_vars(n_fields * (n_fields - 1) // 2)
-            s = sequence_vars
-            for i, (fi, ti) in enumerate(zip(field_vars, start_time_vars)):
-                model.add_indicators(
-                    s[: n_fields - i - 1],
-                    (ti + exptime_s * fi <= tj for tj in start_time_vars[i + 1 :]),
-                    true_values=1,
-                )
-                model.add_indicators(
-                    s[: n_fields - i - 1],
-                    (
-                        tj + exptime_s * fj <= ti
-                        for fj, tj in zip(field_vars[i + 1 :], start_time_vars[i + 1 :])
-                    ),
-                    true_values=0,
-                )
-                s = s[n_fields - i - 1 :]
+        with status("adding slew constraints"):
+            sequence_vars = model.binary_vars(len(slew_i))
+            model.add_indicators(
+                sequence_vars,
+                (
+                    ti + delta * fi <= tj
+                    for fi, ti, tj, delta in zip(
+                        field_vars[slew_i],
+                        start_time_vars[slew_i],
+                        start_time_vars[slew_j],
+                        timediff_s,
+                    )
+                ),
+                true_values=1,
+            )
+            model.add_indicators(
+                sequence_vars,
+                (
+                    tj + delta * fj <= ti
+                    for fj, ti, tj, delta in zip(
+                        field_vars[slew_j],
+                        start_time_vars[slew_i],
+                        start_time_vars[slew_j],
+                        timediff_s,
+                    )
+                ),
+                true_values=0,
+            )
 
         with status("adding coverage constraints"):
             model.add_constraints_(
