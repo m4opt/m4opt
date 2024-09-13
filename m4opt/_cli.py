@@ -2,7 +2,7 @@ import shlex
 import sys
 from contextlib import contextmanager
 from itertools import accumulate, chain
-from typing import Annotated
+from typing import Annotated, Iterable, cast
 
 import click
 import numpy as np
@@ -15,12 +15,15 @@ from astropy.visualization.units import quantity_support as _quantity_support
 from astropy_healpix import HEALPix
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
+from ligo.skymap.plot.allsky import AutoScaledWCSAxes
 from ligo.skymap.plot.poly import cut_prime_meridian
 from ligo.skymap.postprocess import find_greedy_credible_levels
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from matplotlib.transforms import BlendedAffine2D
+from matplotlib.typing import ColorType
 
 from . import missions
 from .fov import footprint, footprint_healpix
@@ -388,7 +391,8 @@ def animate(
         with status("setting up axes"):
             fig = plt.figure()
             gs = fig.add_gridspec(2, 1, height_ratios=[4, 1])
-
+            colormap = plt.get_cmap("Paired")
+            assert isinstance(colormap, ListedColormap)
             (
                 field_of_regard_color,
                 averaged_field_of_regard_color,
@@ -397,10 +401,11 @@ def animate(
                 _,
                 footprint_color,
                 *_,
-            ) = plt.get_cmap("Paired").colors
+            ) = cast(Iterable[ColorType], colormap.colors)
             now_color = "black"
 
             ax_map = fig.add_subplot(gs[0], projection="astro hours mollweide")
+            assert isinstance(ax_map, AutoScaledWCSAxes)
             transform = ax_map.get_transform("world")
             ax_map.add_artist(
                 ax_map.legend(
