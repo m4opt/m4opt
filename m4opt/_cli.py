@@ -69,7 +69,14 @@ def invert_footprints(footprints, n_pixels):
 @progress()
 @u.quantity_input
 def schedule(
-    skymap: Annotated[typer.FileBinaryRead, typer.Argument(help="Sky map filename")],
+    skymap: Annotated[
+        typer.FileBinaryRead,
+        typer.Argument(help="Sky map filename", metavar="INPUT.multiorder.fits"),
+    ],
+    output: Annotated[
+        typer.FileTextWrite,
+        typer.Argument(help="Output filename", metavar="OUTPUT.ecsv"),
+    ],
     mission: MissionOption = missions.uvex,
     delay: Annotated[
         u.Quantity[u.physical.time],
@@ -312,4 +319,4 @@ def schedule(
         )
         table["observer_location"].info.description = "Position of the spacecraft"
         table.sort("start_time")
-        table.write("example.ecsv", overwrite=True)
+        table.write(output, format="ascii.ecsv", overwrite=True)
