@@ -13,6 +13,9 @@ from ..orbit import Orbit
 class Mission:
     """Base class for all missions."""
 
+    name: str
+    """Name of the mission."""
+
     fov: Region | Regions
     """Instrument field of view."""
 

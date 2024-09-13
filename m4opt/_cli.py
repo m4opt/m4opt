@@ -1,5 +1,7 @@
 import shlex
 import sys
+from contextlib import contextmanager
+from itertools import accumulate, chain
 from typing import Annotated
 
 import click
@@ -9,12 +11,19 @@ from astropy import units as u
 from astropy.coordinates import ICRS
 from astropy.table import QTable
 from astropy.time import Time
+from astropy.visualization.units import quantity_support as _quantity_support
 from astropy_healpix import HEALPix
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
+from ligo.skymap.plot.poly import cut_prime_meridian
+from ligo.skymap.postprocess import find_greedy_credible_levels
+from matplotlib import pyplot as plt
+from matplotlib.animation import FuncAnimation
+from matplotlib.patches import Patch
+from matplotlib.transforms import BlendedAffine2D
 
 from . import missions
-from .fov import footprint_healpix
+from .fov import footprint, footprint_healpix
 from .milp import Model
 from .utils.console import progress, status
 from .utils.dynamics import nominal_roll
@@ -312,6 +321,7 @@ def schedule(
                 "args": {
                     "deadline": deadline,
                     "delay": delay,
+                    "mission": mission.name,
                     "nside": nside,
                     "time_step": time_step,
                     "skymap": skymap.name,
@@ -330,3 +340,240 @@ def schedule(
         table["observer_location"].info.description = "Position of the spacecraft"
         table.sort("start_time")
         table.write(schedule, format="ascii.ecsv", overwrite=True)
+
+
+@contextmanager
+def quantity_support(*args, **kwargs):
+    """Workaround for https://github.com/astropy/astropy/pull/17006."""
+    with _quantity_support(*args, **kwargs):
+        yield
+
+
+@app.command()
+@progress()
+@quantity_support()
+def animate(
+    schedule: Annotated[
+        typer.FileBinaryRead,
+        typer.Argument(help="Input filename for schedule", metavar="SCHEDULE.ecsv"),
+    ],
+    output: Annotated[
+        typer.FileBinaryWrite,
+        typer.Argument(help="Output filename for animation", metavar="MOVIE.gif"),
+    ],
+    time_step: Annotated[
+        u.Quantity[u.physical.time],
+        typer.Option(
+            parser=u.Quantity,
+            help="Time step for evaluating field of regard",
+        ),
+    ] = "1 hour",
+):
+    with status("loading schedule"):
+        table = QTable.read(schedule, format="ascii.ecsv")
+        deadline = table.meta["args"]["deadline"]
+        delay = table.meta["args"]["delay"]
+        nside = table.meta["args"]["nside"]
+        skymap = table.meta["args"]["skymap"]
+
+    with status("loading sky map"):
+        hpx = HEALPix(nside, frame=ICRS(), order="nested")
+        skymap_moc = read_sky_map(skymap, moc=True)
+        probs = rasterize(skymap_moc["UNIQ", "PROBDENSITY"], hpx.level)["PROB"]
+        event_time = Time(
+            Time(skymap_moc.meta["gps_time"], format="gps").utc, format="iso"
+        )
+
+    with status("making animation"):
+        with status("setting up axes"):
+            fig = plt.figure()
+            gs = fig.add_gridspec(3, 1, height_ratios=[3, 0.5, 1])
+
+            (
+                skymap_style,
+                footprint_style,
+                *_,
+            ) = plt.rcParams["axes.prop_cycle"]
+            averaged_field_of_regard_style = {"color": "gray"}
+            instantaneous_field_of_regard_style = {"color": "darkgray"}
+            now_style = {"color": "black"}
+
+            ax_legend = fig.add_subplot(gs[1], frame_on=False)
+            ax_legend.set_xticks([])
+            ax_legend.set_yticks([])
+            ax_legend.legend(
+                [
+                    Patch(facecolor=averaged_field_of_regard_style["color"]),
+                    Patch(
+                        facecolor=instantaneous_field_of_regard_style["color"],
+                    ),
+                    Patch(facecolor=footprint_style["color"]),
+                    Patch(facecolor="none", edgecolor=skymap_style["color"]),
+                ],
+                [
+                    "outside averaged field of regard",
+                    "outside instantaneous field of regard",
+                    "observation footprints",
+                    "90% credible region",
+                ],
+                loc="upper left",
+                fontsize="small",
+                mode="expand",
+                ncols=2,
+            )
+
+            ax_map = fig.add_subplot(gs[0], projection="astro hours mollweide")
+            transform = ax_map.get_transform("world")
+
+            mission: missions.Mission = getattr(missions, table.meta["args"]["mission"])
+            time_steps = (
+                event_time
+                + np.arange(
+                    0,
+                    (deadline + time_step).to_value(u.s),
+                    time_step.to_value(u.s),
+                )
+                * u.s
+            )
+
+            cls = find_greedy_credible_levels(probs)
+            ax_map.contour_hpx(
+                cls, levels=[0.9], colors=[skymap_style["color"]], nested=True
+            )
+            ax_map.grid()
+
+            observer_locations = mission.orbit(time_steps).earth_location
+
+        with status("adding field of regard"):
+            instantaneous_field_of_regard = np.logical_and.reduce(
+                [
+                    constraint(
+                        observer_locations[:, np.newaxis],
+                        hpx.healpix_to_skycoord(np.arange(hpx.npix)),
+                        time_steps[:, np.newaxis],
+                    )
+                    for constraint in mission.constraints
+                ],
+                axis=0,
+            )
+            averaged_field_of_regard = np.logical_or.reduce(
+                instantaneous_field_of_regard, axis=0
+            )
+            ax_map.contourf_hpx(
+                averaged_field_of_regard,
+                nested=True,
+                levels=[-1, 0.5],
+                colors=[averaged_field_of_regard_style["color"]],
+                zorder=1.1,
+            )
+
+        with status("adding observation footprints"):
+            footprint_patches = [
+                [
+                    plt.Polygon(
+                        np.rad2deg(vertices),
+                        transform=transform,
+                        visible=False,
+                        facecolor=footprint_style["color"],
+                    )
+                    for vertices in cut_prime_meridian(
+                        np.column_stack(
+                            (region.vertices.ra.rad, region.vertices.dec.rad)
+                        )
+                    )
+                ]
+                for region in footprint(
+                    mission.fov, table["target_coord"], table["roll"]
+                )
+            ]
+            for patch in chain.from_iterable(footprint_patches):
+                ax_map.add_patch(patch)
+
+            table["prob"] = list(
+                map(
+                    lambda pixels: probs[pixels].sum(),
+                    accumulate(
+                        footprint_healpix(
+                            hpx, mission.fov, table["target_coord"], table["roll"]
+                        ),
+                        lambda *args: np.unique(np.concatenate(args)),
+                    ),
+                )
+            )
+
+            ax_timeline = fig.add_subplot(gs[2])
+            ax_timeline.step(
+                (table["end_time"] - time_steps[0]).to(u.hour),
+                table["prob"],
+                **skymap_style,
+                where="post",
+                label="cumulative probability",
+            )
+            ax_timeline.set_xlim(0 * u.hour, deadline)
+            ax_timeline.set_xlabel(f"time in hours since event at {event_time}")
+            ax_timeline.set_ylim(0, 1)
+            ax_timeline.set_ylabel("probability")
+            now_line = ax_timeline.axvline(
+                (time_steps[0] - event_time).to(u.hour),
+                **now_style,
+                label="current time",
+            )
+            now_label = ax_timeline.text(
+                (time_steps[0] - event_time).to(u.hour),
+                1,
+                "now",
+                ha="center",
+                va="bottom",
+                color=now_style["color"],
+                transform=BlendedAffine2D(ax_timeline.transData, ax_timeline.transAxes),
+            )
+            ax_timeline.axvspan(0 * u.hour, delay, color="lightgray")
+            ax_timeline.text(
+                delay,
+                0.5,
+                "delay",
+                rotation=90,
+                rotation_mode="anchor",
+                horizontalalignment="center",
+                verticalalignment="bottom",
+                transform=BlendedAffine2D(ax_timeline.transData, ax_timeline.transAxes),
+            )
+
+        with status("rendering frames"):
+            field_of_regard_artist = None
+
+            def draw_frame(args):
+                time, field_of_regard = args
+                blit = [now_line, now_label]
+                time_from_start = (time - event_time).to(u.hour)
+                now_line.set_xdata([time_from_start])
+                now_label.set_x(time_from_start)
+                for patches, visible in zip(
+                    footprint_patches, table["start_time"] <= time
+                ):
+                    for patch in patches:
+                        if visible != patch.get_visible():
+                            patch.set_visible(visible)
+                            blit.append(patch)
+
+                nonlocal field_of_regard_artist
+                if field_of_regard_artist is not None:
+                    blit.append(field_of_regard_artist)
+                    field_of_regard_artist.remove()
+                field_of_regard_artist = ax_map.contourf_hpx(
+                    field_of_regard,
+                    nested=True,
+                    colors=[instantaneous_field_of_regard_style["color"]],
+                    levels=[-1, 0.5],
+                )
+                blit.append(field_of_regard_artist)
+
+                return blit
+
+            FuncAnimation(
+                fig,
+                draw_frame,
+                frames=zip(time_steps, instantaneous_field_of_regard),
+                save_count=len(time_steps),
+                blit=True,
+            ).save(output.name)

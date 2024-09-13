@@ -21,6 +21,7 @@ def box_for_lo_hi(lo, hi):
 
 
 uvex = Mission(
+    name="uvex",
     fov=RectangleSkyRegion(
         center=SkyCoord(0 * u.deg, 0 * u.deg), width=3.5 * u.deg, height=3.5 * u.deg
     ),
