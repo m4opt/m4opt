@@ -310,6 +310,6 @@ def schedule(
             index=2,
             name="observer_location",
         )
-        table["observer_location"].description = "Position of the spacecraft"
+        table["observer_location"].info.description = "Position of the spacecraft"
         table.sort("start_time")
         table.write("example.ecsv", overwrite=True)
