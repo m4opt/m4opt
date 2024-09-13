@@ -416,7 +416,7 @@ def animate(
                     "observation footprints",
                     "90% credible region",
                 ],
-                loc="upper left",
+                loc="lower left",
                 fontsize="small",
                 mode="expand",
                 ncols=2,
