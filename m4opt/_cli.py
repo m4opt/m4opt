@@ -299,12 +299,12 @@ def schedule(
     with status("writing results"):
         if solution is None:
             field_values = np.zeros(n_fields, dtype=bool)
+            start_time_values = np.zeros(n_fields)
             objective_value = 0.0
         else:
             field_values = np.asarray(solution.get_values(field_vars), dtype=bool)
+            start_time_values = np.asarray(solution.get_values(start_time_vars))
             objective_value = solution.get_objective_value()
-
-        start_time_values = np.asarray(solution.get_values(start_time_vars))
 
         table = QTable(
             {
