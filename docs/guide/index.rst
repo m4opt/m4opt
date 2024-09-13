@@ -13,3 +13,4 @@ User Guide
    milp
    missions
    utils
+   cli

@@ -255,3 +255,7 @@ plot_html_show_formats = False
 # -- Options for the sphinx.ext.todo extension --------------------------------
 # extensions += ['sphinx.ext.todo']
 todo_include_todos = True
+
+
+# -- Options for the sphinxcontrib.typer extension ----------------------------
+extensions += ["sphinxcontrib.typer"]
