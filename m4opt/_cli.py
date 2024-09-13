@@ -387,43 +387,54 @@ def animate(
     with status("making animation"):
         with status("setting up axes"):
             fig = plt.figure()
-            gs = fig.add_gridspec(3, 1, height_ratios=[3, 0.5, 1])
+            gs = fig.add_gridspec(2, 1, height_ratios=[4, 1])
 
             (
-                skymap_style,
-                footprint_style,
+                field_of_regard_color,
+                averaged_field_of_regard_color,
+                _,
+                skymap_color,
+                _,
+                footprint_color,
                 *_,
-            ) = plt.rcParams["axes.prop_cycle"]
-            averaged_field_of_regard_style = {"color": "gray"}
-            instantaneous_field_of_regard_style = {"color": "darkgray"}
-            now_style = {"color": "black"}
-
-            ax_legend = fig.add_subplot(gs[1], frame_on=False)
-            ax_legend.set_xticks([])
-            ax_legend.set_yticks([])
-            ax_legend.legend(
-                [
-                    Patch(facecolor=averaged_field_of_regard_style["color"]),
-                    Patch(
-                        facecolor=instantaneous_field_of_regard_style["color"],
-                    ),
-                    Patch(facecolor=footprint_style["color"]),
-                    Patch(facecolor="none", edgecolor=skymap_style["color"]),
-                ],
-                [
-                    "outside averaged field of regard",
-                    "outside instantaneous field of regard",
-                    "observation footprints",
-                    "90% credible region",
-                ],
-                loc="lower left",
-                fontsize="small",
-                mode="expand",
-                ncols=2,
-            )
+            ) = plt.get_cmap("Paired").colors
+            now_color = "black"
 
             ax_map = fig.add_subplot(gs[0], projection="astro hours mollweide")
             transform = ax_map.get_transform("world")
+            ax_map.add_artist(
+                ax_map.legend(
+                    [
+                        Patch(facecolor=footprint_color),
+                        Patch(facecolor="none", edgecolor=skymap_color),
+                    ],
+                    [
+                        "observation footprints",
+                        "90% credible region",
+                    ],
+                    loc="upper left",
+                    borderaxespad=0,
+                    bbox_to_anchor=[0, 1],
+                    bbox_transform=fig.transFigure,
+                )
+            )
+            ax_map.legend(
+                [
+                    Patch(facecolor=averaged_field_of_regard_color),
+                    Patch(
+                        facecolor=field_of_regard_color,
+                    ),
+                ],
+                [
+                    "averaged",
+                    "instantaneous",
+                ],
+                loc="upper right",
+                title="outside field of regard",
+                borderaxespad=0,
+                bbox_to_anchor=[1, 1],
+                bbox_transform=fig.transFigure,
+            )
 
             mission: missions.Mission = getattr(missions, table.meta["args"]["mission"])
             time_steps = (
@@ -437,9 +448,7 @@ def animate(
             )
 
             cls = find_greedy_credible_levels(probs)
-            ax_map.contour_hpx(
-                cls, levels=[0.9], colors=[skymap_style["color"]], nested=True
-            )
+            ax_map.contour_hpx(cls, levels=[0.9], colors=[skymap_color], nested=True)
             ax_map.grid()
 
             observer_locations = mission.orbit(time_steps).earth_location
@@ -463,7 +472,7 @@ def animate(
                 averaged_field_of_regard,
                 nested=True,
                 levels=[-1, 0.5],
-                colors=[averaged_field_of_regard_style["color"]],
+                colors=[averaged_field_of_regard_color],
                 zorder=1.1,
             )
 
@@ -474,7 +483,7 @@ def animate(
                         np.rad2deg(vertices),
                         transform=transform,
                         visible=False,
-                        facecolor=footprint_style["color"],
+                        facecolor=footprint_color,
                     )
                     for vertices in cut_prime_meridian(
                         np.column_stack(
@@ -489,9 +498,9 @@ def animate(
             for patch in chain.from_iterable(footprint_patches):
                 ax_map.add_patch(patch)
 
-            table["prob"] = list(
-                map(
-                    lambda pixels: probs[pixels].sum(),
+            table["area"], table["prob"] = zip(
+                *map(
+                    lambda pixels: [len(pixels) * hpx.pixel_area, probs[pixels].sum()],
                     accumulate(
                         footprint_healpix(
                             hpx, mission.fov, table["target_coord"], table["roll"]
@@ -501,22 +510,38 @@ def animate(
                 )
             )
 
-            ax_timeline = fig.add_subplot(gs[2])
-            ax_timeline.step(
-                (table["end_time"] - time_steps[0]).to(u.hour),
-                table["prob"],
-                **skymap_style,
-                where="post",
-                label="cumulative probability",
-            )
+            ax_timeline = fig.add_subplot(gs[1])
             ax_timeline.set_xlim(0 * u.hour, deadline)
             ax_timeline.set_xlabel(f"time in hours since event at {event_time}")
             ax_timeline.set_ylim(0, 1)
-            ax_timeline.set_ylabel("probability")
+            ax_timeline.yaxis.set_tick_params(
+                color=skymap_color, labelcolor=skymap_color
+            )
+            ax_timeline.set_ylabel("probability", color=skymap_color)
+
+            ax_area = ax_timeline.twinx()
+            ax_area.yaxis.set_tick_params(
+                color=footprint_color, labelcolor=footprint_color
+            )
+            ax_area.set_ylabel("area (deg$^2$)", color=footprint_color)
+
+            ax_timeline.step(
+                (table["end_time"] - time_steps[0]).to(u.hour),
+                table["prob"],
+                color=skymap_color,
+                where="post",
+            )
+            ax_area.step(
+                (table["end_time"] - time_steps[0]).to(u.hour),
+                table["area"],
+                color=footprint_color,
+                where="post",
+            )
+            ax_area.set_ylim(0 * u.deg**2)
+
             now_line = ax_timeline.axvline(
                 (time_steps[0] - event_time).to(u.hour),
-                **now_style,
-                label="current time",
+                color=now_color,
             )
             now_label = ax_timeline.text(
                 (time_steps[0] - event_time).to(u.hour),
@@ -524,7 +549,7 @@ def animate(
                 "now",
                 ha="center",
                 va="bottom",
-                color=now_style["color"],
+                color=now_color,
                 transform=BlendedAffine2D(ax_timeline.transData, ax_timeline.transAxes),
             )
             ax_timeline.axvspan(0 * u.hour, delay, color="lightgray")
@@ -563,7 +588,7 @@ def animate(
                 field_of_regard_artist = ax_map.contourf_hpx(
                     field_of_regard,
                     nested=True,
-                    colors=[instantaneous_field_of_regard_style["color"]],
+                    colors=[field_of_regard_color],
                     levels=[-1, 0.5],
                 )
                 blit.append(field_of_regard_artist)
