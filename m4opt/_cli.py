@@ -308,6 +308,13 @@ def schedule(
             },
             meta={
                 "command": shlex.join(sys.argv),
+                "args": {
+                    "deadline": deadline,
+                    "delay": delay,
+                    "nside": nside,
+                    "time_step": time_step,
+                    "skymap": skymap.name,
+                },
                 "objective_value": objective_value,
                 "best_bound": model.solve_details.best_bound,
                 "solution_status": model.solve_details.status,
