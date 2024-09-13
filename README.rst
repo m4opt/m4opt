@@ -11,6 +11,9 @@ Multi-Mission Multi-Messenger Observation Planning Toolkit
     :target: https://m4opt.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
+.. image:: docs/_static/example.gif
+    :alt: Visualization of an example observing plan for UVEX generated M4OPT
+
 M4OPT is an open-source toolkit for multi-facility scheduling of astrophysics
 observing campaigns. It focuses on extremely rapid follow-up of gravitational
 wave (GW) and neutrino events with heterogeneous networks of space and
