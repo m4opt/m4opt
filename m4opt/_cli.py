@@ -124,10 +124,10 @@ def schedule(
     """Schedule a target of opportunity observation."""
     with status("loading sky map"):
         hpx = HEALPix(nside, order="nested")
-        skymap_table = read_sky_map(skymap, moc=True)
-        probs = rasterize(skymap_table["UNIQ", "PROBDENSITY"], hpx.level)["PROB"]
+        skymap_moc = read_sky_map(skymap, moc=True)
+        probs = rasterize(skymap_moc["UNIQ", "PROBDENSITY"], hpx.level)["PROB"]
         event_time = Time(
-            Time(skymap_table.meta["gps_time"], format="gps").utc, format="iso"
+            Time(skymap_moc.meta["gps_time"], format="gps").utc, format="iso"
         )
 
     with status("propagating orbit"):
