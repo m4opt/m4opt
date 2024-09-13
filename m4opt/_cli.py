@@ -73,9 +73,11 @@ def schedule(
         typer.FileBinaryRead,
         typer.Argument(help="Sky map filename", metavar="INPUT.multiorder.fits"),
     ],
-    output: Annotated[
+    schedule: Annotated[
         typer.FileTextWrite,
-        typer.Argument(help="Output filename", metavar="OUTPUT.ecsv"),
+        typer.Argument(
+            help="Output filename for generated schedule", metavar="SCHEDULE.ecsv"
+        ),
     ],
     mission: MissionOption = missions.uvex,
     delay: Annotated[
@@ -319,4 +321,4 @@ def schedule(
         )
         table["observer_location"].info.description = "Position of the spacecraft"
         table.sort("start_time")
-        table.write(output, format="ascii.ecsv", overwrite=True)
+        table.write(schedule, format="ascii.ecsv", overwrite=True)
