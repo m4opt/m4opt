@@ -277,33 +277,14 @@ def schedule(
                         model.add_indicator(interval_var, start_time_var <= end)
 
         with status("adding slew constraints"):
-            sequence_vars = model.binary_vars(len(slew_i))
-            model.add_indicators(
-                sequence_vars,
-                (
-                    ti + delta * fi <= tj
-                    for fi, ti, tj, delta in zip(
-                        field_vars[slew_i],
-                        start_time_vars[slew_i],
-                        start_time_vars[slew_j],
-                        timediff_s,
-                    )
-                ),
-                true_values=1,
-            )
-            model.add_indicators(
-                sequence_vars,
-                (
-                    tj + delta * fj <= ti
-                    for fj, ti, tj, delta in zip(
-                        field_vars[slew_j],
-                        start_time_vars[slew_i],
-                        start_time_vars[slew_j],
-                        timediff_s,
-                    )
-                ),
-                true_values=0,
-            )
+            for fi, fj, ti, tj, delta in zip(
+                field_vars[slew_i],
+                field_vars[slew_j],
+                start_time_vars[slew_i],
+                start_time_vars[slew_j],
+                timediff_s,
+            ):
+                model.add_if_then(fi + fj >= 2, model.abs(ti - tj) >= delta)
 
         with status("adding coverage constraints"):
             model.add_constraints_(
