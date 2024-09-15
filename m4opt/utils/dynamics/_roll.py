@@ -64,6 +64,38 @@ def nominal_roll(
         ax.set_ylabel('Nominal roll angle (°)')
         ax.legend(title='Ecliptic latitude')
 
+    .. plot::
+        :caption: Maximum rate of change of nominal roll angle as a function of ecliptic latitude
+        :include-source: False
+
+        from astropy.coordinates import EarthLocation, GeocentricMeanEcliptic, SkyCoord
+        from astropy.time import Time
+        from astropy import units as u
+        from matplotlib import pyplot as plt
+        from m4opt.utils.dynamics import nominal_roll
+        import numpy as np
+
+        # Place the observer at the center of the Earth.
+        # Note that for observers in Earth orbit, the impact of the orbital phase
+        # is negligible because the orbit is much smaller than the Earth-Sun distance.
+        observer_location = EarthLocation.from_geocentric(0, 0, 0, unit=u.m)
+        obstime = Time('2024-01-1') + np.linspace(0, 1, 1000) * u.year
+
+        lat = np.linspace(0, 90, 2000) * u.deg
+        target_coord = SkyCoord(0 * u.deg, lat[:, np.newaxis], frame=GeocentricMeanEcliptic)
+        roll = nominal_roll(observer_location, target_coord, obstime)
+        d_roll = np.abs(np.diff(np.unwrap(roll, period=360 * u.deg, axis=1), axis=1)).max(axis=1)
+        d_t = obstime[1] - obstime[0]
+
+        fig, ax = plt.subplots()
+        ax.plot(lat, d_roll / d_t)
+        ax.set_yscale('log')
+        ax.set_xlabel('Ecliptic latitude')
+        ax.set_ylabel('Max rate of chang of roll angle (°/day)')
+        ax.grid()
+        ax.set_xlim(0, 90)
+        ax.set_ylim(1, 1e3)
+
     You can compute the nominal roll angle for a particular observation:
 
     >>> from astropy.coordinates import GCRS, EarthLocation, SkyCoord
