@@ -121,11 +121,6 @@ def schedule(
             help="Exposure time for each observation",
         ),
     ] = "900 s",
-    visits: Annotated[int, typer.Option(min=1, help="Number of visits")] = 2,
-    cadence: Annotated[
-        u.Quantity[u.physical.time],
-        typer.Option(parser=u.Quantity, help="Minimum time separation between visits"),
-    ] = "30 min",
     timelimit: Annotated[
         u.Quantity[u.physical.time],
         typer.Option(
