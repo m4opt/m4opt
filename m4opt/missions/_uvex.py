@@ -51,7 +51,7 @@ uvex = Mission(
         # About half of the light goes into each filter due the dichroic.
         gain=0.5,
         # "...an effective aperture of 75cm."
-        area=np.pi * (0.5 * 75) * u.cm**2,
+        area=np.pi * np.square(0.5 * 75 * u.cm),
         bandpasses={
             "NUV": box_for_lo_hi(2030 * u.angstrom, 2700 * u.angstrom),
             "FUV": box_for_lo_hi(1390 * u.angstrom, 1900 * u.angstrom),
