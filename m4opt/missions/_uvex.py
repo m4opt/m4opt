@@ -48,6 +48,8 @@ uvex = Mission(
         # Wild guesses
         dark_noise=0.0001 / u.s,
         read_noise=1,
+        # About half of the light goes into each filter due the dichroic.
+        gain=0.5,
         # "...an effective aperture of 75cm."
         area=np.pi * (0.5 * 75) * u.cm**2,
         bandpasses={

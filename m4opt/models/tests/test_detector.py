@@ -15,13 +15,14 @@ from ..background import ZodiacalBackground
     plate_scale=st.floats(min_value=0, max_value=1e30, exclude_min=True),
     dark_noise=st.floats(min_value=0, max_value=1e30, exclude_min=True),
     read_noise=st.floats(min_value=0, max_value=1e30, exclude_min=True),
+    gain=st.floats(min_value=0, max_value=1, exclude_min=True),
     area=st.floats(min_value=0, max_value=1e30, exclude_min=True),
     exptime=st.floats(min_value=0, max_value=1e30),
 )
 @settings(deadline=None, suppress_health_check=[HealthCheck.filter_too_much])
 @np.errstate(divide="ignore", invalid="ignore", over="ignore")
 def test_snr_exptime_roundtrip(
-    npix, aperture_correction, plate_scale, dark_noise, read_noise, area, exptime
+    npix, aperture_correction, plate_scale, dark_noise, read_noise, gain, area, exptime
 ):
     detector = Detector(
         npix=npix,
@@ -29,6 +30,7 @@ def test_snr_exptime_roundtrip(
         plate_scale=plate_scale * u.steradian,
         dark_noise=dark_noise * u.Hz,
         read_noise=read_noise,
+        gain=gain,
         area=area * u.cm**2,
         bandpasses={"R": SpectralElement.from_filter("johnson_r")},
         background=ZodiacalBackground.high(),
@@ -50,6 +52,7 @@ def test_snr_exptime_roundtrip(
     plate_scale=st.floats(min_value=0, max_value=1e30, exclude_min=True),
     dark_noise=st.floats(min_value=0, max_value=1e30, exclude_min=True),
     read_noise=st.floats(min_value=0, max_value=1e30, exclude_min=True),
+    gain=st.floats(min_value=0, max_value=1, exclude_min=True),
     area=st.floats(min_value=0, max_value=1e30, exclude_min=True),
     exptime=st.floats(min_value=0, max_value=1e30),
     snr=st.floats(min_value=0),
@@ -57,7 +60,15 @@ def test_snr_exptime_roundtrip(
 @settings(deadline=None, suppress_health_check=[HealthCheck.filter_too_much])
 @np.errstate(divide="ignore", invalid="ignore", over="ignore")
 def test_limmag_snr_roundtrip(
-    npix, aperture_correction, plate_scale, dark_noise, read_noise, area, exptime, snr
+    npix,
+    aperture_correction,
+    plate_scale,
+    dark_noise,
+    read_noise,
+    gain,
+    area,
+    exptime,
+    snr,
 ):
     detector = Detector(
         npix=npix,
@@ -65,6 +76,7 @@ def test_limmag_snr_roundtrip(
         plate_scale=plate_scale * u.steradian,
         dark_noise=dark_noise * u.Hz,
         read_noise=read_noise,
+        gain=gain,
         area=area * u.cm**2,
         bandpasses={"R": SpectralElement.from_filter("johnson_r")},
         background=ZodiacalBackground.high(),
