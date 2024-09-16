@@ -11,7 +11,7 @@ from ..constraints import (
     SunSeparationConstraint,
 )
 from ..models import Detector
-from ..models.background import ZodiacalBackground
+from ..models.background import GalacticBackground, ZodiacalBackground
 from ..orbit import TLE
 from ..utils.dynamics import Slew
 from ._core import Mission
@@ -54,7 +54,7 @@ uvex = Mission(
             "NUV": box_for_lo_hi(2030 * u.angstrom, 2700 * u.angstrom),
             "FUV": box_for_lo_hi(1390 * u.angstrom, 1900 * u.angstrom),
         },
-        background=ZodiacalBackground(),
+        background=GalacticBackground() + ZodiacalBackground(),
     ),
     # UVEX will be in a highly elliptical TESS-like orbit.
     # This is the TESS TLE downloaded from Celestrak at 2024-09-10T00:43:57Z.
