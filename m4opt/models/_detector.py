@@ -19,6 +19,13 @@ def exptime_oir_ccd(snr, source_eps, sky_eps, dark_eps, rd, npix, gain=1.0):
     return 0.5 * snr * (c2 + np.sqrt(4 * c1 * c3 + np.square(c2))) / c1
 
 
+def amplitude_oir_ccd(snr, t, source_eps, sky_eps, dark_eps, rd, npix, gain=1.0):
+    """Inverse of :meth:`astropy.stats.signal_to_noise_oir_ccd`."""
+    c1 = t * source_eps * gain
+    c2 = npix * (t * (sky_eps * gain + dark_eps) + np.square(rd))
+    return 0.5 * snr * (snr + np.sqrt(4 * c2 + np.square(snr))) / c1
+
+
 @dataclass
 class Detector:
     """Sensitivity calculator: compute SNR for exposure time or vice-versa."""
@@ -94,4 +101,26 @@ class Detector:
             self.dark_noise,
             self.read_noise,
             self.npix,
+        )
+
+    def get_limmag(
+        self,
+        snr: float,
+        exptime: u.Quantity[u.physical.time],
+        wavelength: u.Quantity[u.physical.length],
+        source_spectrum: Model,
+        bandpass: Hashable | None = None,
+    ):
+        src, bkg = self._get_count_rates(source_spectrum, bandpass)
+        a = amplitude_oir_ccd(
+            snr,
+            exptime,
+            src,
+            bkg,
+            self.dark_noise,
+            self.read_noise,
+            self.npix,
+        )
+        return (a * source_spectrum(wavelength)).to(
+            u.ABmag, equivalencies=u.spectral_density(wavelength)
         )
