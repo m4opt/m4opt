@@ -30,7 +30,7 @@ from .fov import footprint, footprint_healpix
 from .milp import Model
 from .utils.console import progress, status
 from .utils.dynamics import nominal_roll
-from .utils.numpy import arange_with_units, clump_nonzero
+from .utils.numpy import arange_with_units, clump_nonzero, full_indices
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
 
@@ -121,6 +121,11 @@ def schedule(
             help="Exposure time for each observation",
         ),
     ] = "900 s",
+    visits: Annotated[int, typer.Option(min=1, help="Number of visits")] = 2,
+    cadence: Annotated[
+        u.Quantity[u.physical.time],
+        typer.Option(parser=u.Quantity, help="Minimum time separation between visits"),
+    ] = "30 min",
     timelimit: Annotated[
         u.Quantity[u.physical.time],
         typer.Option(
@@ -156,6 +161,7 @@ def schedule(
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
         exptime_s = exptime.to_value(u.s)
+        cadence_s = cadence.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
         observable_intervals = np.asarray(
             [
@@ -208,8 +214,8 @@ def schedule(
         rolls = nominal_roll(observer_locations[0], target_coords, event_time)
         footprints = footprint_healpix(hpx, mission.fov, target_coords, rolls)
 
-        # Select only the most probable 100 fields.
-        n_fields = 100
+        # Select only the most probable 50 fields.
+        n_fields = 50
         if len(target_coords) > n_fields:
             good = np.argpartition(
                 [-probs[footprint].sum() for footprint in footprints], n_fields
@@ -251,25 +257,43 @@ def schedule(
         model = Model(timelimit=timelimit, jobs=jobs)
         pixel_vars = model.binary_vars(n_pixels)
         field_vars = model.binary_vars(n_fields)
-        start_time_vars = model.continuous_vars(
-            n_fields,
-            lb=start_time_lbs,
-            ub=start_time_ubs,
+        start_time_field_visit_vars = model.continuous_vars(
+            (n_fields, visits),
+            lb=np.tile(start_time_lbs[:, np.newaxis], visits),
+            ub=np.tile(start_time_ubs[:, np.newaxis], visits),
         )
 
         # Add constraints on observability windows for each field
         with status("adding field of regard constraints"):
-            for start_time_var, intervals in zip(start_time_vars, observable_intervals):
+            for start_time_visit_vars, intervals in zip(
+                start_time_field_visit_vars, observable_intervals
+            ):
                 if len(intervals) > 1:
-                    interval_vars = model.binary_vars(len(intervals))
-                    model.add_sos1(interval_vars)
                     begin, end = intervals.T
-                    model.add_indicator(interval_vars, start_time_var >= begin)
-                    model.add_indicator(interval_vars, start_time_var <= end)
+                    visit_interval_vars = model.binary_vars((visits, len(intervals)))
+                    for interval_vars in visit_interval_vars:
+                        model.add_sos1(interval_vars)
+                    model.add_indicators(
+                        visit_interval_vars,
+                        start_time_visit_vars[:, np.newaxis] >= begin,
+                    )
+                    model.add_indicators(
+                        visit_interval_vars, start_time_visit_vars[:, np.newaxis] <= end
+                    )
+
+        with status("adding cadence constraints"):
+            model.add_constraints_(
+                start_time_field_visit_vars[:, 1:] - start_time_field_visit_vars[:, :-1]
+                >= cadence_s * field_vars
+            )
 
         with status("adding slew constraints"):
+            p, q = full_indices(visits)
             model.add_constraints_(
-                model.abs(start_time_vars[slew_i] - start_time_vars[slew_j])
+                model.abs(
+                    start_time_field_visit_vars[slew_i, p[:, np.newaxis]]
+                    - start_time_field_visit_vars[slew_j, q[:, np.newaxis]]
+                )
                 >= timediff_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
             )
 
@@ -290,21 +314,29 @@ def schedule(
 
     with status("writing results"):
         if solution is None:
-            field_values = np.zeros(n_fields, dtype=bool)
-            start_time_values = np.zeros(n_fields)
+            field_values = np.zeros(field_vars.shape, dtype=bool)
+            start_time_field_visit_values = np.empty(start_time_field_visit_vars.shape)
             objective_value = 0.0
         else:
             field_values = np.asarray(solution.get_values(field_vars), dtype=bool)
-            start_time_values = np.asarray(solution.get_values(start_time_vars))
+            start_time_field_visit_values = np.asarray(
+                solution.get_values(start_time_field_visit_vars.ravel())
+            ).reshape(start_time_field_visit_vars.shape)
             objective_value = solution.get_objective_value()
 
         table = QTable(
             {
-                "action": np.full(n_fields, "observe"),
-                "start_time": obstimes[0] + start_time_values * u.s,
-                "duration": np.full(n_fields, exptime.value) * exptime.unit,
-                "target_coord": target_coords,
-                "roll": rolls,
+                "action": np.full(field_values.sum() * visits, "observe"),
+                "start_time": obstimes[0]
+                + start_time_field_visit_values[field_values].ravel() * u.s,
+                "duration": np.full(field_values.sum() * visits, exptime.value)
+                * exptime.unit,
+                "target_coord": target_coords[
+                    np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
+                ].ravel(),
+                "roll": rolls[
+                    np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
+                ].ravel(),
             },
             descriptions={
                 "action": "Action for the spacecraft",
@@ -322,13 +354,14 @@ def schedule(
                     "nside": nside,
                     "time_step": time_step,
                     "skymap": skymap.name,
+                    "visits": visits,
                 },
                 "objective_value": objective_value,
                 "best_bound": model.solve_details.best_bound,
                 "solution_status": model.solve_details.status,
                 "solution_time": model.solve_details.time * u.s,
             },
-        )[field_values]
+        )
         table.sort("start_time")
 
         # Add orbit to table
@@ -416,6 +449,7 @@ def animate(
         delay = table.meta["args"]["delay"]
         nside = table.meta["args"]["nside"]
         skymap = table.meta["args"]["skymap"]
+        visits = table.meta["args"]["visits"]
 
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
@@ -441,6 +475,7 @@ def animate(
                 *_,
             ) = cast(Iterable[ColorType], colormap.colors)
             now_color = "black"
+            footprint_alpha = 1 / visits
 
             ax_map = fig.add_subplot(gs[0], projection="astro hours mollweide")
             assert isinstance(ax_map, AutoScaledWCSAxes)
@@ -448,7 +483,7 @@ def animate(
             ax_map.add_artist(
                 ax_map.legend(
                     [
-                        Patch(facecolor=footprint_color),
+                        Patch(facecolor=footprint_color, alpha=footprint_alpha),
                         Patch(facecolor="none", edgecolor=skymap_color),
                     ],
                     [
@@ -525,6 +560,7 @@ def animate(
                         transform=transform,
                         visible=False,
                         facecolor=footprint_color,
+                        alpha=footprint_alpha,
                     )
                     for vertices in cut_prime_meridian(
                         np.column_stack(
