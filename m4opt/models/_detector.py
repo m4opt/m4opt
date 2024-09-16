@@ -13,12 +13,10 @@ from .background._core import BACKGROUND_SOLID_ANGLE
 
 def exptime_oir_ccd(snr, source_eps, sky_eps, dark_eps, rd, npix, gain=1.0):
     """Inverse of :meth:`astropy.stats.signal_to_noise_oir_ccd`."""
-    c1 = source_eps * gain
-    c2 = npix * (sky_eps * gain + dark_eps)
+    c1 = np.square(source_eps * gain)
+    c2 = (source_eps * gain + npix * (sky_eps * gain + dark_eps)) * snr
     c3 = npix * np.square(rd)
-    x = 1 + c2 / c1
-    snr2 = np.square(snr)
-    return 0.5 * snr2 / c1 * (x + np.sqrt(np.square(x) + 4 * c3 / snr2))
+    return 0.5 * snr * (c2 + np.sqrt(4 * c1 * c3 + np.square(c2))) / c1
 
 
 @dataclass
@@ -27,9 +25,6 @@ class Detector:
 
     npix: float
     """Effective number of pixels in the photometry aperture."""
-
-    aperture_correction: float
-    """Fraction of the signal from a point source falls within the aperture."""
 
     plate_scale: u.physical.solid_angle
     """Solid angle per pixel."""
@@ -49,7 +44,10 @@ class Detector:
     background: SourceSpectrum
     """Background: 1D model mapping wavelength to surface brightness."""
 
-    extinction: SpectralElement
+    aperture_correction: float = 1.0
+    """Fraction of the signal from a point source falls within the aperture."""
+
+    extinction: SpectralElement | None = None
     """Extinction: 1D model mapping wavelength to dimensionless attenuation of source."""
 
     def _get_count_rates(self, source_spectrum: Model, bandpass: Hashable | None):
@@ -61,10 +59,10 @@ class Detector:
             raise ValueError(
                 f"This instrument has more than one bandpass. Please specify one of them: {self.bandpasses.keys()}"
             )
+        if self.extinction is not None:
+            source_spectrum = source_spectrum * self.extinction
         src_count_rate = (
-            self.aperture_correction
-            * self.area
-            * countrate(source_spectrum * self.extinction, bp)
+            self.aperture_correction * self.area * countrate(source_spectrum, bp)
         )
         bkg_count_rate = (
             self.area
@@ -101,4 +99,4 @@ class Detector:
             self.dark_noise,
             self.read_noise,
             self.npix,
-        ).to_value(u.dimensionless_unscaled)
+        )
