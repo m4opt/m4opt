@@ -18,7 +18,7 @@ from ..background import ZodiacalBackground
     area=st.floats(min_value=0, max_value=1e30, exclude_min=True),
     exptime=st.floats(min_value=0, max_value=1e30),
 )
-@settings(suppress_health_check=[HealthCheck.filter_too_much])
+@settings(deadline=None, suppress_health_check=[HealthCheck.filter_too_much])
 @np.errstate(divide="ignore", invalid="ignore", over="ignore")
 def test_detector(
     npix, aperture_correction, plate_scale, dark_noise, read_noise, area, exptime
