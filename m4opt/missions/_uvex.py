@@ -2,7 +2,7 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from regions import RectangleSkyRegion
-from synphot import Box1D, SpectralElement
+from synphot import Gaussian1D, SpectralElement
 
 from .. import skygrid
 from ..constraints import (
@@ -16,11 +16,6 @@ from ..orbit import TLE
 from ..utils.dynamics import Slew
 from ._core import Mission
 
-
-def box_for_lo_hi(lo, hi):
-    return SpectralElement(Box1D, x_0=0.5 * (lo + hi), width=hi - lo)
-
-
 uvex = Mission(
     name="uvex",
     fov=RectangleSkyRegion(
@@ -32,31 +27,30 @@ uvex = Mission(
         MoonSeparationConstraint(25 * u.deg),
     ],
     detector=Detector(
-        # "The OTA provides a field-averaged point spread function (PSF) with
-        # half-power diameter (HPD) <2.25 arcsec."
-        #
-        # Assuming a Gaussian PSF with profile exp(-(r/a)^2/2),
-        # a = HPD / (2 sqrt(2 ln(2))).
-        #
-        # npix = \int_0^\infty \int_0^\infty |x y| \exp\left[-((x/a)^2+(y/a)^2)/2\right]\,dx\,dy
-        #      = 2 a^2 / pi
-        npix=np.square(2.25) / (4 * np.pi * np.log(2)),
-        # Assume PSF photometry, so we recover all of the flux.
-        aperture_correction=1,
+        npix=4 * np.pi,
         # "This is Nyquist sampled by the 1 arcsec pixels."
         plate_scale=1 * u.arcsec**2,
         # "...an effective aperture of 75cm."
         area=np.pi * np.square(0.5 * 75 * u.cm),
         bandpasses={
-            "NUV": box_for_lo_hi(2030 * u.angstrom, 2700 * u.angstrom),
-            "FUV": box_for_lo_hi(1390 * u.angstrom, 1900 * u.angstrom),
+            "FUV": SpectralElement(
+                Gaussian1D,
+                amplitude=0.15,
+                mean=1600 * u.angstrom,
+                stddev=100 * u.angstrom,
+            ),
+            "NUV": SpectralElement(
+                Gaussian1D,
+                amplitude=0.2,
+                mean=2300 * u.angstrom,
+                stddev=180 * u.angstrom,
+            ),
         },
         background=GalacticBackground() + ZodiacalBackground(),
-        # These are made-up numbers that happen to make median limiting
-        # magnitudes agree with https://www.uvex.caltech.edu/page/for-astronomers.
-        gain=0.08,
-        read_noise=10,
-        dark_noise=1e-1 * u.Hz,
+        # Made up to match plot
+        read_noise=2,
+        dark_noise=1e-3 * u.Hz,
+        gain=0.85,
     ),
     # UVEX will be in a highly elliptical TESS-like orbit.
     # This is the TESS TLE downloaded from Celestrak at 2024-09-10T00:43:57Z.
@@ -79,12 +73,20 @@ uvex.__doc__ = r"""UVEX, the UltraViolet EXplorer.
 `UVEX <https://www.uvex.caltech.edu/>`_ is a NASA Medium Explorer mission to
 map the transient sky in the ultraviolet, expected to launch in 2030. UVEX has
 a long-slit spectrograph and a 3.5° square field of view camera with two UV
-filter bandpasses.
+filters.
 
-Note that the bandpasses and parameters are mockups based on the publicly
-available description of the mission from the UVEX science paper,
-:arXiv:`2111.15608`. They will be replaced with realistic filter bandpasses
-when those become publicly available.
+Note that the imaging mode exposure time calculator is a toy model based on
+the publicly available description of the mission from the UVEX science paper,
+:arXiv:`2111.15608`, and that roughly reproduces the `public sensitivity plots
+<https://www.uvex.caltech.edu/page/for-astronomers>`_. It will be replaced with
+realistic filter bandpasses when those are publicly released.
+
+We make these simplifying assumptions:
+
+- The filter bandpasses are Gassians that mimic the filter shapes on the UVEX
+  web site.
+- Assume that the PSF is critically sampled, so that the effective number of
+  background pixels is 4π (see :doi:`10.1111/j.1365-2966.2005.09208.x`).
 
 Examples
 --------
@@ -133,7 +135,7 @@ Examples
     ax.set_ylim(24.5, 26.5)
     ax.invert_yaxis()
     for filt, limmag in zip(uvex.detector.bandpasses.keys(), median_limmags):
-        ax.plot(exptime, limmag, "-o", label=f"{filt}, stacked")
+        ax.plot(exptime, limmag, "-o", label=filt)
     ax.legend()
     ax.set_xlabel("Number of stacked 900 s dwells")
     ax.set_ylabel(r"5-$\sigma$ Limiting magnitude (AB)")
