@@ -262,15 +262,11 @@ def schedule(
 
         # Add constraints on observability windows for each field
         with status("adding field of regard constraints"):
-            for field_var, start_time_var, intervals in zip(
-                field_vars, start_time_vars, observable_intervals
-            ):
+            for start_time_var, intervals in zip(start_time_vars, observable_intervals):
                 if len(intervals) > 1:
                     interval_vars = model.binary_vars(len(intervals))
+                    model.add_sos1(interval_vars)
                     begin, end = intervals.T
-                    model.add_constraint_(
-                        field_var >= model.sum_vars_all_different(interval_vars)
-                    )
                     for interval_var, interval in zip(interval_vars, intervals):
                         begin, end = interval
                         model.add_indicator(interval_var, start_time_var >= begin)
