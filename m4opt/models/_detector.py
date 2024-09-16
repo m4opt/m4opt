@@ -5,7 +5,7 @@ import numpy as np
 from astropy import units as u
 from astropy.modeling import Model
 from astropy.stats import signal_to_noise_oir_ccd
-from synphot import SourceSpectrum, SpectralElement
+from synphot import SourceSpectrum
 
 from ._math import countrate
 from .background._core import BACKGROUND_SOLID_ANGLE
@@ -47,9 +47,6 @@ class Detector:
     aperture_correction: float = 1.0
     """Fraction of the signal from a point source falls within the aperture."""
 
-    extinction: SpectralElement | None = None
-    """Extinction: 1D model mapping wavelength to dimensionless attenuation of source."""
-
     def _get_count_rates(self, source_spectrum: Model, bandpass: Hashable | None):
         if bandpass is not None:
             bp = self.bandpasses[bandpass]
@@ -59,8 +56,6 @@ class Detector:
             raise ValueError(
                 f"This instrument has more than one bandpass. Please specify one of them: {self.bandpasses.keys()}"
             )
-        if self.extinction is not None:
-            source_spectrum = source_spectrum * self.extinction
         src_count_rate = (
             self.aperture_correction * self.area * countrate(source_spectrum, bp)
         )
