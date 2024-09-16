@@ -6,7 +6,7 @@ import sympy
 from astropy import units as u
 from astropy.modeling import CompoundModel, Model
 from scipy.interpolate import interp1d
-from synphot import Observation, SourceSpectrum, SpectralElement
+from synphot import SourceSpectrum, SpectralElement
 
 from ._extinction import DustExtinction, DustExtinctionForSkyCoord, dust_map
 from ._extrinsic import ExtrinsicScaleFactor, state
@@ -41,19 +41,19 @@ def countrate(
     <Quantity 1.12557248e+09 PHOTLAM>
     >>> with observing(EarthLocation.of_site('Palomar'), SkyCoord(*np.meshgrid(np.linspace(0, 360, 100), np.linspace(-90, 90, 200)), unit=u.deg), Time('2024-01-01')):
     ...     countrate(spectrum, band)
-    <Quantity [[1.16887524e+14, 1.16887524e+14, 1.16887524e+14, ...,
-                1.16887524e+14, 1.16887524e+14, 1.16887524e+14],
-               [1.26595837e+14, 1.27605355e+14, 1.28926750e+14, ...,
-                1.26033735e+14, 1.26275459e+14, 1.26595837e+14],
-               [1.33787878e+14, 1.33649910e+14, 1.33151561e+14, ...,
-                1.29494053e+14, 1.31992994e+14, 1.33787878e+14],
+    <Quantity [[1.15881864e+14, 1.15881864e+14, 1.15881864e+14, ...,
+                1.15881864e+14, 1.15881864e+14, 1.15881864e+14],
+               [1.25522043e+14, 1.26524531e+14, 1.27836738e+14, ...,
+                1.24963859e+14, 1.25203898e+14, 1.25522043e+14],
+               [1.32664208e+14, 1.32527192e+14, 1.32032285e+14, ...,
+                1.28400102e+14, 1.30881727e+14, 1.32664208e+14],
                ...,
-               [1.00300151e+14, 8.85700541e+13, 9.54674777e+13, ...,
-                1.14393997e+14, 1.10917927e+14, 1.00300151e+14],
-               [1.23148237e+14, 1.21034114e+14, 1.18647710e+14, ...,
-                1.18545557e+14, 1.21294547e+14, 1.23148237e+14],
-               [1.06308797e+14, 1.06308797e+14, 1.06308797e+14, ...,
-                1.06308797e+14, 1.06308797e+14, 1.06308797e+14]] 1 / (s cm2)>
+               [9.94134356e+13, 8.77698007e+13, 9.46161206e+13, ...,
+                1.13406002e+14, 1.09954677e+14, 9.94134356e+13],
+               [1.22098526e+14, 1.19999232e+14, 1.17629623e+14, ...,
+                1.17528190e+14, 1.20257836e+14, 1.22098526e+14],
+               [1.05378588e+14, 1.05378588e+14, 1.05378588e+14, ...,
+                1.05378588e+14, 1.05378588e+14, 1.05378588e+14]] 1 / (s cm2)>
     """
     count_rate_unit = 1 / (u.s * u.cm**2)
     extrinsic_scale_factors = []
@@ -89,11 +89,7 @@ def countrate(
                 )
 
     def base_countrate_no_extinction(spectrum):
-        area = 1 * u.cm**2
-        return Observation(spectrum, bandpass).countrate(
-            wavelengths=bandpass.waveset,
-            area=area,
-        ) / (area * u.count)
+        return (spectrum * bandpass).integrate(bandpass.waveset) / u.photon
 
     def base_countrate(spectrum):
         @np.vectorize
