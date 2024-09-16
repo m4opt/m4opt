@@ -11,7 +11,7 @@ from ._math import countrate
 from .background._core import BACKGROUND_SOLID_ANGLE
 
 
-def exptime_oir_ccd(snr, source_eps, sky_eps, dark_eps, rd, npix, gain=1.0):
+def exptime_oir_ccd(snr, source_eps, sky_eps, dark_eps, rd, npix, gain):
     """Inverse of :meth:`astropy.stats.signal_to_noise_oir_ccd`."""
     c1 = np.square(source_eps * gain)
     c2 = (source_eps * gain + npix * (sky_eps * gain + dark_eps)) * snr
@@ -19,7 +19,7 @@ def exptime_oir_ccd(snr, source_eps, sky_eps, dark_eps, rd, npix, gain=1.0):
     return 0.5 * snr * (c2 + np.sqrt(4 * c1 * c3 + np.square(c2))) / c1
 
 
-def amplitude_oir_ccd(snr, t, source_eps, sky_eps, dark_eps, rd, npix, gain=1.0):
+def amplitude_oir_ccd(snr, t, source_eps, sky_eps, dark_eps, rd, npix, gain):
     """Inverse of :meth:`astropy.stats.signal_to_noise_oir_ccd`."""
     c1 = t * source_eps * gain
     c2 = npix * (t * (sky_eps * gain + dark_eps) + np.square(rd))
@@ -54,6 +54,9 @@ class Detector:
     aperture_correction: float = 1.0
     """Fraction of the signal from a point source falls within the aperture."""
 
+    gain: float = 1.0
+    """Gain."""
+
     def _get_count_rates(self, source_spectrum: Model, bandpass: Hashable | None):
         if bandpass is not None:
             bp = self.bandpasses[bandpass]
@@ -82,12 +85,7 @@ class Detector:
     ):
         src, bkg = self._get_count_rates(source_spectrum, bandpass)
         return signal_to_noise_oir_ccd(
-            exptime,
-            src,
-            bkg,
-            self.dark_noise,
-            self.read_noise,
-            self.npix,
+            exptime, src, bkg, self.dark_noise, self.read_noise, self.npix, self.gain
         ).to_value(u.dimensionless_unscaled)
 
     def get_exptime(
@@ -95,12 +93,7 @@ class Detector:
     ):
         src, bkg = self._get_count_rates(source_spectrum, bandpass)
         return exptime_oir_ccd(
-            snr,
-            src,
-            bkg,
-            self.dark_noise,
-            self.read_noise,
-            self.npix,
+            snr, src, bkg, self.dark_noise, self.read_noise, self.npix, self.gain
         )
 
     def get_limmag(
@@ -120,6 +113,7 @@ class Detector:
             self.dark_noise,
             self.read_noise,
             self.npix,
+            self.gain,
         )
         return (a * source_spectrum(wavelength)).to(
             u.ABmag, equivalencies=u.spectral_density(wavelength)
