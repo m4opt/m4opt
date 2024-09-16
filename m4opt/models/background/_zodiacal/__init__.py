@@ -175,11 +175,11 @@ class ZodiacalBackground:
         obstime = Time('2023-06-30T00:00:00')
         zodi = ZodiacalBackground()
         with observing(observer_location=loc, target_coord=coord, obstime=obstime):
-            surf = zodi(wave)
+            surf = zodi(wave, flux_unit=u.ABmag)
 
         fig = plt.figure()
         ax = fig.add_subplot(projection='astro hours mollweide')
-        im = ax.imshow_hpx(surf.value, norm=LogNorm(vmin=0.95e-18, vmax=1.1e-17), cmap='viridis')
+        im = ax.imshow_hpx(surf.value, cmap='viridis')
         fig.colorbar(im, extend='both', orientation='horizontal').set_label(surf.unit)
 
         sun = get_body('sun', obstime)
