@@ -45,11 +45,6 @@ uvex = Mission(
         aperture_correction=1,
         # "This is Nyquist sampled by the 1 arcsec pixels."
         plate_scale=1 * u.arcsec**2,
-        # Wild guesses
-        dark_noise=0.0001 / u.s,
-        read_noise=1,
-        # About half of the light goes into each filter due the dichroic.
-        gain=0.5,
         # "...an effective aperture of 75cm."
         area=np.pi * np.square(0.5 * 75 * u.cm),
         bandpasses={
@@ -57,6 +52,11 @@ uvex = Mission(
             "FUV": box_for_lo_hi(1390 * u.angstrom, 1900 * u.angstrom),
         },
         background=GalacticBackground() + ZodiacalBackground(),
+        # These are made-up numbers that happen to make median limiting
+        # magnitudes agree with https://www.uvex.caltech.edu/page/for-astronomers.
+        gain=0.08,
+        read_noise=10,
+        dark_noise=1e-1 * u.Hz,
     ),
     # UVEX will be in a highly elliptical TESS-like orbit.
     # This is the TESS TLE downloaded from Celestrak at 2024-09-10T00:43:57Z.
@@ -91,29 +91,57 @@ Examples
 
 .. plot::
     :include-source: False
+    :caption: Median limiting magnitude, averaged over target coordinates and observation time.
 
-    from astropy.coordinates import SkyCoord
-    from astropy.time import Time
     from astropy import units as u
+    from astropy.coordinates import EarthLocation, ICRS
+    from astropy_healpix import HEALPix
+    from astropy.time import Time
     from matplotlib import pyplot as plt
-    import numpy as np
     from m4opt.missions import uvex
     from m4opt.models import observing
+    import numpy as np
     from synphot import ConstFlux1D, SourceSpectrum
 
-    source_spectrum = SourceSpectrum(ConstFlux1D, amplitude=25 * u.ABmag)
-    exptime = np.linspace(0, 900) * u.s
-    obstime = Time("2021-10-31")
-    with observing(observer_location=uvex.orbit(obstime).earth_location, target_coord=SkyCoord("0deg 0deg"), obstime=obstime):
-        snr = uvex.detector.get_snr(exptime, source_spectrum, "NUV")
+    dwell = u.def_unit("dwell", 900 * u.s)
+    exptime = np.arange(1, 11) * dwell
+    obstime = Time("2024-01-01") + np.linspace(0, 1) * u.year
+    hpx = HEALPix(128, frame=ICRS())
+    target_coords = hpx.healpix_to_skycoord(np.arange(hpx.npix))
+    observer_location = EarthLocation(0 * u.m, 0 * u.m, 0 * u.m)
+
+    limmags = []
+    for filt in uvex.detector.bandpasses.keys():
+        with observing(
+            observer_location,
+            target_coords[np.newaxis, :, np.newaxis],
+            obstime[np.newaxis, np.newaxis, :],
+        ):
+            limmags.append(
+                uvex.detector.get_limmag(
+                    5 * np.sqrt(dwell / exptime[:, np.newaxis, np.newaxis]),
+                    1 * dwell,
+                    1000 * u.angstrom,
+                    SourceSpectrum(ConstFlux1D, amplitude=0 * u.ABmag),
+                    filt,
+                ).to_value(u.ABmag)
+            )
+    median_limmags = np.median(limmags, axis=[2, 3])
 
     ax = plt.axes()
-    ax.plot(exptime.to_value(u.s), snr)
-    ax.set_xlabel("Exposure time (s)")
-    ax.set_ylabel("S/N")
+    ax.set_xlim(1, 10)
+    ax.set_ylim(24.5, 26.5)
+    ax.invert_yaxis()
+    for filt, limmag in zip(uvex.detector.bandpasses.keys(), median_limmags):
+        ax.plot(exptime, limmag, "-o", label=f"{filt}, stacked")
+    ax.legend()
+    ax.set_xlabel("Number of stacked 900 s dwells")
+    ax.set_ylabel(r"5-$\sigma$ Limiting magnitude (AB)")
+    plt.savefig("test.png")
 
 .. plot::
     :include-source: False
+    :caption: UVEX filter bandpasses.
 
     from astropy.visualization import quantity_support
     from astropy import units as u
