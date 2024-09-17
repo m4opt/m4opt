@@ -71,11 +71,15 @@ class Model(_Model):
 
 
 def add_var_array_method(cls, tp):
-    def func(self, shape=(), *args, **kwargs):
+    def func(self, shape=(), lb=None, ub=None):
         size = np.prod(shape, dtype=int)
+        if lb is not None:
+            lb = np.ravel(lb)
+        if ub is not None:
+            ub = np.ravel(ub)
         with status(f"adding {size} {tp} variables"):
             vartype = getattr(self, f"{tp}_vartype")
-            vars = np.reshape(self.var_list(size, vartype, *args, **kwargs), shape)
+            vars = np.reshape(self.var_list(size, vartype, lb, ub), shape)
             if vars.ndim == 0:
                 vars = vars.item()
             return vars
