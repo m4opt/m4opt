@@ -61,4 +61,9 @@ def test_cplex_add_var_array(tp):
     result = getattr(m, f"{tp}_vars")((6, 4))
     assert result.shape == (6, 4)
 
-    assert getattr(m, f"number_of_{tp}_variables") == 25
+    result = getattr(m, f"{tp}_vars")(
+        (6, 4), lb=np.full((6, 4), 0.5), ub=np.full((6, 4), 1)
+    )
+    assert result.shape == (6, 4)
+
+    assert getattr(m, f"number_of_{tp}_variables") == 49
