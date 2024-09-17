@@ -55,3 +55,21 @@ def clump_nonzero(a):
         ).reshape((-1, 2))
         for row in masked_array
     ]
+
+
+def full_indices(n):
+    """Calculate the indices of all of the elements of a square array.
+
+    Examples
+    --------
+    >>> from m4opt.utils.numpy import full_indices
+    >>> full_indices(2)
+    [array([0, 0, 1, 1]), array([0, 1, 0, 1])]
+    >>> full_indices(0)
+    [array([], dtype=int64), array([], dtype=int64)]
+
+    See also
+    --------
+    numpy.tril_indices, numpy.triu_indices
+    """
+    return [x.ravel() for x in np.mgrid[:n, :n]]
