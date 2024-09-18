@@ -65,6 +65,7 @@ __all__ = ("progress", "status")
 
 _progress = None
 _depth = 0
+_max_depth = 2
 
 
 @contextmanager
@@ -105,18 +106,21 @@ class IndentedSpinnerColumn(SpinnerColumn):
 def status(description: str):
     """Context manager to track the runtime of a task."""
     global _depth
-    with progress() as pg:
-        task = pg.add_task(description, total=1, depth=_depth, failed=False)
-        _depth += 1
-        try:
-            yield
-        except:
-            pg.update(task, failed=True)
-            raise
-        else:
-            pg.update(task, advance=1, completed=True)
-        finally:
-            _depth -= 1
+    if _depth >= _max_depth:
+        yield
+    else:
+        with progress() as pg:
+            task = pg.add_task(description, total=1, depth=_depth, failed=False)
+            _depth += 1
+            try:
+                yield
+            except:
+                pg.update(task, failed=True)
+                raise
+            else:
+                pg.update(task, advance=1, completed=True)
+            finally:
+                _depth -= 1
 
 
 if __name__ == "__main__":
