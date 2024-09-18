@@ -70,10 +70,10 @@ class TLE(Orbit):
         Examples
         --------
 
-        Look up the latest TLE for BurstCube.
+        Look up the latest TLE for the Fermi Gamma-Ray Space Telescope.
 
         >>> from m4opt.orbit import TLE
-        >>> tle = TLE.from_id(59562)
+        >>> tle = TLE.from_id(33053)
         """
         *_, line1, line2 = fetch_tle_from_celestrak(norad_id)
         return cls(line1, line2)
