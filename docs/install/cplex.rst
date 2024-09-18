@@ -1,24 +1,5 @@
 .. highlight:: sh
 
-Installation
-============
-
-The recommended way to install |M4OPT| is using :doc:`pip:index`::
-
-    $ git clone https://github.com/m4opt/m4opt
-    $ cd m4opt
-    $ pip install -e .
-
-For the largest problems, |M4OPT| requires a commercial MIP solver: `IBM ILOG
-CPLEX Optimization Studio`__ (just "CPLEX" for short) or `Gurobi`__. Both
-products are available for free for academic users (students, staff, and
-faculty at accredited educational institutions). If you are going to use the
-scheduling features of |M4OPT|, then you should follow the instructions below
-to install CPLEX *or* Gurobi.
-
-__ https://www.ibm.com/products/ilog-cplex-optimization-studio
-__ https://www.gurobi.com
-
 Install CPLEX
 -------------
 
@@ -33,7 +14,7 @@ Academic users
 ~~~~~~~~~~~~~~
 
 Academic users cannot use the versions of cplex and docplex that are installed
-automatically when you :doc:`install M4OPT using pip <install>`. Instead,
+automatically when you :doc:`install M4OPT using pip <index>`. Instead,
 they need to use the Python packages that come with the full academic software
 distribution of IBM ILOG CPLEX Optimization Studio, following the instructions
 below.
@@ -91,51 +72,3 @@ required. Follow these two steps:
        export CPLEX_STUDIO_KEY_SERVER=https://scx-cos.docloud.ibm.com/cos/query/v1/apikeys
 
    Consider adding these commands to your login shell's profile script.
-
-Install Gurobi
---------------
-
-Gurobi for Python is distributed as the lightweight `gurobipy`__ Python
-package. It is installed automatically when you :doc:`install M4OPT using pip
-<install>`.
-
-__ https://pypi.org/project/gurobipy/
-
-No matter what kind of license that you have, to make gurobipy fully functional
-you simply need to have your ``gurobi.lic`` license file present in your home
-directory.
-
-Depending on your license type, you may need additional command-line tools to
-retrieve and manage your license file, such as the ``grbgetkey`` command
-mentioned in the instructions below. These command-line tools are not included
-in gurobipy, but are included in the full Gurobi Optimizer distribution.
-
-**However, once your license file is set up, you no longer need the full
-distribution. We recommend that you use the gurobipy Python package that was
-automatically installed by pip, rather than the one that came with the Gurobi
-Optimizer installer.**
-
-Academic users
-~~~~~~~~~~~~~~
-
-1. Make sure that your computer is connected to your campus network or VPN.
-
-2. In a Web browser, navigate to `Gurobi Academic Programs and Licenses`__.
-
-__ https://www.gurobi.com/academia/academic-program-and-licenses/
-
-3. Follow the instructions under the "Individual Academic Licenses" heading to
-   download and install Gurobi and retrieve your ``gurobi.lic`` file using
-   the ``grbgetkey`` command.
-
-4. Once you have retrieved the ``gurobi.lic`` file on your computer, it
-   does not need to be connected to your campus network or VPN to use Gurobi.
-
-All others
-~~~~~~~~~~
-
-For commerical and government users, `Gurobi offers a variety of license
-types`__. Contact `Gurobi sales`__ for pricing.
-
-__ https://www.gurobi.com/products/licensing-options/
-__ https://www.gurobi.com/products/purchase-gurobi/

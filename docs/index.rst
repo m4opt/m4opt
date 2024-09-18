@@ -41,7 +41,7 @@ Getting Started
 .. toctree::
    :maxdepth: 2
 
-   install
+   install/index
    scenarios/index
    guide/index
    dev/index
