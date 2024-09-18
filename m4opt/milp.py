@@ -1,10 +1,12 @@
 """Mixed integer linear programs (MILP)"""
 
 import operator
+from collections.abc import Callable
 
 import numpy as np
 from astropy import units as u
 from docplex.mp.model import Model as _Model
+from numpy import typing as npt
 
 from .utils.console import status
 from .utils.numpy import atmost_1d
@@ -50,7 +52,7 @@ class Model(_Model):
         """
         super().__init__()
 
-        self.abs = np.vectorize(self.abs)
+        self.abs: Callable[[npt.ArrayLike], npt.ArrayLike] = np.vectorize(self.abs)
 
         self.context.solver.log_output = True
         self.context.cplex_parameters.threads = jobs
