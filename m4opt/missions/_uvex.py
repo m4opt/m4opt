@@ -74,7 +74,7 @@ uvex = Mission(
         max_angular_acceleration=0.2 * u.deg / u.s**2,
     ),
 )
-uvex.__doc__ = """UVEX, the UltraViolet EXplorer.
+uvex.__doc__ = r"""UVEX, the UltraViolet EXplorer.
 
 `UVEX <https://www.uvex.caltech.edu/>`_ is a NASA Medium Explorer mission to
 map the transient sky in the ultraviolet, expected to launch in 2030. UVEX has
