@@ -68,6 +68,9 @@ testpaths = [
     "m4opt",
     "docs",
 ]
+norecursedirs = [
+    "_build",
+]
 astropy_header = true
 doctest_plus = "enabled"
 text_file_format = "rst"
