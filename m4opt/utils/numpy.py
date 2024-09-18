@@ -26,6 +26,30 @@ def arange_with_units(*args: u.Quantity) -> u.Quantity:
     return np.arange(first.value, *(arg.to_value(unit) for arg in rest)) * unit
 
 
+def atmost_1d(a):
+    """Force an array-like object to have no more than 1 dimension.
+
+    Examples
+    --------
+    >>> from m4opt.utils.numpy import atmost_1d
+    >>> atmost_1d([[1, 2], [3, 4]])
+    array([1, 2, 3, 4])
+    >>> atmost_1d([1, 2, 3, 4])
+    array([1, 2, 3, 4])
+    >>> atmost_1d([])
+    array([], dtype=float64)
+    >>> atmost_1d(1)
+    1
+
+    See also
+    --------
+    numpy.atleast_1d
+    """
+    if isinstance(a, (np.ndarray, list, tuple)):
+        a = np.ravel(a)
+    return a
+
+
 def clump_nonzero(a):
     """Find intervals of nonzero values in an array, row by row.
 
