@@ -464,9 +464,7 @@ def animate(
             ax_map.legend(
                 [
                     Patch(facecolor=averaged_field_of_regard_color),
-                    Patch(
-                        facecolor=field_of_regard_color,
-                    ),
+                    Patch(facecolor=field_of_regard_color),
                 ],
                 [
                     "averaged",
