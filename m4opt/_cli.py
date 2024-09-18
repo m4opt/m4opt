@@ -267,25 +267,22 @@ def schedule(
                     interval_vars = model.binary_vars(len(intervals))
                     model.add_sos1(interval_vars)
                     begin, end = intervals.T
-                    for interval_var, interval in zip(interval_vars, intervals):
-                        begin, end = interval
-                        model.add_indicator(interval_var, start_time_var >= begin)
-                        model.add_indicator(interval_var, start_time_var <= end)
+                    model.add_indicator(interval_vars, start_time_var >= begin)
+                    model.add_indicator(interval_vars, start_time_var <= end)
 
         with status("adding slew constraints"):
-            for fi, fj, ti, tj, delta in zip(
-                field_vars[slew_i],
-                field_vars[slew_j],
-                start_time_vars[slew_i],
-                start_time_vars[slew_j],
-                timediff_s,
-            ):
-                model.add_if_then(fi + fj >= 2, model.abs(ti - tj) >= delta)
+            model.add_constraints_(
+                model.abs(start_time_vars[slew_i] - start_time_vars[slew_j])
+                >= timediff_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
+            )
 
         with status("adding coverage constraints"):
             model.add_constraints_(
-                pixel_var <= model.sum_vars_all_different(field_vars[field_indices])
-                for pixel_var, field_indices in zip(pixel_vars, pixels_to_fields_map)
+                pixel_vars
+                <= [
+                    model.sum_vars_all_different(field_vars[field_indices])
+                    for field_indices in pixels_to_fields_map
+                ]
             )
 
         with status("adding objective function"):
