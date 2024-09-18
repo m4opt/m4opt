@@ -63,6 +63,7 @@ distribute-*.tar.gz
 .pydevproject
 .settings
 pip-wheel-metadata/
+.tmp
 
 # Mac OSX
 .DS_Store
