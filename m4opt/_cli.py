@@ -8,8 +8,8 @@ import click
 import numpy as np
 import typer
 from astropy import units as u
-from astropy.coordinates import ICRS
-from astropy.table import QTable
+from astropy.coordinates import ICRS, SkyCoord
+from astropy.table import QTable, vstack
 from astropy.time import Time
 from astropy.visualization.units import quantity_support as _quantity_support
 from astropy_healpix import HEALPix
@@ -153,6 +153,8 @@ def schedule(
 
     with status("evaluating field of regard"):
         target_coords = mission.skygrid
+        # FIXME: https://github.com/astropy/astropy/issues/17030
+        target_coords = SkyCoord(target_coords.ra, target_coords.dec)
         exptime_s = exptime.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
         observable_intervals = np.asarray(
@@ -204,12 +206,7 @@ def schedule(
         # We compute it for the start of the schedule because we assume that it
         # does not change much over the duration.
         rolls = nominal_roll(observer_locations[0], target_coords, event_time)
-        footprints = footprint_healpix(
-            hpx,
-            mission.fov,
-            target_coords,
-            rolls,
-        )
+        footprints = footprint_healpix(hpx, mission.fov, target_coords, rolls)
 
         # Select only the most probable 100 fields.
         n_fields = 100
@@ -303,14 +300,16 @@ def schedule(
 
         table = QTable(
             {
+                "action": np.full(n_fields, "observe"),
                 "start_time": obstimes[0] + start_time_values * u.s,
-                "end_time": obstimes[0] + start_time_values * u.s + exptime,
+                "duration": np.full(n_fields, exptime.value) * exptime.unit,
                 "target_coord": target_coords,
                 "roll": rolls,
             },
             descriptions={
-                "start_time": "Start time of observation",
-                "end_time": "End time of observation",
+                "action": "Action for the spacecraft",
+                "start_time": "Start time of segment",
+                "duration": "Duration of segment",
                 "target_coord": "Coordinates of the center of the FOV",
                 "roll": "Position angle of the FOV",
             },
@@ -330,13 +329,55 @@ def schedule(
                 "solution_time": model.solve_details.time * u.s,
             },
         )[field_values]
+        table.sort("start_time")
+
+        # Add orbit to table
         table.add_column(
             mission.orbit(table["start_time"]).earth_location,
-            index=2,
+            index=3,
             name="observer_location",
         )
         table["observer_location"].info.description = "Position of the spacecraft"
+
+        # Add slew segments to table
+        nrows = len(table) - 1
+        slew_table = QTable(
+            {
+                "action": np.full(nrows, "slew"),
+                "start_time": (table["start_time"] + table["duration"])[:-1],
+                "duration": mission.slew.time(
+                    table["target_coord"][:-1],
+                    table["target_coord"][1:],
+                    table["roll"][:-1],
+                    table["roll"][1:],
+                ),
+                # FIXME: dummy values.
+                # See https://github.com/astropy/astropy/issues/14292
+                "target_coord": SkyCoord(
+                    np.zeros(nrows) * u.deg, np.zeros(nrows) * u.deg
+                ),
+            }
+        )
+        table = vstack(
+            (
+                table,
+                slew_table,
+            )
+        )
         table.sort("start_time")
+
+        # Calculate total time spent observing, slewing, etc.,
+        # as well as the amount of unused slack time
+        total_time_by_action = (
+            table["action", "duration"].group_by("action").groups.aggregate(np.sum)
+        )
+        table.meta["total_time"] = {
+            str(row["action"]): row["duration"] for row in total_time_by_action
+        }
+        table.meta["total_time"]["slack"] = (
+            deadline - delay - total_time_by_action["duration"].sum()
+        )
+
         table.write(schedule, format="ascii.ecsv", overwrite=True)
 
 
@@ -369,6 +410,8 @@ def animate(
 ):
     with status("loading schedule"):
         table = QTable.read(schedule, format="ascii.ecsv")
+        table["end_time"] = table["start_time"] + table["duration"]
+        table = table[table["action"] == "observe"]
         deadline = table.meta["args"]["deadline"]
         delay = table.meta["args"]["delay"]
         nside = table.meta["args"]["nside"]
@@ -525,17 +568,17 @@ def animate(
             )
             ax_area.set_ylabel("area (deg$^2$)", color=footprint_color)
 
-            ax_timeline.step(
-                (table["end_time"] - time_steps[0]).to(u.hour),
+            ax_timeline.hlines(
                 table["prob"],
-                color=skymap_color,
-                where="post",
-            )
-            ax_area.step(
+                (table["start_time"] - time_steps[0]).to(u.hour),
                 (table["end_time"] - time_steps[0]).to(u.hour),
+                skymap_color,
+            )
+            ax_area.hlines(
                 table["area"],
-                color=footprint_color,
-                where="post",
+                (table["start_time"] - time_steps[0]).to(u.hour),
+                (table["end_time"] - time_steps[0]).to(u.hour),
+                footprint_color,
             )
             ax_area.set_ylim(0 * u.deg**2)
 
