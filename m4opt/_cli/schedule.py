@@ -91,6 +91,7 @@ def schedule(
     jobs: Annotated[
         int,
         typer.Option(
+            min=0,
             help="Number of threads for parallel processing, or 0 for all cores",
         ),
     ] = 0,
