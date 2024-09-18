@@ -1,10 +1,13 @@
 """Mixed integer linear programs (MILP)"""
 
+import operator
+
 import numpy as np
 from astropy import units as u
 from docplex.mp.model import Model as _Model
 
 from .utils.console import status
+from .utils.numpy import atmost_1d
 
 __all__ = ("Model",)
 
@@ -47,6 +50,8 @@ class Model(_Model):
         """
         super().__init__()
 
+        self.abs = np.vectorize(self.abs)
+
         self.context.solver.log_output = True
         self.context.cplex_parameters.threads = jobs
 
@@ -69,6 +74,79 @@ class Model(_Model):
                 self.cplex.parameters.emphasis.mip.values.feasibility
             )
 
+    def add_constraints_(self, cts, names=None):
+        """Add any number of constraints to the model.
+
+        Examples
+        --------
+        This method adds support for arrays of constraints to
+        :meth:`docplex.mp.model.Model.add_constraints_`:
+
+        >>> from m4opt.milp import Model
+        >>> import numpy as np
+        >>> m = Model()
+        >>> x = m.continuous_vars((3, 4))
+        ✓ adding 12 continuous variables 0:00:00
+        >>> xmax = np.random.normal(size=x.shape)
+        >>> m.add_constraints_(x >= xmax)
+        """
+        return super().add_constraints_(atmost_1d(cts), names)
+
+    def add_indicators(self, binary_vars, cts, true_values=1, names=None):
+        """Add any number of indicator constraints to the model.
+
+        Examples
+        --------
+        This method adds support for arrays of constraints to
+        :meth:`docplex.mp.model.Model.add_indicators`:
+
+        >>> from m4opt.milp import Model
+        >>> import numpy as np
+        >>> m = Model()
+        >>> x = m.continuous_vars((3, 4))
+        ✓ adding 12 continuous variables 0:00:00
+        >>> y = m.binary_vars((3, 4))
+        ✓ adding 12 binary variables 0:00:00
+        >>> xmax = np.random.normal(size=x.shape)
+        >>> _ = m.add_indicators(y, x >= xmax)
+        """
+        return super().add_indicators(
+            atmost_1d(binary_vars), atmost_1d(cts), atmost_1d(true_values), names
+        )
+
+
+ufunc_map = {
+    np.less_equal: np.vectorize(operator.le, signature="(),()->()"),
+    np.greater_equal: np.vectorize(operator.ge, signature="(),()->()"),
+    np.equal: np.vectorize(operator.eq, signature="(),()->()"),
+}
+
+
+class VariableArray(np.ndarray):
+    """Subclass numpy.ndarray to support vectorized comparison operators."""
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if ufunc not in ufunc_map:
+            return (
+                super()
+                .__array_ufunc__(
+                    ufunc,
+                    method,
+                    *(
+                        input.view(np.ndarray)
+                        if isinstance(input, VariableArray)
+                        else input
+                        for input in inputs
+                    ),
+                    **kwargs,
+                )
+                .view(self.__class__)
+            )
+        elif method != "__call__":
+            return NotImplemented
+        else:
+            return ufunc_map[ufunc](*inputs)
+
 
 def add_var_array_method(cls, tp):
     def func(self, shape=(), lb=None, ub=None):
@@ -79,12 +157,14 @@ def add_var_array_method(cls, tp):
             ub = np.ravel(ub)
         with status(f"adding {size} {tp} variables"):
             vartype = getattr(self, f"{tp}_vartype")
-            vars = np.reshape(self.var_list(size, vartype, lb, ub), shape)
+            vars = np.reshape(self.var_list(size, vartype, lb, ub), shape).view(
+                VariableArray
+            )
             if vars.ndim == 0:
                 vars = vars.item()
             return vars
 
-    func.__doc__ = f"""Create a Numpy array of {tp} decision variables.
+    func.__doc__ = f"""Create an arbitary N-dimensional array of {tp} decision variables.
 
     Parameters
     ----------
@@ -98,6 +178,25 @@ def add_var_array_method(cls, tp):
     Returns
     -------
     numpy.ndarray
+
+    Examples
+    --------
+    >>> from m4opt.milp import Model
+    >>> model = Model()
+    >>> x = model.{tp}_vars()
+    ✓ adding 1 {tp} variables 0:00:00
+    >>> y = model.{tp}_vars(3)
+    ✓ adding 3 {tp} variables 0:00:00
+    >>> z = model.{tp}_vars((3, 4))
+    ✓ adding 12 {tp} variables 0:00:00
+    >>> print(x)
+    x1
+    >>> print(y)
+    [x2 x3 x4]
+    >>> print(z)
+    [[x5 x6 x7 x8]
+     [x9 x10 x11 x12]
+     [x13 x14 x15 x16]]
     """
 
     setattr(cls, f"{tp}_vars", func)
