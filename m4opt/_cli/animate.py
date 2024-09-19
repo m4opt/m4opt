@@ -17,7 +17,7 @@ from ligo.skymap.plot.poly import cut_prime_meridian
 from ligo.skymap.postprocess import find_greedy_credible_levels
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import ListedColormap, to_rgb
 from matplotlib.patches import Patch
 from matplotlib.transforms import BlendedAffine2D
 from matplotlib.typing import ColorType
@@ -189,17 +189,24 @@ def animate(
             for patch in chain.from_iterable(footprint_patches):
                 ax_map.add_patch(patch)
 
-            table["area"], table["prob"] = zip(
-                *map(
-                    lambda pixels: [len(pixels) * hpx.pixel_area, probs[pixels].sum()],
-                    accumulate(
-                        footprint_healpix(
-                            hpx, mission.fov, table["target_coord"], table["roll"]
-                        ),
-                        lambda *args: np.unique(np.concatenate(args)),
+            ivisit = np.arange(visits)
+            table["area"] = np.empty((len(table), visits)) * hpx.pixel_area
+            table["prob"] = np.empty((len(table), visits))
+            for row, selected_pixels in zip(
+                table,
+                accumulate(
+                    footprint_healpix(
+                        hpx, mission.fov, table["target_coord"], table["roll"]
                     ),
+                    lambda *args: np.concatenate(args),
+                ),
+            ):
+                visited = (
+                    np.bincount(selected_pixels, minlength=hpx.npix)
+                    > ivisit[:, np.newaxis]
                 )
-            )
+                row["area"] = np.count_nonzero(visited, axis=1) * hpx.pixel_area
+                row["prob"] = np.sum(probs * visited, axis=1)
 
             ax_timeline = fig.add_subplot(gs[1])
             ax_timeline.set_xlim(0 * u.hour, deadline)
@@ -216,18 +223,27 @@ def animate(
             )
             ax_area.set_ylabel("area (deg$^2$)", color=footprint_color)
 
-            ax_timeline.hlines(
-                table["prob"],
-                (table["start_time"] - time_steps[0]).to(u.hour),
-                (table["end_time"] - time_steps[0]).to(u.hour),
-                skymap_color,
-            )
-            ax_area.hlines(
-                table["area"],
-                (table["start_time"] - time_steps[0]).to(u.hour),
-                (table["end_time"] - time_steps[0]).to(u.hour),
-                footprint_color,
-            )
+            for i, (area, prob) in enumerate(zip(table["area"].T, table["prob"].T)):
+                alpha = i / visits
+                visit_skymap_color, visit_footprint_color = (
+                    np.asarray(
+                        [to_rgb(color) for color in [skymap_color, footprint_color]]
+                    )
+                    * (1 - alpha)
+                    + alpha
+                )
+                ax_timeline.hlines(
+                    prob,
+                    (table["start_time"] - time_steps[0]).to(u.hour),
+                    (table["end_time"] - time_steps[0]).to(u.hour),
+                    visit_skymap_color,
+                )
+                ax_area.hlines(
+                    area,
+                    (table["start_time"] - time_steps[0]).to(u.hour),
+                    (table["end_time"] - time_steps[0]).to(u.hour),
+                    visit_footprint_color,
+                )
             ax_area.set_ylim(0 * u.deg**2)
 
             now_line = ax_timeline.axvline(
