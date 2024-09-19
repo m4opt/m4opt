@@ -12,7 +12,7 @@ from astropy_healpix import HEALPix
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
 
-from .. import missions
+from .. import __version__, missions
 from ..fov import footprint_healpix
 from ..milp import Model
 from ..utils.console import progress, status
@@ -302,6 +302,7 @@ def schedule(
             },
             meta={
                 "command": shlex.join(sys.argv),
+                "version": __version__,
                 "args": {
                     "deadline": deadline,
                     "delay": delay,
