@@ -20,7 +20,7 @@ distribution of IBM ILOG CPLEX Optimization Studio, following the instructions
 below.
 
 1. In a Web browser, navigate to the `IBM Academic Initiative Data Science`__
-   site. 
+   site.
 
 __ https://www.ibm.com/academic
 
