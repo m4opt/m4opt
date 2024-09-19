@@ -3,9 +3,30 @@ from typing import Annotated
 import click
 import typer
 
-from .. import missions
+from .. import __version__, missions
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
+
+
+def version_callback(value: bool):
+    if value:
+        print(__version__)
+        raise typer.Exit()
+
+
+@app.callback()
+def version(
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            callback=version_callback,
+            is_eager=True,
+            help="Print version and exit.",
+        ),
+    ] = False,
+):
+    pass
 
 
 class MissionParam(click.Choice):
