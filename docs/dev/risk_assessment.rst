@@ -21,15 +21,15 @@ solvers.
 
 2. Access failures due to lack of internet access
 
-Since |M4OPT| uses the `Astropy.coordinates` module to identify observatory
-and target locations, users should know that `SkyCoord.from_name` and
-`EarthLocation.of_site` both require `an internet connection to access`__
+Since |M4OPT| uses :doc:`astropy:coordinates/index` to identify observatory and
+target locations, users should know that
+:meth:`astropy.coordinates.SkyCoord.from_name` and
+:meth:`astropy.coordinates.EarthLocation.of_site` both require
+:doc:`an internet connection to access <astropy:coordinates/remote_methods>`
 remote data. If |M4OPT| must be deployed offline, users should consider saving
-a list of `SkyCoord` and `EarthLocation` corresponding to needed locations, `as
-mentioned in the Astropy documentation.`__
-
-__ https://docs.astropy.org/en/stable/coordinates/remote_methods.html
-__ https://docs.astropy.org/en/stable/utils/iers.html#working-offline
+a list of :class:`~astropy.coordinates.SkyCoord` and
+:class:`~astropy.coordinates.EarthLocation` corresponding to needed locations,
+:ref:`as mentioned in the Astropy documentation <astropy:iers-working-offline>`.
 
 Lack of internet access may also affect connection to a license server (see point 1).
 
@@ -95,7 +95,8 @@ Title: Lack of Internet Access
 Affinity: External
 
 Description/Status: Some `astropy` commands require internet access, namely
-`SkyCoord.from_name` and `EarthLocation.of_site`. Depending on how targets and
+:meth:`astropy.coordinates.SkyCoord.from_name` and
+:meth:`astropy.coordinates.EarthLocation.of_site`. Depending on how targets and
 observatory locations will be defined in the user code, this may impact |M4OPT|
 usability.
 
