@@ -37,7 +37,4 @@ See also the Examples section for
 :class:`~m4opt.models.background.ZodiacalBackground`.
 
 .. automodapi:: m4opt.models
-    :no-inheritance-diagram:
-
 .. automodapi:: m4opt.models.background
-    :no-inheritance-diagram:

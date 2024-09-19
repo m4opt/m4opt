@@ -79,4 +79,3 @@ Gallery
             ax.grid()
 
 .. automodapi:: m4opt.skygrid
-    :no-inheritance-diagram:

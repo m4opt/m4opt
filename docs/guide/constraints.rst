@@ -10,4 +10,3 @@ detector is pointed (a :class:`~astropy.coordinates.SkyCoord` instance), and
 the time of the observation (a :class:`~astropy.time.Time` instance).
 
 .. automodapi:: m4opt.constraints
-    :no-inheritance-diagram:

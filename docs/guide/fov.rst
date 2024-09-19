@@ -187,4 +187,3 @@ The following example code reads the region file and plots a grid of footprints:
 
 
 .. automodapi:: m4opt.fov
-    :no-inheritance-diagram:
