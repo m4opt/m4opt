@@ -22,7 +22,7 @@ __ https://www.ibm.com/products/ilog-cplex-optimization-studio
 __ https://www.gurobi.com
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    cplex
    gurobi
