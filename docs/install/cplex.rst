@@ -26,7 +26,7 @@ __ https://www.ibm.com/academic
 
 2. Register or log in using your institutional email address (for example, one that ends in .edu). If you encounter issues with being recognized as part of an academic institution, you can refer to the guide on `creating an IBM Cloud account`__ for assistance.
 
-__https://github.com/academic-initiative/documentation/blob/main/academic-initiative/how-to/How-to-create-an-IBM-Cloud-account/readme.md
+__ https://github.com/academic-initiative/documentation/blob/main/academic-initiative/how-to/How-to-create-an-IBM-Cloud-account/readme.md
 
 3. Scroll to the middle of the page and navigate to
    :menuselection:`Software --> IBM ILOG CPLEX Optimization Studio`.
