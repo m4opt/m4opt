@@ -243,6 +243,7 @@ intersphinx_mapping.update(  # noqa: F405
         "pip": ("https://pip.pypa.io/en/stable/", None),
         "regions": ("https://astropy-regions.readthedocs.io/en/stable/", None),
         "tynt": ("https://tynt.readthedocs.io/en/latest/", None),
+        "userguide": ("https://emfollow.docs.ligo.org/userguide/", None),
     }
 )
 
