@@ -83,7 +83,8 @@ Constraints
 .. math::
     \forall j \ne j^\prime ,\; k ,\; k^\prime :\quad \left|t_{jk} - t_{j^\prime k^\prime}\right|  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
 
-**Field of regard.** An observation of a reference field can only occur while the coordinates of the reference field are within the field of regard. (Omit this constraint for fields that have exactly one observable interval.)
+**Field of regard.** An observation of a reference field can only occur while the coordinates of the reference field are within the field of regard.
+Note: for each reference field :math:`j` that have exactly one observable interval, instead of an indicator constraint, simply place lower and upper bounds on :math:`t_{jk}`.
 
 .. math::
 
