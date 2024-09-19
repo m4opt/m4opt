@@ -26,7 +26,6 @@ dependencies = [
     "spiceypy",
     "sympy",
     "synphot",
-    "tynt",
     "typer",
     "xdg-base-dirs",
 ]
