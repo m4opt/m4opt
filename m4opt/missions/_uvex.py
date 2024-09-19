@@ -85,8 +85,7 @@ We make these simplifying assumptions:
 
 - The filter bandpasses are Gassians that mimic the filter shapes on the UVEX
   web site.
-- Assume that the PSF is critically sampled, so that the effective number of
-  background pixels is 4π (see :doi:`10.1111/j.1365-2966.2005.09208.x`).
+- Assume that the PSF is critically sampled.
 
 Examples
 --------

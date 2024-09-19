@@ -30,9 +30,6 @@ def amplitude_oir_ccd(snr, t, source_eps, sky_eps, dark_eps, rd, npix, gain):
 class Detector:
     """Sensitivity calculator: compute SNR for exposure time or vice-versa."""
 
-    npix: float
-    """Effective number of pixels in the photometry aperture."""
-
     plate_scale: u.physical.solid_angle
     """Solid angle per pixel."""
 
@@ -51,11 +48,19 @@ class Detector:
     background: SourceSpectrum
     """Background: 1D model mapping wavelength to surface brightness."""
 
+    npix: float = 4 * np.pi
+    """Effective number of pixels in the photometry aperture.
+
+    The default value of 4π is appropriate for a PSF that is critically sampled
+    by the pixels (see :doi:`10.1111/j.1365-2966.2005.09208.x`)."""
+
     aperture_correction: float = 1.0
-    """Fraction of the signal from a point source falls within the aperture."""
+    """Fraction of the signal from a point source in the photometry aperture.
+
+    The default value of 1 is appopriate for PSF photometry."""
 
     gain: float = 1.0
-    """Gain."""
+    """Detector gain."""
 
     def _get_count_rates(self, source_spectrum: Model, bandpass: Hashable | None):
         if bandpass is not None:
