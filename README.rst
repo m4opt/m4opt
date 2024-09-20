@@ -41,6 +41,20 @@ __ https://nodis3.gsfc.nasa.gov/displayDir.cfm?t=NPR&c=7150&s=2C
 __ https://nodis3.gsfc.nasa.gov/displayDir.cfm?Internal_ID=N_PR_7150_002C_&page_name=AppendixD
 __ https://nodis3.gsfc.nasa.gov/displayDir.cfm?t=NPR&c=8705&s=4A
 
+Features
+--------
+
+*   **Global**: jointly and globally solves the problems of tiling (the set of
+    telescope boresight orientations and roll angles) and the scheduling (which
+    tile is observed at what time), rather than solving each sub-problem one at
+    a time
+*   **Optimal**: generally solves all the way to optimality, rather than
+    finding merely a "good enough" solution
+*   **Fast**: solve an entire orbit in about 5 minutes
+*   **General**: does not depend on heuristics of any kind
+*   **Flexible**: problem is formulated in the versatile framework of
+    `mixed integer programming <https://en.wikipedia.org/wiki/Integer_programming>`_
+
 License
 -------
 
