@@ -236,11 +236,15 @@ def schedule(
                         visit_interval_vars, start_time_visit_vars[:, np.newaxis] <= end
                     )
 
-        with status("adding cadence constraints"):
-            model.add_constraints_(
-                start_time_field_visit_vars[:, 1:] - start_time_field_visit_vars[:, :-1]
-                >= cadence_s * field_vars
-            )
+        if visits > 1:
+            with status("adding cadence constraints"):
+                model.add_constraints_(
+                    (
+                        start_time_field_visit_vars[:, 1:]
+                        - start_time_field_visit_vars[:, :-1]
+                    )
+                    >= cadence_s * field_vars[:, np.newaxis]
+                )
 
         with status("adding slew constraints"):
             p, q = full_indices(visits)
