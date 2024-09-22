@@ -22,9 +22,13 @@ def gif_path(tmp_path):
     return tmp_path / "example.gif"
 
 
-@pytest.fixture
-def run_scheduler(fits_path, ecsv_path, gif_path, run_cli):
+@pytest.fixture(params=[None, -10])
+def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, request):
+    absmag = request.param
+
     def func(*args):
+        if absmag is not None:
+            args = [*args, f"--absmag={absmag}", "--bandpass=NUV"]
         result = run_cli(app, "schedule", fits_path, ecsv_path, *args)
         assert result.exit_code == 0
         table = QTable.read(ecsv_path)
@@ -48,7 +52,8 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli):
             len(observations) == num_visits * num_fields
         ), f"there are {num_fields} observations of each field"
 
-        assert (observations["duration"] == table.meta["args"]["exptime"]).all()
+        assert (observations["duration"] >= table.meta["args"]["min_exptime"]).all()
+        assert (observations["duration"] <= table.meta["args"]["max_exptime"]).all()
 
         result = run_cli(app, "animate", ecsv_path, gif_path, "--time-step=8hour")
         assert result.exit_code == 0
