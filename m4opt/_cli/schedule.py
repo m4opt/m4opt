@@ -3,9 +3,10 @@ import sys
 from typing import Annotated
 
 import numpy as np
+import synphot
 import typer
 from astropy import units as u
-from astropy.coordinates import ICRS, SkyCoord
+from astropy.coordinates import ICRS, Distance, SkyCoord
 from astropy.table import QTable, vstack
 from astropy.time import Time
 from astropy_healpix import HEALPix
@@ -15,6 +16,7 @@ from ligo.skymap.io import read_sky_map
 from .. import __version__, missions
 from ..fov import footprint_healpix
 from ..milp import Model
+from ..models import observing
 from ..utils.console import progress, status
 from ..utils.dynamics import nominal_roll
 from ..utils.numpy import clump_nonzero_inclusive, full_indices
@@ -34,6 +36,30 @@ def invert_footprints(footprints, n_pixels):
         for j in js:
             pixels_to_fields_map[j].append(i)
     return [np.asarray(field_indices) for field_indices in pixels_to_fields_map]
+
+
+def invert_footprints_to_regions(footprints, n_pixels):
+    """
+    Examples
+    --------
+    >>> from m4opt._cli.schedule import invert_footprints_to_regions
+    >>> invert_footprints_to_regions([[1, 2, 3], [0, 2, 3]], 4)
+    ([1, 0, 2, 2], [array([0]), array([1]), array([0, 1])])
+    """
+    pixels_to_fields_map = [
+        tuple(field_indices)
+        for field_indices in invert_footprints(footprints, n_pixels)
+    ]
+    region_to_fields_map = {
+        footprint: i for i, footprint in enumerate(set(pixels_to_fields_map))
+    }
+    pixel_to_region_map = [
+        region_to_fields_map[footprint] for footprint in pixels_to_fields_map
+    ]
+    region_to_fields_map = [
+        np.asarray(fields, dtype=np.intp) for fields in region_to_fields_map.keys()
+    ]
+    return pixel_to_region_map, region_to_fields_map
 
 
 @app.command()
@@ -70,12 +96,29 @@ def schedule(
             help="Time step for evaluating field of regard",
         ),
     ] = "1 min",
-    exptime: Annotated[
+    min_exptime: Annotated[
         u.Quantity,
         typer.Option(
-            help="Exposure time for each observation",
+            help="Minimum exposure time for each observation",
         ),
     ] = "900 s",
+    max_exptime: Annotated[
+        u.Quantity,
+        typer.Option(
+            help="Maximum exposure time for each observation",
+        ),
+    ] = "inf s",
+    absmag: Annotated[
+        float | None,
+        typer.Option(
+            help="AB absolute magnitude of source",
+            show_default="disable adaptive exposure time",
+        ),
+    ] = None,
+    snr: Annotated[float, typer.Option(help="Signal to noise ratio for detection")] = 5,
+    bandpass: Annotated[
+        str | None, typer.Option(help="Name of detector bandpass")
+    ] = None,
     visits: Annotated[int, typer.Option(min=1, help="Number of visits")] = 2,
     cadence: Annotated[
         u.Quantity,
@@ -117,7 +160,7 @@ def schedule(
         target_coords = mission.skygrid
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
-        exptime_s = exptime.to_value(u.s)
+        min_exptime_s = min_exptime.to_value(u.s)
         cadence_s = cadence.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
         observable_intervals = np.asarray(
@@ -143,7 +186,7 @@ def schedule(
         # Keep only intervals that are at least as long as the exposure time.
         observable_intervals = np.asarray(
             [
-                intervals[intervals[:, 1] - intervals[:, 0] >= exptime_s]
+                intervals[intervals[:, 1] - intervals[:, 0] >= min_exptime_s]
                 for intervals in observable_intervals
             ],
             dtype=object,
@@ -185,7 +228,33 @@ def schedule(
         )
         n_pixels = len(probs)
 
-        pixels_to_fields_map = invert_footprints(footprints, n_pixels)
+        pixel_to_region_map, region_to_fields_map = invert_footprints_to_regions(
+            footprints, n_pixels
+        )
+        n_regions = len(region_to_fields_map)
+
+    if absmag is None:
+        exptime_pixel_s = np.full(len(good), min_exptime_s)
+        max_exptime_s = min_exptime_s
+    else:
+        with status("evaluating exposure time map"):
+            distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
+            with observing(
+                observer_location=observer_locations[0],
+                target_coord=hpx.healpix_to_skycoord(good),
+                obstime=obstimes[0],
+            ):
+                exptime_pixel_s = mission.detector.get_exptime(
+                    snr,
+                    synphot.SourceSpectrum(
+                        synphot.ConstFlux1D(absmag * u.ABmag + distmod)
+                    ),
+                    bandpass,
+                ).to_value(u.s)
+            min_exptime_s = exptime_pixel_s.min()
+            max_exptime_s = min(
+                max_exptime.to_value(u.s), deadline.to_value(u.s), exptime_pixel_s.max()
+            )
 
     with status("calculating slew times"):
         slew_i, slew_j = np.triu_indices(n_fields, 1)
@@ -199,41 +268,49 @@ def schedule(
     with status("assembling MILP model"):
         model = Model(timelimit=timelimit, jobs=jobs)
         pixel_vars = model.binary_vars(n_pixels)
+        exptime_field_vars = (
+            model.semicontinuous_vars if min_exptime_s > 0 else model.continuous_vars
+        )(n_fields, lb=min_exptime_s, ub=max_exptime_s)
         field_vars = model.binary_vars(n_fields)
+        exptime_region_vars = model.continuous_vars(n_regions)
         time_field_visit_vars = model.continuous_vars(
             (n_fields, visits),
         )
 
         # Add constraints on observability windows for each field
         with status("adding field of regard constraints"):
-            for time_visit_vars, intervals in zip(
-                time_field_visit_vars, observable_intervals
+            for time_visit_vars, exptime_var, intervals in zip(
+                time_field_visit_vars,
+                exptime_field_vars,
+                observable_intervals,
             ):
                 assert len(intervals) > 0
                 begin, end = intervals.T
                 if len(intervals) == 1:
                     model.add_constraints_(
-                        time_visit_vars - begin - 0.5 * exptime_s >= 0
+                        time_visit_vars - begin - 0.5 * exptime_var >= 0
                     )
-                    model.add_constraints_(time_visit_vars - end + 0.5 * exptime_s <= 0)
+                    model.add_constraints_(
+                        time_visit_vars - end + 0.5 * exptime_var <= 0
+                    )
                 else:
                     visit_interval_vars = model.binary_vars((visits, len(intervals)))
                     for interval_vars in visit_interval_vars:
                         model.add_sos1(interval_vars)
                     model.add_indicators(
                         visit_interval_vars,
-                        time_visit_vars[:, np.newaxis] >= begin + 0.5 * exptime_s,
+                        time_visit_vars[:, np.newaxis] >= begin + 0.5 * exptime_var,
                     )
                     model.add_indicators(
                         visit_interval_vars,
-                        time_visit_vars[:, np.newaxis] <= end - 0.5 * exptime_s,
+                        time_visit_vars[:, np.newaxis] <= end - 0.5 * exptime_var,
                     )
 
         if visits > 1:
             with status("adding cadence constraints"):
                 model.add_constraints_(
                     (time_field_visit_vars[:, 1:] - time_field_visit_vars[:, :-1])
-                    >= (exptime_s + cadence_s) * field_vars[:, np.newaxis]
+                    >= (cadence_s * field_vars + exptime_field_vars)[:, np.newaxis]
                 )
 
         with status("adding slew constraints"):
@@ -243,17 +320,28 @@ def schedule(
                     time_field_visit_vars[slew_i, p[:, np.newaxis]]
                     - time_field_visit_vars[slew_j, q[:, np.newaxis]]
                 )
-                >= (slew_time_s + exptime_s)
-                * (field_vars[slew_i] + field_vars[slew_j] - 1)
+                >= 0.5 * (exptime_field_vars[slew_i] + exptime_field_vars[slew_j])
+                + slew_time_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
             )
 
-        with status("adding coverage constraints"):
+        with status("adding exposure time constraints"):
+            model.add_constraints_(max_exptime_s * field_vars >= exptime_field_vars)
+
+        with status("adding depth constraints"):
             model.add_constraints_(
-                pixel_vars
-                <= [
-                    model.sum_vars_all_different(field_vars[field_indices])
-                    for field_indices in pixels_to_fields_map
+                [
+                    model.max(*exptime_field_vars[field_indices]).item() >= exptime_var
+                    for field_indices, exptime_var in zip(
+                        region_to_fields_map, exptime_region_vars
+                    )
                 ]
+            )
+            model.add_indicators(
+                pixel_vars,
+                [
+                    exptime_region_vars[region] >= exptime_s
+                    for region, exptime_s in zip(pixel_to_region_map, exptime_pixel_s)
+                ],
             )
 
         with status("adding objective function"):
@@ -266,20 +354,27 @@ def schedule(
         if solution is None:
             field_values = np.zeros(field_vars.shape, dtype=bool)
             time_field_visit_values = np.empty(time_field_visit_vars.shape)
+            exptime_field_values = np.empty(field_vars.shape)
             objective_value = 0.0
         else:
             field_values = solution.get_values(field_vars).astype(bool)
             time_field_visit_values = solution.get_values(time_field_visit_vars)
+            exptime_field_values = solution.get_values(exptime_field_vars)
             objective_value = solution.get_objective_value()
 
         table = QTable(
             {
                 "action": np.full(field_values.sum() * visits, "observe"),
                 "start_time": obstimes[0]
-                + time_field_visit_values[field_values].ravel() * u.s
-                - 0.5 * exptime,
-                "duration": np.full(field_values.sum() * visits, exptime.value)
-                * exptime.unit,
+                + (
+                    time_field_visit_values[field_values]
+                    - 0.5 * exptime_field_values[field_values][:, np.newaxis]
+                ).ravel()
+                * u.s,
+                "duration": np.tile(
+                    exptime_field_values[field_values][:, np.newaxis], visits
+                ).ravel()
+                * u.s,
                 "target_coord": target_coords[
                     np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
                 ].ravel(),
