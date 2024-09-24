@@ -190,7 +190,7 @@ def animate(
                 ax_map.add_patch(patch)
 
             ivisit = np.arange(visits)
-            table["area"] = np.empty((len(table), visits)) * hpx.pixel_area
+            table["area"] = np.empty((len(table), visits)) * hpx.pixel_area.to(u.deg**2)
             table["prob"] = np.empty((len(table), visits))
             for row, selected_pixels in zip(
                 table,
@@ -205,11 +205,13 @@ def animate(
                     np.bincount(selected_pixels, minlength=hpx.npix)
                     > ivisit[:, np.newaxis]
                 )
-                row["area"] = np.count_nonzero(visited, axis=1) * hpx.pixel_area
+                row["area"] = np.count_nonzero(visited, axis=1) * hpx.pixel_area.to(
+                    u.deg**2
+                )
                 row["prob"] = np.sum(probs * visited, axis=1)
 
             ax_timeline = fig.add_subplot(gs[1])
-            ax_timeline.set_xlim(0 * u.hour, deadline)
+            ax_timeline.set_xlim(0 * u.hour, deadline.to(u.hour))
             ax_timeline.set_xlabel(f"time in hours since event at {event_time}")
             ax_timeline.set_ylim(0, 1)
             ax_timeline.yaxis.set_tick_params(
