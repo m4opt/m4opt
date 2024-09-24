@@ -8,7 +8,8 @@ readme = "README.rst"
 requires-python = ">=3.10"
 dependencies = [
     "antiprism-python",
-    "astropy >= 6.1.0",
+    # FIXME: https://github.com/astropy/astropy/pull/17013
+    "astropy @ git+https://github.com/mhvk/astropy.git@iers-empty-time-queries",
     "astropy-healpix",
     "cplex",
     "docplex",
