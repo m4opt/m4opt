@@ -15,19 +15,24 @@ def nominal_roll(
     """Determine the nominal roll angle for a space telescope.
 
     Many space telescopes have a gross physical configuration that consists of
-    a telescope boresight along the +V1 axis, solar panels that are on the +V2
+    a telescope boresight along the +X axis, solar panels that are on the +Y
     axis (which may be free to rotate around that axis to track the sun), and a
-    +V3 axis that points away from the sun shield toward the "dark" or "cool"
-    side of the spacecraft. See, for example, `this coordinate system diagram
-    for the Hubble Space Telescope
-    <https://hst-docs.stsci.edu/hsp/the-hubble-space-telescope-primer-for-cycle-32/hst-primer-system-overview>`_.
+    +Z axis that points away from the sun shield toward the "dark" or "cool"
+    side of the spacecraft. See below for an example from Chandra.
+
+    .. figure:: https://cxc.harvard.edu/proposer/POG/html/images/sc-config.png
+        :alt: Chandra X-ray Observatory spacecraft coordinate system
+
+        Spacecraft coordinate system typical of most space telescopes.
+        Reproduced with permission from SAO/CXC (see
+        `original <https://cxc.harvard.edu/proposer/POG/html/chap1.html#tth_sEc1.3>`_).
 
     In space telescopes with this general physical plan, it is common to prefer
     or require that the roll of the telescope about the boresight places the +Y
     axis perpendicular to the direction of the sun, so that the solar array can
     be oriented for optimal power. This is called the nominal roll angle.
 
-    (It is assumed that when roll=0, the +V3 axis points to celestial north.)
+    (It is assumed that when roll=0, the +Z axis points to celestial north.)
 
     This function determines the nominal roll angle for a spacecraft at a given
     location, observing a given target at a given time.
