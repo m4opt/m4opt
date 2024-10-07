@@ -20,7 +20,9 @@ def arange_with_units(*args: u.Quantity) -> u.Quantity:
 
     - https://docs.astropy.org/en/stable/known_issues.html#numpy-array-creation-functions-cannot-be-used-to-initialize-quantity
     - https://github.com/astropy/astropy/issues/17001
+    - https://github.com/astropy/astropy/pull/17120
     """
+    # FIXME: Remove this when we depend upon astropy >= 7.0.0.
     first, *rest = args
     unit = first.unit
     return np.arange(first.value, *(arg.to_value(unit) for arg in rest)) * unit
