@@ -8,8 +8,7 @@ readme = "README.rst"
 requires-python = ">=3.10"
 dependencies = [
     "antiprism-python",
-    # FIXME: replace with astropy >= 6.1.5 when it is out.
-    "astropy @ git+https://github.com/astropy/astropy@v6.1.x",
+    "astropy >= 6.1.5",
     "astropy-healpix",
     "cplex",
     "docplex",
