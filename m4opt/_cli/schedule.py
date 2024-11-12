@@ -332,31 +332,33 @@ def schedule(
         )
         table["observer_location"].info.description = "Position of the spacecraft"
 
-        # Add slew segments to table
-        nrows = len(table) - 1
-        slew_table = QTable(
-            {
-                "action": np.full(nrows, "slew"),
-                "start_time": (table["start_time"] + table["duration"])[:-1],
-                "duration": mission.slew.time(
-                    table["target_coord"][:-1],
-                    table["target_coord"][1:],
-                    table["roll"][:-1],
-                    table["roll"][1:],
-                ),
-                # FIXME: dummy values.
-                # See https://github.com/astropy/astropy/issues/14292
-                "target_coord": SkyCoord(
-                    np.zeros(nrows) * u.deg, np.zeros(nrows) * u.deg
-                ),
-            }
-        )
-        table = vstack(
-            (
-                table,
-                slew_table,
+        # Add slew segments to table.
+        if len(table) > 0:
+            nrows = len(table) - 1
+            slew_table = QTable(
+                {
+                    "action": np.full(nrows, "slew"),
+                    "start_time": (table["start_time"] + table["duration"])[:-1],
+                    "duration": mission.slew.time(
+                        table["target_coord"][:-1],
+                        table["target_coord"][1:],
+                        table["roll"][:-1],
+                        table["roll"][1:],
+                    ),
+                    # FIXME: dummy values.
+                    # See https://github.com/astropy/astropy/issues/14292
+                    "target_coord": SkyCoord(
+                        np.zeros(nrows) * u.deg, np.zeros(nrows) * u.deg
+                    ),
+                }
             )
-        )
+            table = vstack(
+                (
+                    table,
+                    slew_table,
+                )
+            )
+
         table.sort("start_time")
 
         # Calculate total time spent observing, slewing, etc.,
@@ -367,8 +369,10 @@ def schedule(
         table.meta["total_time"] = {
             str(row["action"]): row["duration"] for row in total_time_by_action
         }
+        # FIXME: replace .columns.get("duration", []) with ["duration"] once
+        # https://github.com/astropy/astropy/issues/17379 is fixed.
         table.meta["total_time"]["slack"] = (
-            deadline - delay - total_time_by_action["duration"].sum()
+            deadline - delay - np.sum(total_time_by_action.columns.get("duration", []))
         )
 
         table.write(schedule, format="ascii.ecsv", overwrite=True)
