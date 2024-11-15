@@ -26,27 +26,30 @@ ultrasat = Mission(
         EarthLimbConstraint(28 * u.deg),
         SunSeparationConstraint(46 * u.deg),
         MoonSeparationConstraint(23 * u.deg),
-#         GalacticLatitudeConstraint(10 * u.deg),
+       # GalacticLatitudeConstraint(10 * u.deg),
     ],
     detector=Detector(
-        npix=4 * np.pi,
-        # "This is Nyquist sampled by the 1 arcsec pixels."
-        plate_scale=1 * u.arcsec**2,
-        # "...an effective aperture of 75cm."
-        area=np.pi * np.square(0.5 * 75 * u.cm),
+        # Total number of pixels
+        npix=89.9e6,
+        # Pixel scale, 5.4 arcsec / pixel
+        plate_scale=(5.4 * u.arcsec)**2,
+
+        # Area of an effective aperture of is 33 cm,
+        area=np.pi * np.square(0.5 * 33 * u.cm),
         bandpasses={
             "NUV": SpectralElement(
                 Gaussian1D,
-                amplitude=0.2,
-                mean=2300 * u.angstrom,
-                stddev=180 * u.angstrom,
+                amplitude=0.25,
+                mean=2600 * u.angstrom,
+                stddev=340 * u.angstrom,
             ),
         },
+        # Zodiacal light, Cerenkov radiation, and Stray light dominate ULTRASAT’s background noise.
         background=GalacticBackground() + ZodiacalBackground(),
         # Made up to match plot
-        read_noise=2,
-        dark_noise=1e-3 * u.Hz,
-        gain=0.85,
+        read_noise=6,
+        dark_noise=12/300 * u.Hz,
+        gain=1,
     ),
     
     # ULTRASAT will be in a geosynchronous orbit similar to GOES-17.
