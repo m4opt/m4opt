@@ -9,7 +9,6 @@ from ..constraints import (
     EarthLimbConstraint,
     MoonSeparationConstraint,
     SunSeparationConstraint,
-    GalacticLatitudeConstraint
 )
 from ..models import Detector
 from ..models.background import GalacticBackground, ZodiacalBackground
@@ -26,14 +25,13 @@ ultrasat = Mission(
         EarthLimbConstraint(28 * u.deg),
         SunSeparationConstraint(46 * u.deg),
         MoonSeparationConstraint(23 * u.deg),
-       # GalacticLatitudeConstraint(10 * u.deg),
+        # GalacticLatitudeConstraint(10 * u.deg),
     ],
     detector=Detector(
         # Total number of pixels
         npix=89.9e6,
         # Pixel scale, 5.4 arcsec / pixel
-        plate_scale=(5.4 * u.arcsec)**2,
-
+        plate_scale=(5.4 * u.arcsec) ** 2,
         # Area of an effective aperture of is 33 cm,
         area=np.pi * np.square(0.5 * 33 * u.cm),
         bandpasses={
@@ -44,23 +42,20 @@ ultrasat = Mission(
                 stddev=340 * u.angstrom,
             ),
         },
-        # Zodiacal light, Cerenkov radiation, and Stray light dominate ULTRASAT’s background noise.
+        # Zodiacal light, Cerenkov radiation, and Stray light dominate ULTRASAT’s background noise.
         background=GalacticBackground() + ZodiacalBackground(),
         # Made up to match plot
         read_noise=6,
-        dark_noise=12/300 * u.Hz,
+        dark_noise=12 / 300 * u.Hz,
         gain=1,
     ),
-    
     # ULTRASAT will be in a geosynchronous orbit similar to GOES-17.
     # This is the TESS TLE downloaded from Celestrak at 2024-11-15T09:15:20Z.
-    # https://celestrak.org/NORAD/elements/weather.txt 
-    
+    # https://celestrak.org/NORAD/elements/weather.txt
     orbit=TLE(
         "1 43226U 18022A   24320.05692005 -.00000082  00000+0  00000+0 0  9997",
         "2 43226   0.0007  47.5006 0003498 198.5164  84.4417  1.00271931 24622",
     ),
-
     # Sky grid optimized for ULTRASAT's wide field of view.
     skygrid=skygrid.healpix(200 * u.deg**2),
     # Slew model tailored for ULTRASAT's operational requirements.

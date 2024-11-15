@@ -13,13 +13,12 @@ from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
 
 from .. import __version__, missions
-from ..missions import Mission
 from ..fov import footprint_healpix
 from ..milp import Model
 from ..utils.console import progress, status
 from ..utils.dynamics import nominal_roll
 from ..utils.numpy import arange_with_units, clump_nonzero, full_indices
-from .core import MissionOption, app
+from .core import app
 
 
 def invert_footprints(footprints, n_pixels):
@@ -47,10 +46,9 @@ def schedule(
             help="Output filename for generated schedule", metavar="SCHEDULE.ecsv"
         ),
     ],
-    mission: Annotated[str, typer.Option(
-        help="Mission to use for scheduling",
-        case_sensitive=False
-    )] = "uvex",
+    mission: Annotated[
+        str, typer.Option(help="Mission to use for scheduling", case_sensitive=False)
+    ] = "uvex",
     delay: Annotated[
         u.Quantity[u.physical.time],
         typer.Option(
@@ -101,20 +99,22 @@ def schedule(
     ] = 0,
 ):
     """Schedule a target of opportunity observation."""
-    
+
     mission_mapping = {
-            name: getattr(missions, name)
-            for name in missions.__all__
-            if isinstance(getattr(missions, name), missions.Mission)
+        name: getattr(missions, name)
+        for name in missions.__all__
+        if isinstance(getattr(missions, name), missions.Mission)
     }
     # Fetch the mission based on user input
     selected_mission = mission_mapping.get(mission.lower())
     if not selected_mission:
-        typer.echo(f"Mission '{mission}' is not recognized. Available options: {', '.join(mission_mapping.keys())}")
+        typer.echo(
+            f"Mission '{mission}' is not recognized. Available options: {', '.join(mission_mapping.keys())}"
+        )
         raise typer.Exit()
-    
+
     mission = selected_mission
-    
+
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
         skymap_moc = read_sky_map(skymap, moc=True)
