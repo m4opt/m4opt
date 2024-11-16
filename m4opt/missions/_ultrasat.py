@@ -32,7 +32,7 @@ ultrasat = Mission(
         npix=89.9e6,
         # Pixel scale, 5.4 arcsec / pixel
         plate_scale=(5.4 * u.arcsec) ** 2,
-        # Area of an effective aperture of is 33 cm,
+        # Circular aperture with a diameter of 33 cm
         area=np.pi * np.square(0.5 * 33 * u.cm),
         bandpasses={
             "NUV": SpectralElement(
