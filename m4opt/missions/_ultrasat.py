@@ -25,7 +25,6 @@ ultrasat = Mission(
         EarthLimbConstraint(28 * u.deg),
         SunSeparationConstraint(46 * u.deg),
         MoonSeparationConstraint(23 * u.deg),
-        # GalacticLatitudeConstraint(10 * u.deg),
     ],
     detector=Detector(
         # Total number of pixels
@@ -50,7 +49,7 @@ ultrasat = Mission(
         gain=1,
     ),
     # ULTRASAT will be in a geosynchronous orbit similar to GOES-17.
-    # This is the TESS TLE downloaded from Celestrak at 2024-11-15T09:15:20Z.
+    # This is the TLE downloaded from Celestrak at 2024-11-15T09:15:20Z.
     # https://celestrak.org/NORAD/elements/weather.txt
     orbit=TLE(
         "1 43226U 18022A   24320.05692005 -.00000082  00000+0  00000+0 0  9997",
@@ -66,8 +65,9 @@ ultrasat = Mission(
 )
 ultrasat.__doc__ = r"""ULTRASAT, the Ultraviolet Transient Astronomy Satellite.
 
-`ULTRASAT <http://www.weizmann.ac.il/ultrasat>`_ is a proposed Israeli ultraviolet
-satellite designed to monitor the transient sky with a wide-field imager (arXiv:2304.14482).
+`ULTRASAT <http://www.weizmann.ac.il/ultrasat>`_ is an Israeli ultraviolet 
+space telescope currently under development. It is designed to monitor the 
+transient sky with a wide-field imager (arXiv:2304.14482).
 Expecte to launch in  2027, ULTRASAT aims to provide continuous monitoring of
 large areas of the sky to detect and study transient astronomical events in the
 ultraviolet spectrum.
