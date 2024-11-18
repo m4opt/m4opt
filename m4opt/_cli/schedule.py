@@ -18,7 +18,7 @@ from ..milp import Model
 from ..utils.console import progress, status
 from ..utils.dynamics import nominal_roll
 from ..utils.numpy import arange_with_units, clump_nonzero, full_indices
-from .core import MissionOption, app
+from .core import app
 
 
 def invert_footprints(footprints, n_pixels):
