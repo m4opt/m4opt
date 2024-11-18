@@ -46,9 +46,7 @@ def schedule(
             help="Output filename for generated schedule", metavar="SCHEDULE.ecsv"
         ),
     ],
-    mission: Annotated[
-        str, typer.Option(help="Mission to use for scheduling", case_sensitive=False)
-    ] = "uvex",
+    mission: MissionOption = missions.uvex,
     delay: Annotated[
         u.Quantity[u.physical.time],
         typer.Option(
