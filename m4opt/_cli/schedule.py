@@ -99,22 +99,6 @@ def schedule(
     ] = 0,
 ):
     """Schedule a target of opportunity observation."""
-
-    mission_mapping = {
-        name: getattr(missions, name)
-        for name in missions.__all__
-        if isinstance(getattr(missions, name), missions.Mission)
-    }
-    # Fetch the mission based on user input
-    selected_mission = mission_mapping.get(mission.lower())
-    if not selected_mission:
-        typer.echo(
-            f"Mission '{mission}' is not recognized. Available options: {', '.join(mission_mapping.keys())}"
-        )
-        raise typer.Exit()
-
-    mission = selected_mission
-
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
         skymap_moc = read_sky_map(skymap, moc=True)
