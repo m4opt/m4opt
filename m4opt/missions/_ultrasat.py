@@ -27,8 +27,7 @@ ultrasat = Mission(
         MoonSeparationConstraint(23 * u.deg),
     ],
     detector=Detector(
-        # Total number of pixels
-        npix=89.9e6,
+        npix=4 * np.pi,
         # Pixel scale, 5.4 arcsec / pixel
         plate_scale=(5.4 * u.arcsec) ** 2,
         # Circular aperture with a diameter of 33 cm
