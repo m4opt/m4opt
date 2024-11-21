@@ -40,7 +40,9 @@ ultrasat = Mission(
                 stddev=340 * u.angstrom,
             ),
         },
+        # FIXME: Add models for Zodiacal light, Cerenkov radiation, and Stray light
         # Zodiacal light, Cerenkov radiation, and Stray light dominate ULTRASAT’s background noise.
+
         background=GalacticBackground() + ZodiacalBackground(),
         # Made up to match plot
         read_noise=6,
