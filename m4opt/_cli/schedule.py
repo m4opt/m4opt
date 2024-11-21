@@ -11,7 +11,7 @@ from astropy.time import Time
 from astropy_healpix import HEALPix
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
-
+from ..missions import Mission
 from .. import __version__, missions
 from ..fov import footprint_healpix
 from ..milp import Model
