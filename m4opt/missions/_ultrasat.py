@@ -58,8 +58,8 @@ ultrasat = Mission(
     skygrid=skygrid.healpix(200 * u.deg**2),
     # Slew model tailored for ULTRASAT's operational requirements.
     slew=Slew(
-        max_angular_velocity=0.872 * u.deg / u.s,
-        max_angular_acceleration=0.244 * u.deg / u.s**2,
+        max_angular_velocity=1 * u.deg / u.s,
+        max_angular_acceleration=0.025 * u.deg / u.s**2,
     ),
 )
 ultrasat.__doc__ = r"""ULTRASAT, the Ultraviolet Transient Astronomy Satellite.
