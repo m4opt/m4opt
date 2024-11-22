@@ -8,7 +8,7 @@ readme = "README.rst"
 requires-python = ">=3.11"
 dependencies = [
     "antiprism-python",
-    "astropy >= 6.1.5",
+    "astropy >= 7.0.0",
     "astropy-healpix",
     "cplex",
     "docplex",

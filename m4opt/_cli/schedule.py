@@ -17,7 +17,7 @@ from ..fov import footprint_healpix
 from ..milp import Model
 from ..utils.console import progress, status
 from ..utils.dynamics import nominal_roll
-from ..utils.numpy import arange_with_units, clump_nonzero, full_indices
+from ..utils.numpy import clump_nonzero, full_indices
 from .core import MissionOption, app
 
 
@@ -106,8 +106,8 @@ def schedule(
         )
 
     with status("propagating orbit"):
-        obstimes = event_time + arange_with_units(
-            delay, deadline + time_step, time_step
+        obstimes = event_time + np.arange(
+            delay, deadline + time_step, time_step, like=time_step
         )
         observer_locations = mission.orbit(obstimes).earth_location
 
@@ -369,10 +369,8 @@ def schedule(
         table.meta["total_time"] = {
             str(row["action"]): row["duration"] for row in total_time_by_action
         }
-        # FIXME: replace .columns.get("duration", []) with ["duration"] once
-        # https://github.com/astropy/astropy/issues/17379 is fixed.
         table.meta["total_time"]["slack"] = (
-            deadline - delay - np.sum(total_time_by_action.columns.get("duration", []))
+            deadline - delay - total_time_by_action["duration"].sum()
         )
 
         table.write(schedule, format="ascii.ecsv", overwrite=True)
