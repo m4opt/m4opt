@@ -30,6 +30,8 @@ import os
 import sys
 from importlib import import_module
 
+import tomllib
+
 try:
     from sphinx_astropy.conf.v2 import *  # noqa
 except ImportError:
@@ -39,12 +41,6 @@ except ImportError:
     sys.exit(1)
 
 # Get configuration information from pyproject.toml
-
-try:
-    import tomllib
-except ImportError:
-    # FIXME: remove when we require Python >= 3.11
-    import tomli as tomllib
 
 with open(os.path.join(os.path.dirname(__file__), "..", "pyproject.toml"), "rb") as f:
     project_metadata = tomllib.load(f)["project"]

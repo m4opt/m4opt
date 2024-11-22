@@ -5,7 +5,7 @@ authors = [{name = "M4OPT Developers", email = "leo.singer@ligo.org"}]
 license = {text = "BSD-3-Clause"}
 description = "Multi-Mission Multi-Messenger Observation Planning Toolkit"
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "antiprism-python",
     "astropy >= 6.1.5",
