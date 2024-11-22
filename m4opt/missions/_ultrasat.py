@@ -28,7 +28,6 @@ ultrasat = Mission(
     ],
     detector=Detector(
         npix=4 * np.pi,
-        # Pixel scale, 5.4 arcsec / pixel
         plate_scale=(5.4 * u.arcsec) ** 2,
         # Circular aperture with a diameter of 33 cm
         area=np.pi * np.square(0.5 * 33 * u.cm),
