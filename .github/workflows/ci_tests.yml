@@ -32,39 +32,39 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Python 3.10 with minimal dependencies
+          - name: Python 3.11 with minimal dependencies
             os: ubuntu-latest
-            python: '3.10'
-            toxenv: py310-test
+            python: '3.11'
+            toxenv: py311-test
 
           - name: Python 3.11 with all optional dependencies and coverage checking
             os: ubuntu-latest
             python: '3.11'
             toxenv: py11-test-alldeps-cov
 
-          # - name: OS X - Python 3.10 with all optional dependencies
+          # - name: OS X - Python 3.11 with all optional dependencies
           #   os: macos-latest
-          #   python: '3.10'
-          #   toxenv: py39-test-alldeps
+          #   python: '3.11'
+          #   toxenv: py311-test-alldeps
 
-          # - name: Windows - Python 3.10 with all optional dependencies
+          # - name: Windows - Python 3.11 with all optional dependencies
           #   os: windows-latest
-          #   python: '3.10'
-          #   toxenv: py39-test-alldeps
+          #   python: '3.11'
+          #   toxenv: py311-test-alldeps
 
-          - name: Python 3.10 with oldest supported version of all dependencies
+          - name: Python 3.11 with oldest supported version of all dependencies
             os: ubuntu-20.04
-            python: '3.10'
-            toxenv: py310-test-oldestdeps
+            python: '3.11'
+            toxenv: py311-test-oldestdeps
 
-          # - name: Python 3.10 with latest dev versions of key dependencies
+          # - name: Python 3.11 with latest dev versions of key dependencies
           #   os: ubuntu-latest
           #   python: '3.11'
           #   toxenv: py311-test-devdeps
 
           # - name: Test building of Sphinx docs
           #   os: ubuntu-latest
-          #   python: '3.10'
+          #   python: '3.11'
           #   toxenv: build_docs
 
     steps:

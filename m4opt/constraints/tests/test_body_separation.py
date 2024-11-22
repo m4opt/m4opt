@@ -1,4 +1,4 @@
-from warnings import catch_warnings, simplefilter
+from warnings import catch_warnings
 
 import pytest
 from astroplan import MoonSeparationConstraint as AstroplanMoonSeparationConstraint
@@ -30,10 +30,7 @@ def test_astroplan(
     constraint = cls(min_sep)
     astroplan_constraint = astroplan_cls(min_sep)
     result = constraint(observer_location, target_coord, obstime)
-    with catch_warnings():
-        # FIXME: In Python >= 3.11, we can pass the ingnore and category
-        # keyword arguments to catch_warnings and then remove this line.
-        simplefilter(action="ignore", category=NonRotationTransformationWarning)
+    with catch_warnings(action="ignore", category=NonRotationTransformationWarning):
         expected = astroplan_constraint(
             Observer(observer_location), target_coord, obstime
         )
