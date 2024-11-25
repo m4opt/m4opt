@@ -20,11 +20,6 @@ from ._core import Orbit
 class TLE(Orbit):
     """An Earth satellite whose orbit is specified by its TLE.
 
-    Parameters
-    ----------
-    tle : str, file
-        The filename or file-like object containing the two-line element (TLE).
-
     Notes
     -----
     The orbit propagation is based on the example code at
@@ -67,6 +62,7 @@ class TLE(Orbit):
     """  # noqa: E501
 
     def __init__(self, line1: str, line2: str):
+        """Create a TLE from the text of its two lines."""
         self._tle = Satrec.twoline2rv(line1, line2)
 
     @classmethod
