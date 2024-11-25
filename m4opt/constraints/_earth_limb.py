@@ -1,3 +1,11 @@
+import sys
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    # FIXME: requires Python >= 3.12
+    from typing_extensions import override
+
 import numpy as np
 from astropy import units as u
 from astropy.constants import R_earth
@@ -53,5 +61,6 @@ class EarthLimbConstraint(Constraint):
     def __init__(self, min: u.Quantity[u.physical.angle]):
         self.min = min
 
+    @override
     def __call__(self, *args):
         return _get_angle_from_earth_limb(*args) >= self.min

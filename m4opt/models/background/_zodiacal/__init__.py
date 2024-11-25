@@ -1,3 +1,11 @@
+import sys
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    # FIXME: requires Python >= 3.12
+    from typing_extensions import override
+
 from importlib import resources
 
 import numpy as np
@@ -39,6 +47,7 @@ class ZodiacalBackgroundScaleFactor(ExtrinsicScaleFactor):
         sb = 10 - 2.5 * np.log10(s10 / 60**4)
         self._interp = RegularGridInterpolator([lon, lat], sb)
 
+    @override
     def at(self, observer_location, target_coord, obstime):
         frame = GeocentricTrueEcliptic(equinox=obstime)
         obj = SkyCoord(target_coord).transform_to(frame)

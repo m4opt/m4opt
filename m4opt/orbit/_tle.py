@@ -1,4 +1,11 @@
+import sys
 from typing import IO
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    # FIXME: requires Python >= 3.12
+    from typing_extensions import override
 
 import numpy as np
 from astropy import units as u
@@ -83,6 +90,7 @@ class TLE(Orbit):
         """The orbital period at the epoch of the TLE."""
         return 2 * np.pi / self._tle.no * u.minute
 
+    @override
     def __call__(self, time):
         """Get the position and velocity of the satellite.
 
