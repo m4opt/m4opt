@@ -74,6 +74,7 @@ Examples
 --------
 
 .. plot::
+    :include-source: False
     :caption: Median signal-to-noise ratio, averaged over target coordinates and observation time.
 
     from astropy import units as u
