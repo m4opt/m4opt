@@ -27,10 +27,5 @@ class Orbit(ABC):
         coord : :class:`astropy.coordinates.SkyCoord`
             The coordinates of the satellite in the ITRS frame.
 
-        Notes
-        -----
-        The orbit propagation is based on the example code at
-        https://docs.astropy.org/en/stable/coordinates/satellites.html.
-
         """
         raise NotImplementedError
