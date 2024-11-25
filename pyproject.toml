@@ -27,6 +27,7 @@ dependencies = [
     "sympy",
     "synphot",
     "typer",
+    "typing_extensions; python_version < \"3.12\"",
     "xdg-base-dirs",
 ]
 

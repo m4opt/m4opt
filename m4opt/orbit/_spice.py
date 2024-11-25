@@ -1,3 +1,11 @@
+import sys
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    # FIXME: requires Python >= 3.12
+    from typing_extensions import override
+
 import numpy as np
 import numpy.typing as npt
 import spiceypy as spice
@@ -56,6 +64,7 @@ class Spice(Orbit):
         self._target = spice.bodn2c(target)
         self._body = spice.bodn2c("EARTH")
 
+    @override
     def __call__(self, time):
         et = _time_to_et(time)
         pos, _ = _spkgps(self._target, et, "IAU_EARTH", self._body)

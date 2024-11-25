@@ -1,3 +1,11 @@
+import sys
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    # FIXME: requires Python >= 3.12
+    from typing_extensions import override
+
 import numpy as np
 from astropy import units as u
 from astropy.modeling.models import Linear1D
@@ -20,6 +28,7 @@ class GalacticBackgroundScaleFactor(ExtrinsicScaleFactor):
         self.north_intercept = north_intercept
         self.south_intercept = south_intercept
 
+    @override
     def at(self, observer_location, target_coord, obstime):
         csc = 1 / np.sin(target_coord.galactic.b)
         return np.where(
