@@ -7,13 +7,13 @@ Methods for tesselating the sky into survey tiles.
 The functions in this module provide a variety of different methods of
 selecting points on the unit sphere with approximately uniform density per unit
 area. All of thee functions take one required argument, ``area``, which is the
-average area per tile. Some (like :meth:`geodesic`) take additional optional
-keyword arguments.
+average area per tile. Some (like :meth:`~m4opt.skygrid.geodesic`) take
+additional optional keyword arguments.
 
-Note that in the case of :meth:`geodesic` and :meth:`healpix`, the number of
-tiles that may be returned is constrained to certain values. For these methods,
-the number of tiles will be the smallest possible number that is greater than
-or equal to 4π/area.
+Note that in the case of :meth:`~m4opt.skygrid.geodesic` and
+:meth:`~m4opt.skygrid.healpix`, the number of tiles that may be returned is
+constrained to certain values. For these methods, the number of tiles will be
+the smallest possible number that is greater than or equal to 4π/area.
 
 Examples
 --------
