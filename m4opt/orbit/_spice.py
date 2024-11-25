@@ -29,11 +29,6 @@ _spkgps = np.vectorize(spice.spkgps, excluded=[0, 2, 3], signature="()->(m),()")
 class Spice(Orbit):
     """A satellite whose orbit is specified by Spice kernels.
 
-    Parameters
-    ----------
-    bsp : str, file
-        The filename or file-like object containing the Spice kernel.
-
     Examples
     --------
 
