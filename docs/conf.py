@@ -256,3 +256,9 @@ todo_include_todos = True
 
 # -- Options for the sphinxcontrib.typer extension ----------------------------
 extensions += ["sphinxcontrib.typer"]
+
+
+# -- Merge type annotations with numpydoc parameter docstrings ----------------
+extensions.remove("numpydoc")
+extensions.append("sphinx.ext.napoleon")
+autodoc_typehints = "description"

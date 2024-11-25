@@ -18,7 +18,7 @@ class GalacticLatitudeConstraint(Constraint):
 
     Parameters
     ----------
-    min : :class:`astropy.units.Quantity`
+    min
         Minimum of absolute value of Galactic latitude.
     """
 

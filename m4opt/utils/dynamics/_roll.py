@@ -37,6 +37,20 @@ def nominal_roll(
     This function determines the nominal roll angle for a spacecraft at a given
     location, observing a given target at a given time.
 
+    Parameters
+    ----------
+    observer_location:
+        Location of the spacecraft.
+    target_coord:
+        Orientation of the boresight of the telescope.
+    obstime:
+        The time of the observation.
+
+    Returns
+    -------
+    :
+        The nominal roll angle for the observation.
+
     Examples
     --------
 

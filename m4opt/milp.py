@@ -24,11 +24,11 @@ class Model(_Model):
 
         Parameters
         ----------
-        timelimit : astropy.units.Quantity
+        timelimit
             Maximum solver run time. Default: run until the solver terminates
             naturally due to finding the optimum or proving the problem to be
             infeasible.
-        jobs : int
+        jobs
             Number of threads. If 0, then automatically configure the number of
             threads based on the number of CPUs present.
 
@@ -170,16 +170,12 @@ def add_var_array_method(cls, tp):
 
     Parameters
     ----------
-    shape : int, tuple
+    shape
         The desired shape of the array.
     args, kwargs
         Additional arguments passed to
         :meth:`~docplex.mp.model.Model.{tp}_var_list`, such as lower and upper
         bounds.
-
-    Returns
-    -------
-    numpy.ndarray
 
     Examples
     --------

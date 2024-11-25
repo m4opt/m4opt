@@ -66,14 +66,14 @@ class TLE(Orbit):
         self._tle = Satrec.twoline2rv(line1, line2)
 
     @classmethod
-    def from_file(cls, name_or_obj: str | IO):
+    def from_file(cls, name_or_obj: str | IO) -> "TLE":
         """Load a TLE from a filename, URL, or file-like object."""
         with get_readable_fileobj(name_or_obj) as f:
             *_, line1, line2 = f.readlines()
         return cls(line1, line2)
 
     @classmethod
-    def from_id(cls, norad_id: int):
+    def from_id(cls, norad_id: int) -> "TLE":
         """Get the latest TLE for a satellite from Celestrak.
 
         Examples

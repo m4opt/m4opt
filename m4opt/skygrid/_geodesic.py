@@ -51,19 +51,19 @@ def geodesic(
 
     Parameters
     ----------
-    area : :class:`astropy.units.Quantity`
+    area
         The average area per tile in any Astropy solid angle units:
         for example, :samp:`10 * astropy.units.deg**2` or
         :samp:`0.1 * astropy.units.steradian`.
-    base : {``'icosahedron'``,  ``'octahedron'``, ``'tetrahedron'``}
+    base
         The base polyhedron of the tesselation.
-    class_ : {``'I'``, ``'II'``, ``'III'``}
+    class_
         The class of the geodesic polyhedron, which constrains the allowed
         values of the number of points. Class III permits the most freedom.
 
     Returns
     -------
-    coords : :class:`astropy.coordinates.SkyCoord`
+    :
         The coordinates of the vertices of the geodesic polyhedron.
 
     References
