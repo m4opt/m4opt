@@ -34,7 +34,7 @@ class EarthLimbConstraint(Constraint):
 
     Parameters
     ----------
-    min : :class:`astropy.units.Quantity`
+    min
         Minimum angular separation from the Earth's limb.
 
     Notes

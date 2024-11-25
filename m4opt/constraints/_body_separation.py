@@ -36,7 +36,7 @@ class MoonSeparationConstraint(BodySeparationConstraint):
 
         Parameters
         ----------
-        min : :class:`astropy.units.Quantity`
+        min
             Minimum angular separation from the Moon.
 
         Examples
@@ -65,7 +65,7 @@ class SunSeparationConstraint(BodySeparationConstraint):
 
         Parameters
         ----------
-        min : :class:`astropy.units.Quantity`
+        min
             Minimum angular separation from the Sun.
 
         Examples

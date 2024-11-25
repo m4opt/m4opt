@@ -10,14 +10,14 @@ def healpix(area: u.Quantity[u.physical.solid_angle]):
 
     Parameters
     ----------
-    area : :class:`astropy.units.Quantity`
+    area
         The average area per tile in any Astropy solid angle units:
         for example, :samp:`10 * astropy.units.deg**2` or
         :samp:`0.1 * astropy.units.steradian`.
 
     Returns
     -------
-    coords : :class:`astropy.coordinates.SkyCoord`
+    :
         The coordinates of the tiles.
 
     """

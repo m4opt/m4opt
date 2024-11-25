@@ -122,6 +122,15 @@ def footprint(
     The target coorinate and rotation may be arrays; in that case the return
     value is a Numpy array of regions.
 
+    Parameters
+    ----------
+    region:
+        The shape of the field of view in the standard orientation.
+    target_coord:
+        The position for the center of the field of view.
+    rotation:
+        The rotation of the field of view about its center.
+
     Examples
     --------
 
@@ -264,6 +273,17 @@ def footprint_healpix(
 
     The target coorinate and rotation may be arrays; in that case the return
     value is a Numpy array of arrays of uneven length.
+
+    Parameters
+    ----------
+    hpx:
+        The HEALPix object specifying the ordering and resolution.
+    region:
+        The shape of the field of view in the standard orientation.
+    target_coord:
+        The position for the center of the field of view.
+    rotation:
+        The rotation of the field of view about its center.
 
     Examples
     --------

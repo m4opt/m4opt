@@ -94,8 +94,25 @@ class Slew:
         center2: SkyCoord,
         roll1: u.Quantity[u.physical.angle] = 0 * u.rad,
         roll2: u.Quantity[u.physical.angle] = 0 * u.rad,
-    ):
-        """Calculate the time to execute an optimal slew."""
+    ) -> u.Quantity[u.physical.time]:
+        """Calculate the time to execute an optimal slew.
+
+        Parameters
+        ----------
+        center1:
+            Initial boresight position.
+        center2:
+            Final boresight position.
+        roll1:
+            Initial roll angle.
+        roll2:
+            Final roll angle.
+
+        Returns
+        -------
+        :
+            Time to slew between the two orientations.
+        """
         return self._time(
             self.separation(center1, center2, roll1, roll2),
             self.max_angular_velocity,
@@ -112,6 +129,22 @@ class Slew:
     ) -> u.Quantity[u.physical.angle]:
         """
         Determine the smallest angle to slew between two attitudes.
+
+        Parameters
+        ----------
+        center1:
+            Initial boresight position.
+        center2:
+            Final boresight position.
+        roll1:
+            Initial roll angle.
+        roll2:
+            Final roll angle.
+
+        Returns
+        -------
+        :
+            Shortest possible angular separation of the two orientations.
 
         Examples
         --------

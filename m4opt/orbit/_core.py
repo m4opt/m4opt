@@ -19,13 +19,12 @@ class Orbit(ABC):
 
         Parameters
         ----------
-        time : :class:`astropy.time.Time`
+        time
             The time of the observation.
 
         Returns
         -------
-        coord : :class:`astropy.coordinates.SkyCoord`
+        :
             The coordinates of the satellite in the ITRS frame.
-
         """
         raise NotImplementedError
