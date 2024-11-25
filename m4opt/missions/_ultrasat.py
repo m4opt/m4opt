@@ -133,5 +133,4 @@ Examples
     ax.set_ylabel('SNR')
     ax.grid(True)
     ax.legend()
-    plt.savefig("ultrasat_snr_vs_ABmag.png")
 """
