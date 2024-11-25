@@ -234,6 +234,7 @@ extlinks = {
 intersphinx_mapping.update(  # noqa: F405
     {
         "astropy": ("https://docs.astropy.org/en/stable/", None),
+        "astropy_healpix": ("https://astropy-healpix.readthedocs.io/en/stable/", None),
         "docplex": ("http://ibmdecisionoptimization.github.io/docplex-doc/mp/", None),
         "dust-extinction": ("https://dust-extinction.readthedocs.io/en/latest/", None),
         "pip": ("https://pip.pypa.io/en/stable/", None),
