@@ -58,10 +58,17 @@ Parameters
 Decision variables
 ~~~~~~~~~~~~~~~~~~
 
-- :math:`\left(p_i\right)_{i \in I}`: pixel :math:`i` is inside the footprint of one or more selected reference fields
-- :math:`\left(r_j\right)_{j \in J}`: reference field :math:`j` is selected for observation
-- :math:`\left(t_{jk}\right)_{j \in J, k \in K}`: start time of observation :math:`j` visit :math:`k`
-- :math:`\left(s_{jkm}\right)_{j \in J, k \in K, m \in M}`: whether reference field :math:`j` visit :math:`k` occurs in segment :math:`m`
++-----------------------------------------------------------+-----------+-----------------------------------------------------------------------------------+
+| Variable                                                  | Type      | Description                                                                       |
++===========================================================+===========+===================================================================================+
+| :math:`\left(r_j\right)_{j \in J}`                        | binary    | reference field :math:`j` is selected for observation                             |
++-----------------------------------------------------------+-----------+-----------------------------------------------------------------------------------+
+| :math:`\left(p_i\right)_{i \in I}`                        | binary    | pixel :math:`i` is inside the footprint of one or more selected reference fields  |
++-----------------------------------------------------------+-----------+-----------------------------------------------------------------------------------+
+| :math:`\left(t_{jk}\right)_{j \in J, k \in K}`            | continous | start time of observation :math:`j` visit :math:`k`                               |
++-----------------------------------------------------------+-----------+-----------------------------------------------------------------------------------+
+| :math:`\left(s_{jkm}\right)_{j \in J, k \in K, m \in M}`  | binary    | whether reference field :math:`j` visit :math:`k` occurs in segment :math:`m`     |
++-----------------------------------------------------------+-----------+-----------------------------------------------------------------------------------+
 
 Constraints
 ~~~~~~~~~~~~
