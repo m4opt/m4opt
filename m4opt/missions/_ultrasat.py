@@ -69,4 +69,69 @@ transient sky with a wide-field imager (arXiv:`2304.14482`).
 Expected to launch in 2027, ULTRASAT aims to provide continuous monitoring of
 large areas of the sky to detect and study transient astronomical events in the
 ultraviolet spectrum.
+
+Examples
+--------
+
+.. plot::
+    :caption: Median signal-to-noise ratio, averaged over target coordinates and observation time.
+
+    from astropy import units as u
+    from astropy.coordinates import EarthLocation, ICRS
+    from astropy.time import Time
+    from astropy_healpix import HEALPix
+    from matplotlib import pyplot as plt
+    from m4opt.missions import ultrasat
+    from m4opt.models import observing
+    import numpy as np
+    from tqdm import tqdm 
+    from synphot import SourceSpectrum
+    from synphot.models import BlackBody1D
+
+    dwell = u.def_unit("dwell", 300 * u.s)
+    exptime = 3 * dwell
+    obstime = Time("2024-01-01") + np.linspace(0, 1) * u.year
+    hpx = HEALPix(8, frame=ICRS())
+    target_coords = hpx.healpix_to_skycoord(np.arange(hpx.npix))
+    observer_location = EarthLocation(0 * u.m, 0 * u.m, 0 * u.m)
+
+    g_dwarf_spectrum = SourceSpectrum(BlackBody1D, temperature=5000 * u.K)
+    m_dwarf_spectrum = SourceSpectrum(BlackBody1D, temperature=3000 * u.K)
+    magnitudes = np.linspace(5, 25, 100) * u.ABmag
+
+    snrs_g = []
+    snrs_m = []
+    for mag in tqdm(magnitudes, desc="Calculating SNRs", unit="magnitude"):
+        with observing(
+            observer_location,
+            target_coords[np.newaxis, :, np.newaxis],
+            obstime[np.newaxis, np.newaxis, :],
+        ):
+            snr_g = ultrasat.detector.get_snr(
+                exptime=exptime,
+                source_spectrum=g_dwarf_spectrum.normalize(renorm_val=mag, band=ultrasat.detector.bandpasses['NUV'], vegaspec=None),
+                bandpass='NUV',
+            )
+            median_snr_g = np.median(snr_g)
+            snrs_g.append(median_snr_g)
+
+            snr_m = ultrasat.detector.get_snr(
+                exptime=exptime,
+                source_spectrum=m_dwarf_spectrum.normalize(renorm_val=mag, band=ultrasat.detector.bandpasses['NUV'], vegaspec=None),
+                bandpass='NUV',
+            )
+            median_snr_m = np.median(snr_m)
+            snrs_m.append(median_snr_m)
+
+    fig, ax = plt.subplots()
+    ax.plot(magnitudes, snrs_g, label='G Dwarf', color='g')
+    ax.plot(magnitudes, snrs_m, label='M Dwarf', color='r')
+    ax.set_xlim(10, 22)
+    ax.set_ylim(1e1, 1e4)
+    ax.set_yscale('log')
+    ax.set_xlabel("AB Magnitude")
+    ax.set_ylabel('SNR')
+    ax.grid(True)
+    ax.legend()
+    plt.savefig("ultrasat_snr_vs_ABmag.png")
 """
