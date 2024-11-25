@@ -1,9 +1,11 @@
+from abc import ABC, abstractmethod
+
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
 
-class Orbit:
+class Orbit(ABC):
     """Base class for an Earth satellite with a specified orbit."""
 
     @property
@@ -11,6 +13,7 @@ class Orbit:
         """The orbital period."""
         raise NotImplementedError
 
+    @abstractmethod
     def __call__(self, time: Time) -> SkyCoord:
         """Get the position and velocity of the satellite.
 
