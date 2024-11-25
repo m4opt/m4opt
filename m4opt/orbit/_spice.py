@@ -27,7 +27,7 @@ _spkgps = np.vectorize(spice.spkgps, excluded=[0, 2, 3], signature="()->(m),()")
 
 
 class Spice(Orbit):
-    """A satellite whose orbit is specified by Spice kernels.
+    """A satellite whose orbit is specified by `Spice <https://naif.jpl.nasa.gov/naif/>`_ kernels.
 
     Examples
     --------

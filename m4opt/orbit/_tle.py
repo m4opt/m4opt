@@ -18,7 +18,7 @@ from ._core import Orbit
 
 
 class TLE(Orbit):
-    """An Earth satellite whose orbit is specified by its TLE.
+    """An Earth satellite whose orbit is specified by its two-line element (TLE).
 
     Notes
     -----
