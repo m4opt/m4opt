@@ -71,6 +71,7 @@ class TLE(Orbit):
 
     @classmethod
     def from_file(cls, name_or_obj: str | IO):
+        """Load a TLE from a filename, URL, or file-like object."""
         with get_readable_fileobj(name_or_obj) as f:
             *_, line1, line2 = f.readlines()
         return cls(line1, line2)
