@@ -34,7 +34,6 @@ class Spice(Orbit):
 
     Load an example Spice kernel from a file:
 
-    >>> from importlib import resources
     >>> from astropy.time import Time
     >>> from astropy import units as u
     >>> from m4opt.orbit import Spice
