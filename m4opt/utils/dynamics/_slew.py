@@ -86,7 +86,7 @@ class Slew:
         s: u.Quantity[u.physical.time],
     ) -> u.Quantity[u.physical.time]:
         xc = np.square(v) / a
-        return np.where(x <= xc, np.sqrt(4 * x / a), (x + xc) / v) + s
+        return np.where(x <= xc, 2 * np.sqrt(x / a), (x + xc) / v) + s
 
     def time(
         self,
