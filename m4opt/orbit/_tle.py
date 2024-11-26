@@ -30,7 +30,6 @@ class TLE(Orbit):
 
     Here is an example TLE for BurstCube (NORAD ID 59562):
 
-    >>> from importlib import resources
     >>> from astropy.time import Time
     >>> from astropy import units as u
     >>> import numpy as np
