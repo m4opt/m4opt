@@ -10,7 +10,7 @@ from ..orbit import Orbit
 from ..utils.dynamics import Slew
 
 
-@dataclass
+@dataclass(repr=False)
 class Mission:
     """Base class for all missions."""
 

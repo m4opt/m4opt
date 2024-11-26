@@ -26,7 +26,7 @@ def amplitude_oir_ccd(snr, t, source_eps, sky_eps, dark_eps, rd, npix, gain):
     return 0.5 * snr * (snr + np.sqrt(4 * c2 + np.square(snr))) / c1
 
 
-@dataclass
+@dataclass(repr=False)
 class Detector:
     """Sensitivity calculator: compute SNR for exposure time or vice-versa."""
 
