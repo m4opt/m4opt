@@ -345,11 +345,6 @@ def schedule(
                         table["roll"][:-1],
                         table["roll"][1:],
                     ),
-                    # FIXME: dummy values.
-                    # See https://github.com/astropy/astropy/issues/14292
-                    "target_coord": SkyCoord(
-                        np.zeros(nrows) * u.deg, np.zeros(nrows) * u.deg
-                    ),
                 }
             )
             table = vstack(
