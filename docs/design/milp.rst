@@ -40,6 +40,7 @@ MILP Problem Formulation
 
 Index sets
 ~~~~~~~~~~
+
 - :math:`I = \{0, 1, \dots, n_p - 1\}`: pixels
 - :math:`J = \{0, 1, \dots, n_r - 1\}`: reference fields
 - :math:`K = \{0, 1, \dots, n_v - 1\}`: visits
@@ -48,6 +49,7 @@ Index sets
 
 Parameters
 ~~~~~~~~~~
+
 - :math:`\left(\rho_i\right)_{i \in I}`: probability that source is inside pixel :math:`i`
 - :math:`\left(\sigma_{jj^\prime}\right)_{j \in J, j^\prime \in J}`: slew time from reference field :math:`j` to reference field :math:`j^\prime`
 - :math:`\left(\alpha_{jm}\right)_{j \in J, m \in M}`: start time of observable segment :math:`m` of reference field :math:`j`
@@ -58,10 +60,15 @@ Parameters
 Decision variables
 ~~~~~~~~~~~~~~~~~~
 
+Continuous decision variables:
+
 - :math:`\left(p_i\right)_{i \in I}`: pixel :math:`i` is inside the footprint of one or more selected reference fields
 - :math:`\left(r_j\right)_{j \in J}`: reference field :math:`j` is selected for observation
-- :math:`\left(t_{jk}\right)_{j \in J, k \in K}`: start time of observation :math:`j` visit :math:`k`
 - :math:`\left(s_{jkm}\right)_{j \in J, k \in K, m \in M}`: whether reference field :math:`j` visit :math:`k` occurs in segment :math:`m`
+
+Binary decision variables:
+
+- :math:`\left(t_{jk}\right)_{j \in J, k \in K}`: start time of observation :math:`j` visit :math:`k`
 
 Constraints
 ~~~~~~~~~~~~
