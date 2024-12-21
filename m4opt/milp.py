@@ -147,13 +147,6 @@ class SolveSolution(_SolveSolution):
         return np.asarray(super().get_values(var_seq.ravel())).reshape(var_seq.shape)
 
 
-ufunc_map = {
-    np.less_equal: np.vectorize(operator.le, signature="(),()->()"),
-    np.greater_equal: np.vectorize(operator.ge, signature="(),()->()"),
-    np.equal: np.vectorize(operator.eq, signature="(),()->()"),
-}
-
-
 class VariableArray(np.ndarray):
     """Subclass numpy.ndarray to support vectorized comparison operators."""
 
@@ -177,7 +170,34 @@ class VariableArray(np.ndarray):
         elif method != "__call__":
             return NotImplemented
         else:
-            return ufunc_map[ufunc](*inputs)
+            return ufunc_map[ufunc](
+                *(input.view(self.__class__) for input in inputs)
+            ).view(self.__class__)
+
+
+def make_attr(op):
+    setattr(
+        VariableArray,
+        op,
+        lambda self, rhs: getattr(super(VariableArray, self), op)(
+            np.asarray(rhs, VariableArray)
+        ),
+    )
+    return np.vectorize(getattr(operator, op), signature="(),()->()")
+
+
+ufunc_map = {
+    numpyfunc: make_attr(op)
+    for numpyfunc, op in [
+        [np.less_equal, "__le__"],
+        [np.greater_equal, "__ge__"],
+        [np.equal, "__eq__"],
+        [np.add, "__add__"],
+        [np.subtract, "__sub__"],
+    ]
+}
+
+del make_attr
 
 
 def add_var_array_method(cls, tp):
