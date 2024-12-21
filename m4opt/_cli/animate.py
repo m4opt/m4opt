@@ -226,14 +226,10 @@ def animate(
             ax_area.set_ylabel("area (deg$^2$)", color=footprint_color)
 
             for i, (area, prob) in enumerate(zip(table["area"].T, table["prob"].T)):
-                alpha = i / visits
-                visit_skymap_color, visit_footprint_color = (
-                    np.asarray(
-                        [to_rgb(color) for color in [skymap_color, footprint_color]]
-                    )
-                    * (1 - alpha)
-                    + alpha
-                )
+                alpha = (i + 1) / visits
+                visit_skymap_color, visit_footprint_color = np.asarray(
+                    [to_rgb(color) for color in [skymap_color, footprint_color]]
+                ) * alpha + (1 - alpha)
                 ax_timeline.hlines(
                     prob,
                     (table["start_time"] - time_steps[0]).to(u.hour),
