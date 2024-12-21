@@ -184,7 +184,7 @@ def schedule(
         else:
             n_fields = len(target_coords)
 
-        # # Throw away pixels that are not contained in any fields.
+        # Throw away pixels that are not contained in any fields.
         good = np.unique(np.concatenate(footprints))
         imap = np.empty(len(probs), dtype=np.intp)
         imap[good] = np.arange(len(good))
