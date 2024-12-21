@@ -2,16 +2,18 @@
 
 import operator
 from collections.abc import Callable
+from unittest.mock import patch
 
 import numpy as np
 from astropy import units as u
 from docplex.mp.model import Model as _Model
+from docplex.mp.solution import SolveSolution as _SolveSolution
 from numpy import typing as npt
 
 from .utils.console import status
 from .utils.numpy import atmost_1d
 
-__all__ = ("Model",)
+__all__ = ("Model", "SolveSolution")
 
 
 class Model(_Model):
@@ -115,6 +117,35 @@ class Model(_Model):
         return super().add_indicators(
             atmost_1d(binary_vars), atmost_1d(cts), atmost_1d(true_values), names
         )
+
+    def solve(self, **kwargs):
+        with patch("docplex.mp.solution.SolveSolution", SolveSolution):
+            return super().solve(**kwargs)
+
+
+class SolveSolution(_SolveSolution):
+    def get_values(self, var_seq):
+        """Get solution values for multidimensional arrays of variables.
+
+        Examples
+        --------
+        >>> from m4opt.milp import Model
+        >>> import numpy as np
+        >>> m = Model()
+        >>> x = m.continuous_vars((3, 4), ub=np.full((3, 4), 42))
+        ✓ adding 12 continuous variables 0:00:00
+        >>> m.maximize(m.sum(x.ravel()))
+        >>> solution = m.solve()  # doctest: +ELLIPSIS
+        Version identifier: ...
+        >>> solution.get_values(x[0])
+        array([42., 42., 42., 42.])
+        >>> solution.get_values(x)
+        array([[42., 42., 42., 42.],
+               [42., 42., 42., 42.],
+               [42., 42., 42., 42.]])
+        """
+        var_seq = np.asarray(var_seq)
+        return np.asarray(super().get_values(var_seq.ravel())).reshape(var_seq.shape)
 
 
 ufunc_map = {

@@ -278,10 +278,10 @@ def schedule(
             start_time_field_visit_values = np.empty(start_time_field_visit_vars.shape)
             objective_value = 0.0
         else:
-            field_values = np.asarray(solution.get_values(field_vars), dtype=bool)
-            start_time_field_visit_values = np.asarray(
-                solution.get_values(start_time_field_visit_vars.ravel())
-            ).reshape(start_time_field_visit_vars.shape)
+            field_values = solution.get_values(field_vars).astype(bool)
+            start_time_field_visit_values = solution.get_values(
+                start_time_field_visit_vars
+            )
             objective_value = solution.get_objective_value()
 
         table = QTable(
