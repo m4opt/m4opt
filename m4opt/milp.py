@@ -195,10 +195,10 @@ def make_attr(op):
 ufunc_map = {
     numpyfunc: make_attr(op)
     for numpyfunc, op in [
-        [np.less_equal, "__le__"],
-        [np.greater_equal, "__ge__"],
-        [np.equal, "__eq__"],
         [np.add, "__add__"],
+        [np.equal, "__eq__"],
+        [np.greater_equal, "__ge__"],
+        [np.less_equal, "__le__"],
         [np.subtract, "__sub__"],
     ]
 }
