@@ -96,3 +96,22 @@ def test_cplex_operators(tp, rhs_shape, expr):
     constraint = eval(expr, None, dict(m=m, x=add_vars((3, 2)), y=add_vars(rhs_shape)))
     assert isinstance(constraint, VariableArray)
     m.add_constraints_(constraint)
+
+
+@pytest.mark.parametrize(
+    "tp", ["binary", "continuous", "integer", "semicontinuous", "semiinteger"]
+)
+@pytest.mark.parametrize(
+    "rhs_shape",
+    ((), 2, (3, 2)),
+)
+def test_cplex_broadcast_indicator(tp, rhs_shape):
+    """Test adding indicator constraints by broadcasting variables."""
+    m = Model()
+    add_vars = getattr(m, f"{tp}_vars")
+    x = m.binary_vars((3, 2))
+    y = add_vars(rhs_shape)
+    constraint = (x == 1) >> (y >= 0)
+    assert isinstance(constraint, VariableArray)
+    m.add_indicator_constraints(constraint)
+    m.add_indicator_constraints_(constraint)

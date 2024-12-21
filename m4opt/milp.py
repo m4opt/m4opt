@@ -118,6 +118,12 @@ class Model(_Model):
             atmost_1d(binary_vars), atmost_1d(cts), atmost_1d(true_values), names
         )
 
+    def add_indicator_constraints(self, indcts):
+        return super().add_indicator_constraints(atmost_1d(indcts))
+
+    def add_indicator_constraints_(self, indcts):
+        return super().add_indicator_constraints_(atmost_1d(indcts))
+
     def solve(self, **kwargs):
         with patch("docplex.mp.solution.SolveSolution", SolveSolution):
             return super().solve(**kwargs)
@@ -199,6 +205,7 @@ ufunc_map = {
         [np.equal, "__eq__"],
         [np.greater_equal, "__ge__"],
         [np.less_equal, "__le__"],
+        [np.right_shift, "__rshift__"],
         [np.subtract, "__sub__"],
     ]
 }
