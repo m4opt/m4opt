@@ -60,13 +60,13 @@ Parameters
 Decision variables
 ~~~~~~~~~~~~~~~~~~
 
-Continuous decision variables:
+Binary decision variables:
 
 - :math:`\left(p_i\right)_{i \in I}`: pixel :math:`i` is inside the footprint of one or more selected reference fields
 - :math:`\left(r_j\right)_{j \in J}`: reference field :math:`j` is selected for observation
 - :math:`\left(s_{jkm}\right)_{j \in J, k \in K, m \in M}`: whether reference field :math:`j` visit :math:`k` occurs in segment :math:`m`
 
-Binary decision variables:
+Continuous decision variables:
 
 - :math:`\left(t_{jk}\right)_{j \in J, k \in K}`: start time of observation :math:`j` visit :math:`k`
 
