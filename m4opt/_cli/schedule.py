@@ -223,6 +223,7 @@ def schedule(
             for start_time_visit_vars, intervals in zip(
                 start_time_field_visit_vars, observable_intervals
             ):
+                assert len(intervals) > 0
                 if len(intervals) > 1:
                     begin, end = intervals.T
                     visit_interval_vars = model.binary_vars((visits, len(intervals)))
