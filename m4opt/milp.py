@@ -122,6 +122,12 @@ class Model(_Model):
         with patch("docplex.mp.solution.SolveSolution", SolveSolution):
             return super().solve(**kwargs)
 
+    def min(self, *args):
+        return np.asarray(super().min(*args)).view(VariableArray)
+
+    def max(self, *args):
+        return np.asarray(super().max(*args)).view(VariableArray)
+
 
 class SolveSolution(_SolveSolution):
     def get_values(self, var_seq):
