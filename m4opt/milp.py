@@ -130,9 +130,8 @@ class SolveSolution(_SolveSolution):
         Examples
         --------
         >>> from m4opt.milp import Model
-        >>> import numpy as np
         >>> m = Model()
-        >>> x = m.continuous_vars((3, 4), ub=np.full((3, 4), 42))
+        >>> x = m.continuous_vars((3, 4), ub=42)
         ✓ adding 12 continuous variables 0:00:00
         >>> m.maximize(m.sum(x.ravel()))
         >>> solution = m.solve()  # doctest: +ELLIPSIS
@@ -186,8 +185,12 @@ def add_var_array_method(cls, tp):
         size = np.prod(shape, dtype=int)
         if lb is not None:
             lb = np.ravel(lb)
+            if lb.size == 1:
+                lb = lb.item()
         if ub is not None:
             ub = np.ravel(ub)
+            if ub.size == 1:
+                ub = ub.item()
         with status(f"adding {size} {tp} variables"):
             vartype = getattr(self, f"{tp}_vartype")
             vars = np.reshape(self.var_list(size, vartype, lb, ub), shape).view(
@@ -211,12 +214,13 @@ def add_var_array_method(cls, tp):
     Examples
     --------
     >>> from m4opt.milp import Model
+    >>> import numpy as np
     >>> model = Model()
     >>> x = model.{tp}_vars()
     ✓ adding 1 {tp} variables 0:00:00
-    >>> y = model.{tp}_vars(3)
+    >>> y = model.{tp}_vars(3, lb=1, ub=1)
     ✓ adding 3 {tp} variables 0:00:00
-    >>> z = model.{tp}_vars((3, 4))
+    >>> z = model.{tp}_vars((3, 4), lb=np.ones((3, 4)), ub=np.ones((3, 4)))
     ✓ adding 12 {tp} variables 0:00:00
     >>> print(x)
     x1
