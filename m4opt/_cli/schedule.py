@@ -361,10 +361,10 @@ def schedule(
             table["action", "duration"].group_by("action").groups.aggregate(np.sum)
         )
         table.meta["total_time"] = {
-            str(row["action"]): row["duration"] for row in total_time_by_action
+            str(row["action"]): row["duration"].to(u.s) for row in total_time_by_action
         }
         table.meta["total_time"]["slack"] = (
             deadline - delay - total_time_by_action["duration"].sum()
-        )
+        ).to(u.s)
 
         table.write(schedule, format="ascii.ecsv", overwrite=True)
