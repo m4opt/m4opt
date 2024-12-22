@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 from itertools import accumulate, chain
 from typing import Annotated, Iterable, cast
 
@@ -8,7 +7,7 @@ from astropy import units as u
 from astropy.coordinates import ICRS
 from astropy.table import QTable
 from astropy.time import Time
-from astropy.visualization.units import quantity_support as _quantity_support
+from astropy.visualization.units import quantity_support
 from astropy_healpix import HEALPix
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
@@ -26,13 +25,6 @@ from .. import missions
 from ..fov import footprint, footprint_healpix
 from ..utils.console import progress, status
 from .core import app
-
-
-@contextmanager
-def quantity_support(*args, **kwargs):
-    """Workaround for https://github.com/astropy/astropy/pull/17006."""
-    with _quantity_support(*args, **kwargs):
-        yield
 
 
 @app.command()
