@@ -95,7 +95,7 @@ jobs:
         if [ -n "$GRB_LICENSE_FILE_CONTENTS" ]; then
           printenv GRB_LICENSE_FILE_CONTENTS > $HOME/gurobi.lic
         fi
-        tox -e ${{ matrix.toxenv }}
+        tox -e ${{ matrix.toxenv }} -- --junitxml=junit.xml -o junit_family=legacy
 
     - name: Upload coverage to codecov
       if: contains(matrix.toxenv, '-cov')
