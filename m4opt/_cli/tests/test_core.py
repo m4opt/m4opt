@@ -1,8 +1,14 @@
 from astropy import units as u
 from typer import Typer
 
-from ... import missions
-from .. import core  # noqa: F401
+from ... import __version__, missions
+from .. import core
+
+
+def test_version(run_cli):
+    """Test the --version option."""
+    result = run_cli(core.app, "--version")
+    assert result.output.strip() == __version__
 
 
 def test_quantity(run_cli):
