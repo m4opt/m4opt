@@ -32,10 +32,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Python 3.11 with minimal dependencies
+          - name: Python 3.11 with minimal dependencies and coverage checking
             os: ubuntu-latest
             python: '3.11'
-            toxenv: py311-test
+            toxenv: py311-test-cov
 
           - name: Python 3.11 with all optional dependencies and coverage checking
             os: ubuntu-latest
