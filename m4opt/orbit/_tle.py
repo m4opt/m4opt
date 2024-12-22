@@ -58,6 +58,15 @@ class TLE(Orbit):
     >>> orbit(times).shape
     (50,)
 
+    If any orbit propagation errors occur, then a :class:`RuntimeError` is
+    raised:
+
+    >>> time = Time('2025-01-01 00:00:00')
+    >>> orbit(time)
+    Traceback (most recent call last):
+      ...
+    RuntimeError: mrt is less than 1.0 which indicates the satellite has decayed
+
     """  # noqa: E501
 
     def __init__(self, line1: str, line2: str):
