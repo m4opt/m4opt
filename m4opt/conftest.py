@@ -11,13 +11,7 @@ import os
 
 import numpy as np
 import pytest
-
-try:
-    from pytest_astropy_header.display import PYTEST_HEADER_MODULES, TESTED_VERSIONS
-
-    ASTROPY_HEADER = True
-except ImportError:
-    ASTROPY_HEADER = False
+from pytest_astropy_header.display import PYTEST_HEADER_MODULES, TESTED_VERSIONS
 
 from .tests.plugins.problem_size_limits import pytest_runtest_call  # noqa: F401
 
@@ -30,19 +24,18 @@ def pytest_configure(config):
     config : pytest configuration
 
     """
-    if ASTROPY_HEADER:
-        config.option.astropy_header = True
+    config.option.astropy_header = True
 
-        # Customize the following lines to add/remove entries from the list of
-        # packages for which version numbers are displayed when running the
-        # tests.
-        PYTEST_HEADER_MODULES.pop("Pandas", None)
-        PYTEST_HEADER_MODULES["scikit-image"] = "skimage"
+    # Customize the following lines to add/remove entries from the list of
+    # packages for which version numbers are displayed when running the
+    # tests.
+    PYTEST_HEADER_MODULES.pop("Pandas", None)
+    PYTEST_HEADER_MODULES["scikit-image"] = "skimage"
 
-        from . import __version__
+    from . import __version__
 
-        packagename = os.path.basename(os.path.dirname(__file__))
-        TESTED_VERSIONS[packagename] = __version__
+    packagename = os.path.basename(os.path.dirname(__file__))
+    TESTED_VERSIONS[packagename] = __version__
 
 
 @pytest.fixture(autouse=True)
