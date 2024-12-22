@@ -29,7 +29,6 @@ from .core import app
 
 @app.command()
 @progress()
-@quantity_support()
 def animate(
     schedule: Annotated[
         typer.FileBinaryRead,
@@ -64,7 +63,7 @@ def animate(
             Time(skymap_moc.meta["gps_time"], format="gps").utc, format="iso"
         )
 
-    with status("making animation"):
+    with status("making animation"), quantity_support():
         with status("setting up axes"):
             fig = plt.figure()
             gs = fig.add_gridspec(2, 1, height_ratios=[4, 1])
