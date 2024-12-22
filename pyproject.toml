@@ -34,7 +34,6 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "astroplan",
-    "hypothesis",
     "pytest-astropy",
 ]
 docs = [
