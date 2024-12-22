@@ -9,6 +9,9 @@ packagename.test
 
 import os
 
+import numpy as np
+import pytest
+
 try:
     from pytest_astropy_header.display import PYTEST_HEADER_MODULES, TESTED_VERSIONS
 
@@ -40,6 +43,20 @@ def pytest_configure(config):
 
         packagename = os.path.basename(os.path.dirname(__file__))
         TESTED_VERSIONS[packagename] = __version__
+
+
+@pytest.fixture(autouse=True)
+def numpy_printoptions():
+    """DOcplex messes globally with Numpy's print options in a way that breaks
+    pytest-doctestplus. Save and restore the Numpy print options before and
+    after each test.
+
+    See also
+    --------
+    docplex.mp.model.Model.init_numpy, docplex.mp.model.Model.restore_numpy
+    """
+    with np.printoptions():
+        yield
 
 
 # Uncomment the last two lines in this block to treat all DeprecationWarnings
