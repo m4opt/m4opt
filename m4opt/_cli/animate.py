@@ -48,9 +48,8 @@ def animate(
         typer.Argument(help="Output filename for animation", metavar="MOVIE.gif"),
     ],
     time_step: Annotated[
-        u.Quantity[u.physical.time],
+        u.Quantity,
         typer.Option(
-            parser=u.Quantity,
             help="Time step for evaluating field of regard",
         ),
     ] = "1 hour",

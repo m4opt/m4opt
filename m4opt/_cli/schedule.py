@@ -34,7 +34,6 @@ def invert_footprints(footprints, n_pixels):
 
 @app.command()
 @progress()
-@u.quantity_input
 def schedule(
     skymap: Annotated[
         typer.FileBinaryRead,
@@ -48,42 +47,37 @@ def schedule(
     ],
     mission: MissionOption = missions.uvex,
     delay: Annotated[
-        u.Quantity[u.physical.time],
+        u.Quantity,
         typer.Option(
-            parser=u.Quantity,
             help="Delay from time of event until the start of observations",
         ),
     ] = "0 day",
     deadline: Annotated[
-        u.Quantity[u.physical.time],
+        u.Quantity,
         typer.Option(
-            parser=u.Quantity,
             help="Maximum time from event until the end of observations",
         ),
     ] = "1 day",
     time_step: Annotated[
-        u.Quantity[u.physical.time],
+        u.Quantity,
         typer.Option(
-            parser=u.Quantity,
             help="Time step for evaluating field of regard",
         ),
     ] = "1 min",
     exptime: Annotated[
-        u.Quantity[u.physical.time],
+        u.Quantity,
         typer.Option(
-            parser=u.Quantity,
             help="Exposure time for each observation",
         ),
     ] = "900 s",
     visits: Annotated[int, typer.Option(min=1, help="Number of visits")] = 2,
     cadence: Annotated[
-        u.Quantity[u.physical.time],
-        typer.Option(parser=u.Quantity, help="Minimum time separation between visits"),
+        u.Quantity,
+        typer.Option(help="Minimum time separation between visits"),
     ] = "30 min",
     timelimit: Annotated[
-        u.Quantity[u.physical.time],
+        u.Quantity,
         typer.Option(
-            parser=u.Quantity,
             help="Time limit for MILP solver",
         ),
     ] = "1e75 s",
