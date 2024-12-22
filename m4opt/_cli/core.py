@@ -34,10 +34,24 @@ class QuantityClickType(click.ParamType):
         return result
 
 
+class MissionClickType(click.Choice):
+    def __init__(self):
+        choices = [name for name in missions.__all__ if name[0].islower()]
+        super().__init__(choices)
+
+    def convert(self, value, *args, **kwargs):
+        if isinstance(value, missions.Mission):
+            return value
+        else:
+            return getattr(missions, super().convert(value, *args, **kwargs))
+
+
 def get_click_type(*, annotation, parameter_info):
     """Monkeypatch for typer.main.get_click_type to add support for new types."""
     if lenient_issubclass(annotation, u.Quantity):
         return QuantityClickType()
+    elif lenient_issubclass(annotation, missions.Mission):
+        return MissionClickType()
     else:
         return _get_click_type(annotation=annotation, parameter_info=parameter_info)
 
@@ -58,20 +72,3 @@ def version(
     ] = False,
 ):
     pass
-
-
-class MissionParam(click.Choice):
-    def __init__(self):
-        choices = [name for name in missions.__all__ if name[0].islower()]
-        super().__init__(choices)
-
-    def convert(self, value, *args, **kwargs):
-        if isinstance(value, missions.Mission):
-            return value
-        else:
-            return getattr(missions, super().convert(value, *args, **kwargs))
-
-
-MissionOption = Annotated[
-    missions.Mission, typer.Option(click_type=MissionParam(), show_default=False)
-]

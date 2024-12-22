@@ -18,7 +18,7 @@ from ..milp import Model
 from ..utils.console import progress, status
 from ..utils.dynamics import nominal_roll
 from ..utils.numpy import clump_nonzero, full_indices
-from .core import MissionOption, app
+from .core import app
 
 
 def invert_footprints(footprints, n_pixels):
@@ -45,7 +45,9 @@ def schedule(
             help="Output filename for generated schedule", metavar="SCHEDULE.ecsv"
         ),
     ],
-    mission: MissionOption = missions.uvex,
+    mission: Annotated[
+        missions.Mission, typer.Option(show_default="uvex")
+    ] = missions.uvex,
     delay: Annotated[
         u.Quantity,
         typer.Option(
