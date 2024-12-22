@@ -50,6 +50,12 @@ class Spice(Orbit):
     >>> orbit(t0 + np.arange(4) * u.hour).shape
     (4,)
 
+    Note that the Spice orbit class does not implement the period property:
+
+    >>> orbit.period
+    Traceback (most recent call last):
+      ...
+    NotImplementedError
     """  # noqa: E501
 
     def __init__(self, target: str, *kernels: str):
@@ -58,6 +64,7 @@ class Spice(Orbit):
         self._target = spice.bodn2c(target)
         self._body = spice.bodn2c("EARTH")
 
+    @property
     @override
     def period(self):
         raise NotImplementedError
