@@ -1,11 +1,3 @@
-import sys
-
-if sys.version_info >= (3, 12):
-    from typing import override
-else:
-    # FIXME: requires Python >= 3.12
-    from typing_extensions import override
-
 from importlib import resources
 
 import numpy as np
@@ -15,6 +7,7 @@ from astropy.table import QTable
 from scipy.interpolate import RegularGridInterpolator
 from synphot import Empirical1D, SourceSpectrum, SpectralElement
 
+from ....utils.typing_extensions import override
 from ..._extrinsic import ExtrinsicScaleFactor
 from .._core import BACKGROUND_SOLID_ANGLE
 from . import data

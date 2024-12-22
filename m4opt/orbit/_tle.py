@@ -1,11 +1,4 @@
-import sys
 from typing import IO
-
-if sys.version_info >= (3, 12):
-    from typing import override
-else:
-    # FIXME: requires Python >= 3.12
-    from typing_extensions import override
 
 import numpy as np
 from astropy import units as u
@@ -14,6 +7,7 @@ from astropy.utils.data import get_readable_fileobj
 from satellite_tle import fetch_tle_from_celestrak
 from sgp4.api import SGP4_ERRORS, Satrec
 
+from ..utils.typing_extensions import override
 from ._core import Orbit
 
 

@@ -1,11 +1,3 @@
-import sys
-
-if sys.version_info >= (3, 12):
-    from typing import override
-else:
-    # FIXME: requires Python >= 3.12
-    from typing_extensions import override
-
 import numpy as np
 import numpy.typing as npt
 import spiceypy as spice
@@ -14,6 +6,7 @@ from astropy.coordinates import ITRS, SkyCoord
 from astropy.time import Time
 from astropy.utils.data import download_file
 
+from ..utils.typing_extensions import override
 from ._core import Orbit
 
 

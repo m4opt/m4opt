@@ -1,14 +1,7 @@
-import sys
-
-if sys.version_info >= (3, 12):
-    from typing import override
-else:
-    # FIXME: requires Python >= 3.12
-    from typing_extensions import override
-
 from astropy import units as u
 from astropy.coordinates import get_body
 
+from ..utils.typing_extensions import override
 from ._core import Constraint
 
 
