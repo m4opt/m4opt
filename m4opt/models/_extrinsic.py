@@ -57,7 +57,6 @@ class ExtrinsicScaleFactor(ABC, Model):
         self, observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
     ) -> float:
         """Evaluate the scale factor at a particular observerd location, target coordinate, and time."""
-        raise NotImplementedError
 
     @property
     def value(self) -> float:
