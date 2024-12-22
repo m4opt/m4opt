@@ -1,14 +1,11 @@
 from astropy import units as u
 from typer import Typer
-from typer.testing import CliRunner
 
 from ... import missions
 from .. import core  # noqa: F401
 
-runner = CliRunner()
 
-
-def test_quantity():
+def test_quantity(run_cli):
     """Test CLI with quantity arguments."""
 
     def run(*args):
@@ -20,7 +17,7 @@ def test_quantity():
             nonlocal value
             value = foo
 
-        result = runner.invoke(app, args)
+        result = run_cli(app, *args)
         return result, value
 
     result, value = run()
@@ -39,7 +36,7 @@ def test_quantity():
     )
 
 
-def test_mission():
+def test_mission(run_cli):
     """Test CLI with mission arguments."""
 
     def run(*args):
@@ -51,7 +48,7 @@ def test_mission():
             nonlocal value
             value = foo
 
-        result = runner.invoke(app, args)
+        result = run_cli(app, *args)
         return result, value
 
     result, value = run()
