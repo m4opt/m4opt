@@ -14,4 +14,3 @@ class Constraint(ABC):
         self, observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
     ) -> npt.NDArray[np.bool_]:
         """Evaluate the constraint at a given observer location, target position, and time."""
-        raise NotImplementedError

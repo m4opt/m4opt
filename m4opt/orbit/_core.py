@@ -9,9 +9,9 @@ class Orbit(ABC):
     """Base class for an Earth satellite with a specified orbit."""
 
     @property
+    @abstractmethod
     def period(self) -> u.Quantity[u.physical.time]:
         """The orbital period."""
-        raise NotImplementedError
 
     @abstractmethod
     def __call__(self, time: Time) -> SkyCoord:
@@ -27,4 +27,3 @@ class Orbit(ABC):
         :
             The coordinates of the satellite in the ITRS frame.
         """
-        raise NotImplementedError

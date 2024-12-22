@@ -59,6 +59,10 @@ class Spice(Orbit):
         self._body = spice.bodn2c("EARTH")
 
     @override
+    def period(self):
+        raise NotImplementedError
+
+    @override
     def __call__(self, time):
         et = _time_to_et(time)
         pos, _ = _spkgps(self._target, et, "IAU_EARTH", self._body)
