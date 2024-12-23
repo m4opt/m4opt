@@ -10,7 +10,7 @@ We receive a :doc:`HEALPix probability sky map <userguide:tutorial/skymaps>` tha
 
 Our telescope can observe any of a set of :math:`n_r` reference fields at predetermined sky locations in order to tile the sky map. For each reference field that we select, our telescope must visit the reference field at least :math:`n_v` times. We have a cadence requirement: each visit of a given reference field must occur at least a time :math:`\gamma` after the previous visit.
 
-Every visit takes a certain amount of exposure time, and it takes a known amount of time to slew between different reference fields. We may only a visit a reference field when it is within the field of regard, the region that constraints where the telescope may point at any given instant of time.
+Every visit takes a certain amount of exposure time, and it takes a known amount of time to slew between different reference fields. We may only a visit a reference field when it is within the field of regard, the region that constrains where the telescope may point at any given instant of time.
 
 Data preparation
 ----------------
