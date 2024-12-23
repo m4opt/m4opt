@@ -68,7 +68,7 @@ Binary decision variables:
 
 Continuous decision variables:
 
-- :math:`\left(t_{jk}\right)_{j \in J, k \in K}`: start time of observation :math:`j` visit :math:`k`
+- :math:`\left(t_{jk}\right)_{j \in J, k \in K}`: midpoint time of observation :math:`j` visit :math:`k`
 
 Constraints
 ~~~~~~~~~~~~
@@ -95,7 +95,7 @@ Note: for each reference field :math:`j` that has exactly one observable interva
 
 .. math::
 
-    \forall j ,\; k \;, m :\quad s_{jkm} = 1 \;\Rightarrow\; \alpha_{jm} \leq t_{jk} \leq \omega_{jm} - \epsilon
+    \forall j ,\; k \;, m :\quad s_{jkm} = 1 \;\Rightarrow\; \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2
 
 Objective
 ~~~~~~~~~
