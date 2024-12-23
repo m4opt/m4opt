@@ -83,7 +83,7 @@ Constraints
 
 .. math::
 
-    \forall k > 1 ,\; j :\quad t_{jk} - t_{j,k-1} \geq \gamma r_j
+    \forall k > 1 ,\; j :\quad t_{jk} - t_{j,k-1} \geq (\epsilon + \gamma) r_j
 
 **No overlap.** Observations cannot overlap in time; they must be separated by at least the exposure time plus the slew time.
 
