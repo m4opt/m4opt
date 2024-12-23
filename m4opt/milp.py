@@ -217,11 +217,11 @@ def add_var_array_method(cls, tp):
     def func(self, shape=(), lb=None, ub=None):
         size = np.prod(shape, dtype=int)
         if lb is not None:
-            lb = np.ravel(lb)
+            lb = np.broadcast_to(lb, shape).ravel()
             if lb.size == 1:
                 lb = lb.item()
         if ub is not None:
-            ub = np.ravel(ub)
+            ub = np.broadcast_to(ub, shape).ravel()
             if ub.size == 1:
                 ub = ub.item()
         with status(f"adding {size} {tp} variables"):

@@ -220,8 +220,8 @@ def schedule(
         field_vars = model.binary_vars(n_fields)
         time_field_visit_vars = model.continuous_vars(
             (n_fields, visits),
-            lb=np.tile(time_lbs[:, np.newaxis], visits),
-            ub=np.tile(time_ubs[:, np.newaxis], visits),
+            lb=time_lbs[:, np.newaxis],
+            ub=time_ubs[:, np.newaxis],
         )
 
         # Add constraints on observability windows for each field
