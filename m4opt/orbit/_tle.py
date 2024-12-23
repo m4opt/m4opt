@@ -1,9 +1,6 @@
-from typing import IO
-
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import TEME, SkyCoord
-from astropy.utils.data import get_readable_fileobj
 from satellite_tle import fetch_tle_from_celestrak
 from sgp4.api import SGP4_ERRORS, Satrec
 
@@ -66,13 +63,6 @@ class TLE(Orbit):
     def __init__(self, line1: str, line2: str):
         """Create a TLE from the text of its two lines."""
         self._tle = Satrec.twoline2rv(line1, line2)
-
-    @classmethod
-    def from_file(cls, name_or_obj: str | IO) -> "TLE":
-        """Load a TLE from a filename, URL, or file-like object."""
-        with get_readable_fileobj(name_or_obj) as f:
-            *_, line1, line2 = f.readlines()
-        return cls(line1, line2)
 
     @classmethod
     def from_id(cls, norad_id: int) -> "TLE":
