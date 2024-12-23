@@ -17,7 +17,7 @@ from ..fov import footprint_healpix
 from ..milp import Model
 from ..utils.console import progress, status
 from ..utils.dynamics import nominal_roll
-from ..utils.numpy import clump_nonzero, full_indices
+from ..utils.numpy import clump_nonzero_inclusive, full_indices
 from .core import app
 
 
@@ -30,14 +30,6 @@ def invert_footprints(footprints, n_pixels):
         np.asarray(field_indices, dtype=np.intp)
         for field_indices in pixels_to_fields_map
     ]
-
-
-def clump_nonzero_inclusive(a):
-    """Like clump_nonzero, but return closed rather than half-open intervals."""
-    result = clump_nonzero(a)
-    for intervals in result:
-        intervals[:, 1] -= 1
-    return result
 
 
 @app.command()

@@ -58,6 +58,32 @@ def clump_nonzero(a):
     ]
 
 
+def clump_nonzero_inclusive(a):
+    """Like clump_nonzero, but return closed rather than half-open intervals.
+
+    Examples
+    --------
+    >>> from m4opt.utils.numpy import clump_nonzero_inclusive
+    >>> clump_nonzero_inclusive([[0, 0, 1, 1, 0, 0]])
+    [array([[2, 3]])]
+    >>> clump_nonzero_inclusive([[1, 1, 0, 0, 1, 1]])
+    [array([[0, 1],
+           [4, 5]])]
+    >>> clump_nonzero_inclusive([[1, 1, 1, 1, 1, 1]])
+    [array([[0, 5]])]
+    >>> clump_nonzero_inclusive([[0, 0, 0, 0, 0, 0]])
+    [array([], shape=(0, 2), dtype=int64)]
+
+    See also
+    --------
+    m4opt.utils.numpy.clump_nonzero
+    """
+    result = clump_nonzero(a)
+    for intervals in result:
+        intervals[:, 1] -= 1
+    return result
+
+
 def full_indices(n):
     """Calculate the indices of all of the elements of a square array.
 
