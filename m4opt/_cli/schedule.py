@@ -242,7 +242,7 @@ def schedule(
                         start_time_field_visit_vars[:, 1:]
                         - start_time_field_visit_vars[:, :-1]
                     )
-                    >= cadence_s * field_vars[:, np.newaxis]
+                    >= (exptime_s + cadence_s) * field_vars[:, np.newaxis]
                 )
 
         with status("adding slew constraints"):
