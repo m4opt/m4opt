@@ -36,7 +36,7 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli):
         )
         num_visits = table.meta["args"]["visits"]
 
-        assert len(table) == num_fields * num_visits * 2 - 1
+        assert len(table) == max(num_fields * num_visits * 2 - 1, 0)
         assert (
             table["action"][::2] == "observe"
         ).all(), "even actions must be 'observe'"
