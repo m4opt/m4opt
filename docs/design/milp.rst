@@ -71,7 +71,7 @@ Continuous decision variables:
 - :math:`\left(t_{jk}\right)_{j \in J, k \in K}`: midpoint time of observation :math:`j` visit :math:`k`
 
 Constraints
-~~~~~~~~~~~~
+~~~~~~~~~~~
 
 **Containment.** Only count pixels that are inside one or more reference fields.
 
