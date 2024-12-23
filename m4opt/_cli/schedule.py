@@ -32,6 +32,13 @@ def invert_footprints(footprints, n_pixels):
     ]
 
 
+def clump_nonzero_inclusive(a):
+    """Like clump_nonzero, but return closed rather than half-open intervals."""
+    result = clump_nonzero(a)
+    a[:, 1] -= 1
+    return result
+
+
 @app.command()
 @progress()
 def schedule(
@@ -119,13 +126,13 @@ def schedule(
         observable_intervals = np.asarray(
             [
                 obstimes_s[intervals]
-                for intervals in clump_nonzero(
+                for intervals in clump_nonzero_inclusive(
                     np.logical_and.reduce(
                         [
                             constraint(
-                                observer_locations[:-1],
+                                observer_locations,
                                 target_coords[:, np.newaxis],
-                                obstimes[:-1],
+                                obstimes,
                             )
                             for constraint in mission.constraints
                         ],
