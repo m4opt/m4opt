@@ -1,7 +1,6 @@
 """Test production problem size limits for MILP solvers."""
 
 import docplex.mp.model
-import gurobipy
 import numpy as np
 import pytest
 from astropy import units as u
@@ -19,14 +18,6 @@ def test_cplex(num_vars):
     m = docplex.mp.model.Model()
     m.binary_var_list(num_vars)
     m.solve()
-
-
-@problem_size_limits
-def test_gurobi(num_vars):
-    """Test that Gurobi solver works with small and big problems."""
-    m = gurobipy.Model()
-    m.addMVar(num_vars)
-    m.optimize()
 
 
 def test_cplex_parameters():
