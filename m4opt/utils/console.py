@@ -130,6 +130,7 @@ if __name__ == "__main__":
         with status(f"Task {roman_numeral}"):
             for letter in ["A", "B", "C"]:
                 with status(f"Task {letter}"):
-                    if roman_numeral == "III" and letter == "B":
-                        raise RuntimeError("Failed")
-                    sleep(1)
+                    for number in ["1", "2", "3"]:
+                        if roman_numeral == "III" and letter == "B" and number == "1":
+                            raise RuntimeError("Failed")
+                        sleep(1)
