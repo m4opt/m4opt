@@ -136,9 +136,10 @@ def schedule(
             dtype=object,
         )
 
-        # Subtract off exposure times from end times.
+        # Contract intervals by the exposure time.
         for intervals in observable_intervals:
-            intervals[:, 1] -= exptime_s
+            intervals[:, 0] += 0.5 * exptime_s
+            intervals[:, 1] -= 0.5 * exptime_s
 
         # Keep only intervals that are at least as long as the exposure time.
         observable_intervals = np.asarray(
@@ -155,7 +156,7 @@ def schedule(
         target_coords = target_coords[good]
 
         # Find the start and end times that a field is observable.
-        start_time_lbs, start_time_ubs = np.transpose(
+        time_lbs, time_ubs = np.transpose(
             [[intervals[0, 0], intervals[-1, -1]] for intervals in observable_intervals]
         )
 
@@ -176,8 +177,8 @@ def schedule(
             target_coords = target_coords[good]
             rolls = rolls[good]
             footprints = footprints[good]
-            start_time_lbs = start_time_lbs[good]
-            start_time_ubs = start_time_ubs[good]
+            time_lbs = time_lbs[good]
+            time_ubs = time_ubs[good]
             observable_intervals = observable_intervals[good]
         else:
             n_fields = len(target_coords)
@@ -210,16 +211,16 @@ def schedule(
         model = Model(timelimit=timelimit, jobs=jobs)
         pixel_vars = model.binary_vars(n_pixels)
         field_vars = model.binary_vars(n_fields)
-        start_time_field_visit_vars = model.continuous_vars(
+        time_field_visit_vars = model.continuous_vars(
             (n_fields, visits),
-            lb=np.tile(start_time_lbs[:, np.newaxis], visits),
-            ub=np.tile(start_time_ubs[:, np.newaxis], visits),
+            lb=np.tile(time_lbs[:, np.newaxis], visits),
+            ub=np.tile(time_ubs[:, np.newaxis], visits),
         )
 
         # Add constraints on observability windows for each field
         with status("adding field of regard constraints"):
-            for start_time_visit_vars, intervals in zip(
-                start_time_field_visit_vars, observable_intervals
+            for time_visit_vars, intervals in zip(
+                time_field_visit_vars, observable_intervals
             ):
                 assert len(intervals) > 0
                 if len(intervals) > 1:
@@ -229,19 +230,16 @@ def schedule(
                         model.add_sos1(interval_vars)
                     model.add_indicators(
                         visit_interval_vars,
-                        start_time_visit_vars[:, np.newaxis] >= begin,
+                        time_visit_vars[:, np.newaxis] >= begin,
                     )
                     model.add_indicators(
-                        visit_interval_vars, start_time_visit_vars[:, np.newaxis] <= end
+                        visit_interval_vars, time_visit_vars[:, np.newaxis] <= end
                     )
 
         if visits > 1:
             with status("adding cadence constraints"):
                 model.add_constraints_(
-                    (
-                        start_time_field_visit_vars[:, 1:]
-                        - start_time_field_visit_vars[:, :-1]
-                    )
+                    (time_field_visit_vars[:, 1:] - time_field_visit_vars[:, :-1])
                     >= (exptime_s + cadence_s) * field_vars[:, np.newaxis]
                 )
 
@@ -249,8 +247,8 @@ def schedule(
             p, q = full_indices(visits)
             model.add_constraints_(
                 model.abs(
-                    start_time_field_visit_vars[slew_i, p[:, np.newaxis]]
-                    - start_time_field_visit_vars[slew_j, q[:, np.newaxis]]
+                    time_field_visit_vars[slew_i, p[:, np.newaxis]]
+                    - time_field_visit_vars[slew_j, q[:, np.newaxis]]
                 )
                 >= timediff_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
             )
@@ -273,20 +271,19 @@ def schedule(
     with status("writing results"):
         if solution is None:
             field_values = np.zeros(field_vars.shape, dtype=bool)
-            start_time_field_visit_values = np.empty(start_time_field_visit_vars.shape)
+            time_field_visit_values = np.empty(time_field_visit_vars.shape)
             objective_value = 0.0
         else:
             field_values = solution.get_values(field_vars).astype(bool)
-            start_time_field_visit_values = solution.get_values(
-                start_time_field_visit_vars
-            )
+            time_field_visit_values = solution.get_values(time_field_visit_vars)
             objective_value = solution.get_objective_value()
 
         table = QTable(
             {
                 "action": np.full(field_values.sum() * visits, "observe"),
                 "start_time": obstimes[0]
-                + start_time_field_visit_values[field_values].ravel() * u.s,
+                + time_field_visit_values[field_values].ravel() * u.s
+                - 0.5 * exptime,
                 "duration": np.full(field_values.sum() * visits, exptime.value)
                 * exptime.unit,
                 "target_coord": target_coords[
