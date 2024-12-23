@@ -35,7 +35,8 @@ def invert_footprints(footprints, n_pixels):
 def clump_nonzero_inclusive(a):
     """Like clump_nonzero, but return closed rather than half-open intervals."""
     result = clump_nonzero(a)
-    a[:, 1] -= 1
+    for intervals in result:
+        intervals[:, 1] -= 1
     return result
 
 
