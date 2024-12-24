@@ -52,8 +52,6 @@ homepage = "https://m4opt.readthedocs.io/"
 [project.scripts]
 m4opt = "m4opt._cli:app"
 
-[tool.setuptools.packages.find]
-
 [tool.setuptools.package-data]
 "*" = [
     "py.typed",
