@@ -136,15 +136,10 @@ def schedule(
             dtype=object,
         )
 
-        # Contract intervals by the exposure time.
-        for intervals in observable_intervals:
-            intervals[:, 0] += 0.5 * exptime_s
-            intervals[:, 1] -= 0.5 * exptime_s
-
         # Keep only intervals that are at least as long as the exposure time.
         observable_intervals = np.asarray(
             [
-                intervals[intervals[:, 1] - intervals[:, 0] >= 0]
+                intervals[intervals[:, 1] - intervals[:, 0] >= exptime_s]
                 for intervals in observable_intervals
             ],
             dtype=object,
@@ -154,11 +149,6 @@ def schedule(
         good = np.asarray([len(intervals) > 0 for intervals in observable_intervals])
         observable_intervals = observable_intervals[good]
         target_coords = target_coords[good]
-
-        # Find the start and end times that a field is observable.
-        time_lbs, time_ubs = np.transpose(
-            [[intervals[0, 0], intervals[-1, -1]] for intervals in observable_intervals]
-        )
 
     with status("calculating footprints"):
         # Compute nominal roll angles for optimal solar power.
@@ -177,8 +167,6 @@ def schedule(
             target_coords = target_coords[good]
             rolls = rolls[good]
             footprints = footprints[good]
-            time_lbs = time_lbs[good]
-            time_ubs = time_ubs[good]
             observable_intervals = observable_intervals[good]
         else:
             n_fields = len(target_coords)
@@ -213,8 +201,6 @@ def schedule(
         field_vars = model.binary_vars(n_fields)
         time_field_visit_vars = model.continuous_vars(
             (n_fields, visits),
-            lb=time_lbs[:, np.newaxis],
-            ub=time_ubs[:, np.newaxis],
         )
 
         # Add constraints on observability windows for each field
@@ -223,17 +209,26 @@ def schedule(
                 time_field_visit_vars, observable_intervals
             ):
                 assert len(intervals) > 0
-                if len(intervals) > 1:
+                if len(intervals) == 1:
+                    (((begin,), (end,)),) = intervals
+                    model.add_constraints_(
+                        time_visit_vars[:, np.newaxis] >= begin + 0.5 * exptime_s
+                    )
+                    model.add_constraints_(
+                        time_visit_vars[:, np.newaxis] <= end - 0.5 * exptime_s
+                    )
+                else:
                     begin, end = intervals.T
                     visit_interval_vars = model.binary_vars((visits, len(intervals)))
                     for interval_vars in visit_interval_vars:
                         model.add_sos1(interval_vars)
                     model.add_indicators(
                         visit_interval_vars,
-                        time_visit_vars[:, np.newaxis] >= begin,
+                        time_visit_vars[:, np.newaxis] >= begin + 0.5 * exptime_s,
                     )
                     model.add_indicators(
-                        visit_interval_vars, time_visit_vars[:, np.newaxis] <= end
+                        visit_interval_vars,
+                        time_visit_vars[:, np.newaxis] <= end - 0.5 * exptime_s,
                     )
 
         if visits > 1:
