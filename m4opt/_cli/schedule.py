@@ -209,13 +209,8 @@ def schedule(
                 time_field_visit_vars, observable_intervals
             ):
                 assert len(intervals) > 0
+                begin, end = intervals.T
                 if len(intervals) == 1:
-                    (
-                        (
-                            begin,
-                            end,
-                        ),
-                    ) = intervals
                     model.add_constraints_(
                         time_visit_vars[:, np.newaxis] >= begin + 0.5 * exptime_s
                     )
@@ -223,7 +218,6 @@ def schedule(
                         time_visit_vars[:, np.newaxis] <= end - 0.5 * exptime_s
                     )
                 else:
-                    begin, end = intervals.T
                     visit_interval_vars = model.binary_vars((visits, len(intervals)))
                     for interval_vars in visit_interval_vars:
                         model.add_sos1(interval_vars)
