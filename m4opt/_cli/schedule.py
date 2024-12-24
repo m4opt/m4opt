@@ -22,14 +22,18 @@ from .core import app
 
 
 def invert_footprints(footprints, n_pixels):
+    """
+    Examples
+    --------
+    >>> from m4opt._cli.schedule import invert_footprints
+    >>> invert_footprints([[1, 2, 3], [0, 2, 3]], 4)
+    [array([1]), array([0]), array([0, 1]), array([0, 1])]
+    """
     pixels_to_fields_map = [[] for _ in range(n_pixels)]
     for i, js in enumerate(footprints):
         for j in js:
             pixels_to_fields_map[j].append(i)
-    return [
-        np.asarray(field_indices, dtype=np.intp)
-        for field_indices in pixels_to_fields_map
-    ]
+    return [np.asarray(field_indices) for field_indices in pixels_to_fields_map]
 
 
 @app.command()
