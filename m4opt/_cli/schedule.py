@@ -210,7 +210,12 @@ def schedule(
             ):
                 assert len(intervals) > 0
                 if len(intervals) == 1:
-                    (((begin,), (end,)),) = intervals
+                    (
+                        (
+                            begin,
+                            end,
+                        ),
+                    ) = intervals
                     model.add_constraints_(
                         time_visit_vars[:, np.newaxis] >= begin + 0.5 * exptime_s
                     )
