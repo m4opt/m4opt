@@ -185,14 +185,11 @@ def schedule(
 
     with status("calculating slew times"):
         slew_i, slew_j = np.triu_indices(n_fields, 1)
-        timediff_s = (
-            exptime
-            + mission.slew.time(
-                target_coords[slew_i],
-                target_coords[slew_j],
-                rolls[slew_i],
-                rolls[slew_j],
-            )
+        slew_time_s = mission.slew.time(
+            target_coords[slew_i],
+            target_coords[slew_j],
+            rolls[slew_i],
+            rolls[slew_j],
         ).to_value(u.s)
 
     with status("assembling MILP model"):
@@ -240,7 +237,8 @@ def schedule(
                     time_field_visit_vars[slew_i, p[:, np.newaxis]]
                     - time_field_visit_vars[slew_j, q[:, np.newaxis]]
                 )
-                >= timediff_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
+                >= (slew_time_s + exptime_s)
+                * (field_vars[slew_i] + field_vars[slew_j] - 1)
             )
 
         with status("adding coverage constraints"):
