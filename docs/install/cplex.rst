@@ -1,7 +1,7 @@
 .. highlight:: sh
 
 Install CPLEX
--------------
+=============
 
 CPLEX comes with a variety of tools and interfaces including a full-featured
 integrated development environment (IDE). However, we require only two
@@ -11,7 +11,7 @@ __ https://pypi.org/project/cplex/
 __ https://pypi.org/project/docplex/
 
 Academic users
-~~~~~~~~~~~~~~
+--------------
 
 Academic users cannot use the versions of cplex and docplex that are installed
 automatically when you :doc:`install M4OPT using pip <index>`. Instead,
@@ -48,7 +48,7 @@ __ https://github.com/academic-initiative/documentation/blob/main/academic-initi
    installed. On macOS, this may be in the ``/Applications`` directory.
 
 All others
-~~~~~~~~~~
+----------
 
 IBM offers a `variety of license options for CPLEX`__ and differentiates between
 "development" and "production" use.

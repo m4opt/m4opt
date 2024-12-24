@@ -39,7 +39,7 @@ MILP Problem Formulation
 ------------------------
 
 Index sets
-~~~~~~~~~~
+^^^^^^^^^^
 
 - :math:`I = \{0, 1, \dots, n_p - 1\}`: pixels
 - :math:`J = \{0, 1, \dots, n_r - 1\}`: reference fields
@@ -48,7 +48,7 @@ Index sets
 - :math:`\left(J_i\right)_{i \in I}`: set of indices of fields that contain pixel :math:`i`
 
 Parameters
-~~~~~~~~~~
+^^^^^^^^^^
 
 - :math:`\left(\rho_i\right)_{i \in I}`: probability that source is inside pixel :math:`i`
 - :math:`\left(\sigma_{jj^\prime}\right)_{j \in J, j^\prime \in J}`: slew time from reference field :math:`j` to reference field :math:`j^\prime`
@@ -58,7 +58,7 @@ Parameters
 - :math:`\gamma`: cadence, time between visits
 
 Decision variables
-~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^
 
 Binary decision variables:
 
@@ -71,7 +71,7 @@ Continuous decision variables:
 - :math:`\left(t_{jk}\right)_{j \in J, k \in K}`: midpoint time of observation :math:`j` visit :math:`k`
 
 Constraints
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 **Containment.** Only count pixels that are inside one or more reference fields.
 
@@ -98,7 +98,7 @@ Note: for each reference field :math:`j` that has exactly one observable interva
     \forall j ,\; k \;, m :\quad s_{jkm} = 1 \;\Rightarrow\; \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2
 
 Objective
-~~~~~~~~~
+^^^^^^^^^
 
 Maximize the sum of the probability of all of the pixels that are contained within selected fields:
 

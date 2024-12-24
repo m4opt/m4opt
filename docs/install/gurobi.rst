@@ -1,7 +1,7 @@
 .. highlight:: sh
 
 Install Gurobi
---------------
+==============
 
 Gurobi for Python is distributed as the lightweight `gurobipy`__ Python
 package. It is installed automatically when you :doc:`install M4OPT using pip
@@ -24,7 +24,7 @@ automatically installed by pip, rather than the one that came with the Gurobi
 Optimizer installer.**
 
 Academic users
-~~~~~~~~~~~~~~
+--------------
 
 1. Make sure that your computer is connected to your campus network or VPN.
 
@@ -40,7 +40,7 @@ __ https://www.gurobi.com/academia/academic-program-and-licenses/
    does not need to be connected to your campus network or VPN to use Gurobi.
 
 All others
-~~~~~~~~~~
+----------
 
 For commerical and government users, `Gurobi offers a variety of license
 types`__. Contact `Gurobi sales`__ for pricing.
