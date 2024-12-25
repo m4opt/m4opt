@@ -16,7 +16,7 @@ from ligo.skymap.io import read_sky_map
 from .. import __version__, missions
 from ..fov import footprint_healpix
 from ..milp import Model
-from ..models import observing
+from ..models import DustExtinction, observing
 from ..utils.console import progress, status
 from ..utils.dynamics import nominal_roll
 from ..utils.numpy import clump_nonzero_inclusive, full_indices
@@ -250,7 +250,8 @@ def schedule(
                     snr,
                     synphot.SourceSpectrum(
                         synphot.ConstFlux1D(absmag * u.ABmag + distmod)
-                    ),
+                    )
+                    * DustExtinction(),
                     bandpass,
                 ).to_value(u.s)
             min_exptime_s = min(
