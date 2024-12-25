@@ -2,9 +2,10 @@ from itertools import accumulate, chain
 from typing import Annotated, Iterable, cast
 
 import numpy as np
+import synphot
 import typer
 from astropy import units as u
-from astropy.coordinates import ICRS
+from astropy.coordinates import ICRS, Distance
 from astropy.table import QTable
 from astropy.time import Time
 from astropy.visualization.units import quantity_support
@@ -23,6 +24,7 @@ from matplotlib.typing import ColorType
 
 from .. import missions
 from ..fov import footprint, footprint_healpix
+from ..models import DustExtinction, observing
 from ..utils.console import progress, status
 from .core import app
 
@@ -54,6 +56,9 @@ def animate(
         nside = table.meta["args"]["nside"]
         skymap = table.meta["args"]["skymap"]
         visits = table.meta["args"]["visits"]
+        absmag = table.meta["args"]["absmag"]
+        bandpass = table.meta["args"]["bandpass"]
+        snr = table.meta["args"]["snr"]
 
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
@@ -132,6 +137,35 @@ def animate(
             ax_map.grid()
 
             observer_locations = mission.orbit(time_steps).earth_location
+
+        if absmag is not None:
+            with status("adding exposure time map"):
+                distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
+                with observing(
+                    observer_location=observer_locations[0],
+                    target_coord=hpx.healpix_to_skycoord(np.arange(hpx.npix)),
+                    obstime=time_steps[0],
+                ):
+                    exptime = mission.detector.get_exptime(
+                        snr,
+                        synphot.SourceSpectrum(
+                            synphot.ConstFlux1D(absmag * u.ABmag + distmod)
+                        )
+                        * DustExtinction(),
+                        bandpass,
+                    ).to_value(u.s)
+                plt.colorbar(
+                    ax_map.imshow_hpx(
+                        exptime,
+                        vmin=table["duration"].min().to_value(u.s),
+                        vmax=table["duration"].max().to_value(u.s),
+                        cmap="binary",
+                        nested=True,
+                        alpha=0.5,
+                    ),
+                    label="Required exposure time (s)",
+                    orientation="horizontal",
+                )
 
         with status("adding field of regard"):
             instantaneous_field_of_regard = np.logical_and.reduce(
