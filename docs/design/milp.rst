@@ -91,7 +91,7 @@ Constraints
 **No overlap.** Observations cannot overlap in time; they must be separated by at least the exposure time plus the slew time.
 
 .. math::
-    \forall j \ne j^\prime ,\; k ,\; k^\prime :\quad \left|t_{jk} - t_{j^\prime k^\prime}\right|  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
+    \forall j^\prime > j,\; k ,\; k^\prime :\quad \left|t_{jk} - t_{j^\prime k^\prime}\right|  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
 
 **Field of regard.** An observation of a reference field can only occur while the coordinates of the reference field are within the field of regard.
 Note: for each reference field :math:`j` that has exactly one observable interval, instead of an indicator constraint, simply place lower and upper bounds on :math:`t_{jk}`.
@@ -160,7 +160,7 @@ The constraints are slightly different:
 **No overlap.** Observations cannot overlap in time; they must be separated by at least the exposure time plus the slew time.
 
 .. math::
-    \forall j \ne j^\prime ,\; k ,\; k^\prime :\quad \left|t_{jk} - t_{j^\prime k^\prime}\right|  \geq \sigma_{jj^\prime} \left( r_j + r_{j^\prime} - 1\right) + (e_j + e_\mathrm{j^\prime}) / 2
+    \forall j^\prime > j ,\; k ,\; k^\prime :\quad \left|t_{jk} - t_{j^\prime k^\prime}\right|  \geq \sigma_{jj^\prime} \left( r_j + r_{j^\prime} - 1\right) + (e_j + e_\mathrm{j^\prime}) / 2
 
 **Field of regard.** An observation of a reference field can only occur while the coordinates of the reference field are within the field of regard.
 Note: for each reference field :math:`j` that has exactly one observable interval, instead of an indicator constraint, simply place lower and upper bounds on :math:`t_{jk}`.
