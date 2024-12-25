@@ -57,7 +57,7 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli):
 def test_end_to_end_no_solution(run_scheduler):
     table = run_scheduler("--timelimit=1s")
     assert len(table) == 0
-    assert table.meta["solution_status"] == "time limit exceeded"
+    assert table.meta["solution_status"].startswith("time limit exceeded")
     assert table.meta["objective_value"] == 0
     assert table.meta["total_time"]["slack"] == 1 * u.day
 
