@@ -11,7 +11,7 @@ Problem statement
 
 We receive a :doc:`HEALPix probability sky map <userguide:tutorial/skymaps>` that describes the probability distribution of the true but unknown position of a target of interest as a function of position on the sky. There is a delay between the time that the event occurred and when we can start observations due to the time it takes to uplink commands to the spacecraft, and there is a deadline by which we must complete our observations.
 
-Our telescope can observe any of a set of :math:`n_r` reference fields at predetermined sky locations in order to tile the sky map. For each reference field that we select, our telescope must visit the reference field at least :math:`n_v` times. We have a cadence requirement: each visit of a given reference field must occur at least a time :math:`\gamma` after the previous visit.
+Our telescope can observe any of a set of :math:`n_J` reference fields at predetermined sky locations in order to tile the sky map. For each reference field that we select, our telescope must visit the reference field at least :math:`n_K` times. We have a cadence requirement: each visit of a given reference field must occur at least a time :math:`\gamma` after the previous visit.
 
 Every visit takes a certain amount of exposure time, and it takes a known amount of time to slew between different reference fields. We may only a visit a reference field when it is within the field of regard, the region that constrains where the telescope may point at any given instant of time.
 
@@ -44,9 +44,9 @@ MILP problem formulation
 Index sets
 """"""""""
 
-- :math:`I = \{0, 1, \dots, n_p - 1\}`: pixels
-- :math:`J = \{0, 1, \dots, n_r - 1\}`: reference fields
-- :math:`K = \{0, 1, \dots, n_v - 1\}`: visits
+- :math:`I = \{0, 1, \dots, n_I - 1\}`: pixels
+- :math:`J = \{0, 1, \dots, n_J - 1\}`: reference fields
+- :math:`K = \{0, 1, \dots, n_K - 1\}`: visits
 - :math:`\left(M_j\right)_{j \in J}`: observable segments for reference field :math:`j`
 - :math:`\left(J_i\right)_{i \in I}`: set of indices of fields that contain pixel :math:`i`
 
