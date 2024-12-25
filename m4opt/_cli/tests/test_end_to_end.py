@@ -31,20 +31,24 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli):
 
         start_time_diff = table["start_time"][1:] - table["start_time"][:-1]
 
-        num_fields = len(
-            unique(table["target_coord"][table["action"] == "observe"].to_table())
-        )
-        num_visits = table.meta["args"]["visits"]
-
-        assert len(table) == max(num_fields * num_visits * 2 - 1, 0)
-        assert (
-            table["action"][::2] == "observe"
-        ).all(), "even actions must be 'observe'"
-        assert (table["action"][1::2] == "slew").all(), "odd actions must be 'slew'"
         assert (start_time_diff > 0 * u.s).all(), "time intervals must be monotonic"
         assert (
             start_time_diff - table["duration"][:-1] >= -1e-3 * u.s
         ).all(), "time intervals must be non-overlapping"
+
+        assert (
+            table["action"][::2] == "observe"
+        ).all(), "even actions must be 'observe'"
+        assert (table["action"][1::2] == "slew").all(), "odd actions must be 'slew'"
+
+        observations = table[table["action"] == "observe"]
+        num_fields = len(unique(observations["target_coord"].to_table()))
+        num_visits = table.meta["args"]["visits"]
+        assert (
+            len(observations) == num_visits * num_fields
+        ), f"there are {num_fields} observations of each field"
+
+        assert (observations["duration"] == table.meta["args"]["exptime"]).all()
 
         result = run_cli(app, "animate", ecsv_path, gif_path, "--time-step=8hour")
         assert result.exit_code == 0
