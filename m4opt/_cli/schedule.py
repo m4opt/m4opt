@@ -434,6 +434,7 @@ def schedule(
                     "max_exptime": max_exptime,
                     "absmag": absmag,
                     "bandpass": bandpass,
+                    "snr": snr,
                 },
                 "objective_value": objective_value,
                 "best_bound": model.solve_details.best_bound,
