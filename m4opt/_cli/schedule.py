@@ -307,7 +307,9 @@ def schedule(
                 else:
                     visit_interval_vars = model.binary_vars((visits, len(intervals)))
                     for interval_vars in visit_interval_vars:
-                        model.add_sos1(interval_vars)
+                        model.add_constraint_(
+                            model.sum_vars_all_different(interval_vars) >= 1
+                        )
                     model.add_indicators(
                         visit_interval_vars,
                         time_visit_vars[:, np.newaxis] >= begin + 0.5 * exptime,

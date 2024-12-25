@@ -67,7 +67,7 @@ Binary decision variables:
 
 - :math:`\left(p_i\right)_{i \in I}`: pixel :math:`i` is inside the footprint of one or more selected reference fields
 - :math:`\left(r_j\right)_{j \in J}`: reference field :math:`j` is selected for observation
-- :math:`\left(s_{jkm}\right)_{j \in J, k \in K, m \in M}`: whether reference field :math:`j` visit :math:`k` occurs in segment :math:`m`
+- :math:`\left(s_{jkm}\right)_{j \in J, k \in K, m \in M \mid {n_M}_j > 1}`: whether reference field :math:`j` visit :math:`k` occurs in segment :math:`m`
 
 Continuous decision variables:
 
@@ -79,26 +79,42 @@ Constraints
 **Containment.** Only count pixels that are inside one or more reference fields.
 
 .. math::
+    :label: fixed-exptime-constraint-containment
 
     \forall i :\quad p_i \leq \sum_{j \in J_i} r_j
 
 **Cadence.** If a reference field is selected for observation, then enforce a minimum time between visits.
 
 .. math::
+    :label: fixed-exptime-constraint-cadence
 
     \forall k > 1 ,\; j :\quad t_{jk} - t_{j,k-1} \geq (\epsilon + \gamma) r_j
 
 **No overlap.** Observations cannot overlap in time; they must be separated by at least the exposure time plus the slew time.
 
 .. math::
+    :label: fixed-exptime-constraint-no-overlap
+
     \forall j^\prime > j,\; k ,\; k^\prime :\quad \left|t_{jk} - t_{j^\prime k^\prime}\right|  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
 
 **Field of regard.** An observation of a reference field can only occur while the coordinates of the reference field are within the field of regard.
-Note: for each reference field :math:`j` that has exactly one observable interval, instead of an indicator constraint, simply place lower and upper bounds on :math:`t_{jk}`.
+
+For fields that have one observable segment (:math:`{n_M}_j = 1`), this constraint is simpy an inequality:
 
 .. math::
+    :label: fixed-exptime-constraint-for-one
 
-    \forall j ,\; k \;, m :\quad s_{jkm} = 1 \;\Rightarrow\; \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2
+    \forall j ,\; k \;, m \mid {n_M}_j = 1 :\quad \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2
+
+For fields that have more than one observable segment (:math:`{n_M}_j = 1`), we use the decision variable :math:`s_{jkm}` to determine which inequality is satisfied:
+
+.. math::
+    :label: fixed-exptime-constraint-for-many
+
+    \begin{eqnarray}
+    \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2, \\
+    \sum_m s_{jkm} &\geq& 1
+    \end{eqnarray}
 
 Objective
 """""""""
@@ -106,6 +122,7 @@ Objective
 Maximize the sum of the probability of all of the pixels that are contained within selected fields:
 
 .. math::
+    :label: fixed-exptime-objective
 
     \sum_{i \in I} \rho_i p_i
 
@@ -142,32 +159,49 @@ The constraints are slightly different:
 **Depth.** Only count pixels that are observed to sufficient depth.
 
 .. math::
+    :label: variable-exptime-constraint-depth
 
     \forall i \in I :\quad p_\mathrm{i} = 1 \Rightarrow \max_{j \in J_i} e_{j} \geq \epsilon_i
 
 **Exposure time.** If a field's exposure time is nonzero, then it is selected for observation.
 
 .. math::
+    :label: variable-exptime-constraint-exptime
 
     \forall j \in J :\quad \epsilon_\mathrm{max} r_j \geq e_\mathrm{j}
 
-**Cadence.** If a reference field is selected for observation, then enforce a minimum time between visits.
+**Cadence.** This is similar to Equation :eq:`fixed-exptime-constraint-cadence`, except that we replace the right-hand side of the inequality.
 
 .. math::
+    :label: variable-exptime-constraint-cadence
 
     \forall k > 1 ,\; j :\quad t_{jk} - t_{j,k-1} \geq \gamma r_j + e_j
 
-**No overlap.** Observations cannot overlap in time; they must be separated by at least the exposure time plus the slew time.
+**No overlap.** This is also similar to Equation :eq:`fixed-exptime-constraint-no-overlap`, except with a slightly different right-hand side.
 
 .. math::
+    :label: variable-exptime-constraint-no-overlap
+
     \forall j^\prime > j ,\; k ,\; k^\prime :\quad \left|t_{jk} - t_{j^\prime k^\prime}\right|  \geq \sigma_{jj^\prime} \left( r_j + r_{j^\prime} - 1\right) + (e_j + e_\mathrm{j^\prime}) / 2
 
-**Field of regard.** An observation of a reference field can only occur while the coordinates of the reference field are within the field of regard.
-Note: for each reference field :math:`j` that has exactly one observable interval, instead of an indicator constraint, simply place lower and upper bounds on :math:`t_{jk}`.
+**Field of regard.** This is similar to Equations :eq:`fixed-exptime-constraint-for-one` and :eq:`fixed-exptime-constraint-for-many`, except that we replace :math:`\epsilon` with :math:`e_j`.
+
+For fields that have one observable segment:
 
 .. math::
+    :label: variable-exptime-constraint-for-one
 
-    \forall j ,\; k \;, m :\quad s_{jkm} = 1 \;\Rightarrow\; \alpha_{jm} + e_\mathrm{j}/2 \leq t_{jk} \leq \omega_{jm} - e_\mathrm{j}/2
+    \forall j ,\; k \;, m \mid {n_M}_j = 1 :\quad \alpha_{jm} + e_j / 2 \leq t_{jk} \leq \omega_{jm} - e_j / 2
+
+For fields that have more than one observable segment:
+
+.. math::
+    :label: variable-exptime-constraint-for-many
+
+    \begin{eqnarray}
+    \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + e_j / 2 \leq t_{jk} \leq \omega_{jm} - e_j / 2, \\
+    \sum_m s_{jkm} &\geq& 1
+    \end{eqnarray}
 
 Objective
 """""""""
