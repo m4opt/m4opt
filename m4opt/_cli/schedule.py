@@ -305,6 +305,7 @@ def schedule(
                     "time_step": time_step,
                     "skymap": skymap.name,
                     "visits": visits,
+                    "exptime": exptime,
                 },
                 "objective_value": objective_value,
                 "best_bound": model.solve_details.best_bound,
