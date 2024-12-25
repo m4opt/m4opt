@@ -69,7 +69,7 @@ class Detector:
             (bp,) = self.bandpasses.values()
         else:
             raise ValueError(
-                f"This instrument has more than one bandpass. Please specify one of them: {self.bandpasses.keys()}"
+                f"This instrument has more than one bandpass. Please specify one of them: {', '.join(self.bandpasses.keys())}"
             )
         src_count_rate = (
             self.aperture_correction * self.area * countrate(source_spectrum, bp)
