@@ -47,8 +47,8 @@ Index sets
 - :math:`I = \{0, 1, \dots, n_I - 1\}`: pixels
 - :math:`J = \{0, 1, \dots, n_J - 1\}`: reference fields
 - :math:`K = \{0, 1, \dots, n_K - 1\}`: visits
-- :math:`\left(M_j\right)_{j \in J}`: observable segments for reference field :math:`j`
-- :math:`\left(J_i\right)_{i \in I}`: set of indices of fields that contain pixel :math:`i`
+- :math:`\left(M_j = \{0, 1, \dots, {n_M}_j\}\right)_{j \in J}`: observable segments for reference field :math:`j`
+- :math:`\left(J_i = \{0, 1, \dots, {n_J}_i\}\right)_{i \in I}`: set of indices of fields that contain pixel :math:`i`
 
 Parameters
 """"""""""
