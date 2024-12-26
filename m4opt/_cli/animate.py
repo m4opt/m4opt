@@ -59,6 +59,7 @@ def animate(
         absmag = table.meta["args"]["absmag"]
         bandpass = table.meta["args"]["bandpass"]
         snr = table.meta["args"]["snr"]
+        min_exptime = table.meta["args"]["min_exptime"]
 
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
@@ -157,8 +158,8 @@ def animate(
                 plt.colorbar(
                     ax_map.imshow_hpx(
                         exptime,
-                        vmin=table["duration"].min().to_value(u.s),
-                        vmax=table["duration"].max().to_value(u.s),
+                        vmin=table["duration"].min(initial=min_exptime).to_value(u.s),
+                        vmax=table["duration"].max(initial=min_exptime).to_value(u.s),
                         cmap="binary",
                         nested=True,
                         alpha=0.5,

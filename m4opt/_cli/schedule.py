@@ -255,13 +255,14 @@ def schedule(
                     bandpass,
                 ).to_value(u.s)
             min_exptime_s = min(
-                max(min_exptime_s, exptime_pixel_s.min()), max_exptime.to_value(u.s)
+                max(min_exptime_s, exptime_pixel_s.min(initial=min_exptime_s)),
+                max_exptime.to_value(u.s),
             )
             max_exptime_s = max(
                 min(
                     max_exptime.to_value(u.s),
                     deadline.to_value(u.s),
-                    exptime_pixel_s.max(),
+                    exptime_pixel_s.max(initial=max_exptime.to_value(u.s)),
                 ),
                 min_exptime.to_value(u.s),
             )
