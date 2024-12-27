@@ -13,7 +13,7 @@ Our telescope can observe any of a set of :math:`n_J` reference fields at predet
 Every visit takes a certain amount of exposure time, and it takes a known amount of time to slew between different reference fields. We may only a visit a reference field when it is within the field of regard, the region that constrains where the telescope may point at any given instant of time.
 
 Data preparation
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 1. Construct a discrete 1D grid of times that stretch from the delayed start of observations up to the deadline.
 
