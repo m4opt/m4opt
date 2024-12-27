@@ -207,3 +207,71 @@ Objective
 """""""""
 
 Same as above.
+
+Problem 3: Variable exposure time with prior distribution of absolute magnitude
+-------------------------------------------------------------------------------
+
+In this variation, we don't know the precise absolute magnitude :math:`X` of the source. In the case of kilonovae, our prior knowledge about the absolute magnitude is scant; for the sake of mathematical convenience, we assume that the absolute magnitude has a normal distribution, :math:`X \sim~ N[\mu_X, \sigma_X]`. We need to compute the distribution of *apparent* magnitudes :math:`x` in order to determine the probability of detection as a function of exposure time for each pixel.
+
+Gravitational-wave sky maps provide the posterior distribution of distance, as a parametric ansatz distribution,
+
+.. math::
+    p(r) = \frac{N}{\sqrt{2 \pi}\sigma} \exp\left[-\frac{1}{2}\left(\frac{r - \mu}{\sigma}\right)^2\right] r^2,
+
+with the location parameter :math:`\mu`, scale parameter :math:`\sigma`, and normalization :math:`N` tabulated for each pixel. This is an inconvenient distribution for integration, so instead we construct a log-normal distance distribution with the same mean and standard deviation as the ansatz distribution.
+
+We calculate the mean :math:`m` and standard deviation :math:`s` from :math:`\mu` and :math:`\sigma` using the function :obj:`ligo.skymap.distance.parameters_to_moments`. Then, the location and scale parameters of the log-normal distribution are given by
+
+.. math::
+    \begin{eqnarray}
+    \mu_{\ln r} &=& \ln m - \frac{1}{2} \ln \left(1 + \frac{s^2}{m^2}\right) \\
+    {\sigma_{\ln r}}^2 &=& \ln \left(1 + \frac{s^2}{m^2}\right).
+    \end{eqnarray}
+
+The logarithm of the distance then has the distribution :math:`\ln r \sim N[\mu_{\ln r}, \sigma_{\ln r}]`. The apparent magnitude is related to the absolute magnitude through :math:`x = X + 5 \log_{10} r + 25`, assuming that :math:`r` is in the units of Mpc. Therefore the apparent magnitude has the distribution :math:`x \sim N[\mu_x, \sigma_x]`, with
+
+.. math::
+    \begin{eqnarray}
+    \mu_x &=& \mu_X + \left(\frac{5}{\ln 10}\right) \mu_{\ln r} + 25 \\
+    {\sigma_x}^2 &=& {\sigma_{X}}^2 + \left(\frac{5}{\ln 10}\right)^2 {\sigma_{\ln r}}^2.
+    \end{eqnarray}
+
+For the purpose of the MILP problem formulation, we approximate the Gaussian CDF of the the distribution of :math:`x` as a piecewise linear function:
+
+.. math::
+    F(x) = \begin{cases}
+    0 & x < -\frac{\sqrt{2 \pi} \sigma}{2} \\
+    \frac{x - \mu}{\sqrt{2 \pi} \sigma} + \frac{1}{2} & -\frac{\sqrt{2 \pi} \sigma}{2} \leq x - \mu \leq \frac{\sqrt{2 \pi} \sigma}{2} \\
+    1 & x > \frac{\sqrt{2 \pi} \sigma}{2} \\
+    \end{cases}
+
+.. plot::
+    :include-source: False
+    :caption: Piecewise linear approximation of a Gaussian CDF.
+
+    from matplotlib import pyplot as plt
+    import numpy as np
+    from scipy import stats
+
+    root2pi = np.sqrt(2 * np.pi)
+    ax = plt.axes()
+    x = np.linspace(-root2pi, root2pi)
+    cdf = stats.norm.cdf(x)
+    ax.plot(x, cdf, label="Gaussian CDF")
+    x = np.asarray([-root2pi, -root2pi / 2, root2pi / 2, root2pi])
+    y = np.asarray([0, 0, 1, 1])
+    for line in ax.plot(x, y, "--", label="Piecewise linear\napproximation"):
+        line.set_clip_on(False)
+    ax.set_xticks([-root2pi / 2, root2pi / 2])
+    ax.set_xticklabels(
+        [r"$\mu-\sqrt{2 \pi} \sigma / 2$", r"$\mu + \sqrt{2 \pi} \sigma / 2$"]
+    )
+    ax.set_yticks([0, 1])
+    ax.set_yticklabels(["0", "1"])
+    ax.set_xlim(-root2pi, root2pi)
+    ax.set_ylim(0, 1)
+    ax.legend()
+    ax.spines.left.set_position("center")
+    ax.spines.right.set_color("none")
+    ax.spines.bottom.set_position("center")
+    ax.spines.top.set_color("none")

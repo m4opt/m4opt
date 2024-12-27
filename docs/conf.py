@@ -237,6 +237,7 @@ intersphinx_mapping.update(  # noqa: F405
         "astropy_healpix": ("https://astropy-healpix.readthedocs.io/en/stable/", None),
         "docplex": ("http://ibmdecisionoptimization.github.io/docplex-doc/mp/", None),
         "dust-extinction": ("https://dust-extinction.readthedocs.io/en/latest/", None),
+        "ligo.skymap": ("https://lscsoft.docs.ligo.org/ligo.skymap/", None),
         "pip": ("https://pip.pypa.io/en/stable/", None),
         "regions": ("https://astropy-regions.readthedocs.io/en/stable/", None),
         "userguide": ("https://emfollow.docs.ligo.org/userguide/", None),
