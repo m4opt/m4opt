@@ -6,9 +6,6 @@ Here we document our representation of the multimessenger follow-up problem as a
 Problem 1: Fixed exposure time
 ------------------------------
 
-Problem statement
-^^^^^^^^^^^^^^^^^
-
 We receive a :doc:`HEALPix probability sky map <userguide:tutorial/skymaps>` that describes the probability distribution of the true but unknown position of a target of interest as a function of position on the sky. There is a delay between the time that the event occurred and when we can start observations due to the time it takes to uplink commands to the spacecraft, and there is a deadline by which we must complete our observations.
 
 Our telescope can observe any of a set of :math:`n_J` reference fields at predetermined sky locations in order to tile the sky map. For each reference field that we select, our telescope must visit the reference field at least :math:`n_K` times. We have a cadence requirement: each visit of a given reference field must occur at least a time :math:`\gamma` after the previous visit.
@@ -128,9 +125,6 @@ Maximize the sum of the probability of all of the pixels that are contained with
 
 Problem 2: Variable exposure time
 ---------------------------------
-
-Problem statement
-^^^^^^^^^^^^^^^^^
 
 In this variation, we have a sky map of the exposure time required to detect the source as a function of its position on the sky. We permit the exposure time to vary for each field. A given pixel counts toward the objective value only if the exposure time of a field that contains that pixel exceeds the pixel's exposure time.
 
