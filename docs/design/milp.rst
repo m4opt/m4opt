@@ -217,6 +217,8 @@ with the location parameter :math:`\mu`, scale parameter :math:`\sigma`, and nor
 We calculate the mean :math:`m` and standard deviation :math:`s` from :math:`\mu` and :math:`\sigma` using the function :obj:`ligo.skymap.distance.parameters_to_moments`. Then, the location and scale parameters of the log-normal distribution are given by
 
 .. math::
+    :label: log-distance-parameters
+
     \begin{eqnarray}
     \mu_{\ln r} &=& \ln m - \frac{1}{2} \ln \left(1 + \frac{s^2}{m^2}\right) \\
     {\sigma_{\ln r}}^2 &=& \ln \left(1 + \frac{s^2}{m^2}\right).
@@ -225,47 +227,75 @@ We calculate the mean :math:`m` and standard deviation :math:`s` from :math:`\mu
 The logarithm of the distance then has the distribution :math:`\ln r \sim N[\mu_{\ln r}, \sigma_{\ln r}]`. The apparent magnitude is related to the absolute magnitude through :math:`x = X + 5 \log_{10} r + 25`, assuming that :math:`r` is in the units of Mpc. Therefore the apparent magnitude has the distribution :math:`x \sim N[\mu_x, \sigma_x]`, with
 
 .. math::
+    :label: appmag-parameters
+
     \begin{eqnarray}
     \mu_x &=& \mu_X + \left(\frac{5}{\ln 10}\right) \mu_{\ln r} + 25 \\
     {\sigma_x}^2 &=& {\sigma_{X}}^2 + \left(\frac{5}{\ln 10}\right)^2 {\sigma_{\ln r}}^2.
     \end{eqnarray}
 
-For the purpose of the MILP problem formulation, we approximate the Gaussian CDF of the the distribution of :math:`x` as a piecewise linear function:
-
-.. math::
-    F(x) = \begin{cases}
-    0 & x < -\frac{\sqrt{2 \pi} \sigma}{2} \\
-    \frac{x - \mu}{\sqrt{2 \pi} \sigma} + \frac{1}{2} & -\frac{\sqrt{2 \pi} \sigma}{2} \leq x - \mu \leq \frac{\sqrt{2 \pi} \sigma}{2} \\
-    1 & x > \frac{\sqrt{2 \pi} \sigma}{2} \\
-    \end{cases}
+With this Gaussian distribution of apparent magnitudes, we can now calculate the detection efficiency for each pixel: the probability that we detect the source assuming that the source is in that pixel, as a function of exposure time. For the purpose of implementation of this function in a MILP, we approximate it with a piecewise lienar function.
 
 .. plot::
     :include-source: False
-    :caption: Piecewise linear approximation of a Gaussian CDF.
+    :caption: Piecewise linear approximation of the detection efficiency for a given pixel
 
     from matplotlib import pyplot as plt
     import numpy as np
     from scipy import stats
 
-    root2pi = np.sqrt(2 * np.pi)
+    q = np.pad(np.linspace(0.05, 0.95, 5), (1, 0))
+    log_flux = np.linspace(-3, 3)
+    p = stats.norm.cdf(log_flux)
+    t = np.exp(0.5 * log_flux)
     ax = plt.axes()
-    x = np.linspace(-root2pi, root2pi)
-    cdf = stats.norm.cdf(x)
-    ax.plot(x, cdf, label="Gaussian CDF")
-    x = np.asarray([-root2pi, -root2pi / 2, root2pi / 2, root2pi])
-    y = np.asarray([0, 0, 1, 1])
-    for line in ax.plot(x, y, "--", label="Piecewise linear\napproximation"):
-        line.set_clip_on(False)
-    ax.set_xticks([-root2pi / 2, root2pi / 2])
-    ax.set_xticklabels(
-        [r"$\mu-\sqrt{2 \pi} \sigma / 2$", r"$\mu + \sqrt{2 \pi} \sigma / 2$"]
-    )
-    ax.set_yticks([0, 1])
-    ax.set_yticklabels(["0", "1"])
-    ax.set_xlim(-root2pi, root2pi)
+    ax.plot(t, p)
+    ax.set_xlim(0, 3)
     ax.set_ylim(0, 1)
-    ax.legend()
-    ax.spines.left.set_position("center")
-    ax.spines.right.set_color("none")
-    ax.spines.bottom.set_position("center")
-    ax.spines.top.set_color("none")
+
+    tq = np.exp(0.5 * stats.norm.ppf(q))
+    for n, (x, y) in enumerate(zip(tq, q)):
+        if n > 0:
+            ax.text(x, y, rf' $(\epsilon_{{i{n}}}, \xi_{n})$', va='top')
+    ax.plot(tq, q, '-o')
+    ax.spines['right'].set_color('none')
+    ax.spines['top'].set_color('none')
+    ax.set_xlabel('Exposure time')
+    ax.set_ylabel('Detection efficiency')
+    ax.set_xticks([])
+    ax.plot(3, 0, '>k', clip_on=False)
+
+Additional data preparation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Use the function :obj:`ligo.skymap.distance.parameters_to_moments` and Equations :eq:`log-distance-parameters` and :eq:`appmag-parameters` to calculate the mean and standard deviation of the apparent magnitude in each pixel.
+
+2. Select desired quantiles for the approximation of the detection efficiency curve: for example, :math:`(0, 0.05 , 0.275, 0.5  , 0.725, 0.95)`. For each pixel, calculate the exposure time required to achieve the specified detection efficiencies.
+
+MILP problem formulation
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Additional index sets
+"""""""""""""""""""""
+
+- :math:`N = \{0, 1, \dots, n_N\}`: indices of quantiles of detection efficiency function approximation
+
+Additional parameters
+"""""""""""""""""""""
+
+- :math:`\left(\xi_n\right)_{n \in N}`: quantiles for piecewise linear approximation of detection efficiency curve
+- :math:`\left(\epsilon_{in}\right)_{i \in I, n \in N}`: exposure time required to achieve a detection efficiency of :math:`\xi_n` in pixel :math:`i`
+- :math:`\left(f_i\right)_{i \in I}`: piecewise linear function interpolating between the points :math:`(\xi_n, \epsilon_{in})_{i \in I, n \in N}`
+
+Additional constraints
+""""""""""""""""""""""
+
+**Depth.** Replace Equation :eq:`variable-exptime-constraint-depth` with:
+
+.. math::
+    \forall i \in I :\quad \max_{j \in J_i} e_{j} \geq f_i(p_\mathrm{i})
+
+Objective
+"""""""""
+
+Same as above.
