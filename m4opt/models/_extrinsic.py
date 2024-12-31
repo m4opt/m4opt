@@ -46,11 +46,28 @@ def observing(*args, **kwargs):
     return state.set(State(*args, **kwargs))
 
 
-class ExtrinsicScaleFactor(ABC, Model):
+class ScaleFactor(ABC, Model):
     """Scale factor for spectral models that depend only on extrinsic parameters."""
 
     n_inputs = 1
     n_outputs = 1
+
+    @property
+    @abstractmethod
+    def value(self) -> float:
+        """Return the value of the scale factor."""
+
+    def __call__(self, x):
+        return self.evaluate(x)
+
+    def evaluate(self, x):
+        value = self.value
+        shape = np.broadcast_shapes(np.shape(value), np.shape(x))
+        return np.broadcast_to(value, shape)
+
+
+class ExtrinsicScaleFactor(ScaleFactor):
+    """Scale factor for spectral models that depend only on extrinsic parameters."""
 
     @abstractmethod
     def at(
@@ -67,10 +84,12 @@ class ExtrinsicScaleFactor(ABC, Model):
             obstime=obs.obstime,
         )
 
-    def __call__(self, x):
-        return self.evaluate(x)
 
-    def evaluate(self, x):
-        value = self.value
-        shape = np.broadcast_shapes(np.shape(value), np.shape(x))
-        return np.broadcast_to(value, shape)
+class TabularScaleFactor(ScaleFactor):
+    def __init__(self, array, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._value = array
+
+    @property
+    def value(self):
+        return self._value
