@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 from synphot import SourceSpectrum, SpectralElement
 
 from ._extinction import DustExtinction, DustExtinctionForSkyCoord, dust_map
-from ._extrinsic import ExtrinsicScaleFactor, state
+from ._extrinsic import ScaleFactor, state
 
 
 class ModelSymbol(sympy.Dummy):
@@ -56,7 +56,7 @@ def countrate(
                 1.05378588e+14, 1.05378588e+14, 1.05378588e+14]] 1 / (s cm2)>
     """
     count_rate_unit = 1 / (u.s * u.cm**2)
-    extrinsic_scale_factors = []
+    scale_factors = []
     dust_extinction = None
 
     def model_to_expr(model):
@@ -65,9 +65,9 @@ def countrate(
                 return model_to_expr(model.left) + model_to_expr(model.right)
             case CompoundModel(op="*"):
                 return model_to_expr(model.left) * model_to_expr(model.right)
-            case ExtrinsicScaleFactor():
+            case ScaleFactor():
                 symbol = ModelSymbol(model)
-                extrinsic_scale_factors.append(symbol)
+                scale_factors.append(symbol)
                 return symbol
             case DustExtinctionForSkyCoord():
                 symbol = ModelSymbol(model)
@@ -140,7 +140,5 @@ def countrate(
 
     return sum(
         evaluate_coef(coef) * evaluate_term(term)
-        for coef, term in expr.expand()
-        .collect(extrinsic_scale_factors, evaluate=False)
-        .items()
+        for coef, term in expr.expand().collect(scale_factors, evaluate=False).items()
     )
