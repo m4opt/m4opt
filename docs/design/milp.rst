@@ -56,6 +56,8 @@ Parameters
 - :math:`\left(\omega_{jm}\right)_{j \in J, m \in M}`: end time of observable segment :math:`m` of reference field :math:`j`
 - :math:`\epsilon`: exposure time
 - :math:`\gamma`: cadence, time between visits
+- :math:`\beta`: delay from event time to start of observations
+- :math:`\delta`: deadline from event time to end of last observation
 
 Decision variables
 """"""""""""""""""
@@ -112,6 +114,16 @@ For fields that have more than one observable segment (:math:`{n_M}_j = 1`), we 
     \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2, \\
     \sum_m s_{jkm} &\geq& 1
     \end{eqnarray}
+
+Cuts
+""""
+
+**Total exposure time.** Although it is implied by other constraints, the constraint that the total exposure time cannot exceed the total available time is found to speed up the search.
+
+.. math::
+    :label: fixed-exptime-cut-total-time
+
+    \sum_{j \in J} r_j \leq \frac{\delta - \beta}{\epsilon n_K}
 
 Objective
 """""""""
@@ -195,6 +207,19 @@ For fields that have more than one observable segment:
     \begin{eqnarray}
     \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + e_j / 2 \leq t_{jk} \leq \omega_{jm} - e_j / 2, \\
     \sum_m s_{jkm} &\geq& 1
+    \end{eqnarray}
+
+Additional cuts
+"""""""""""""""
+
+**Total exposure time.** Replace Equation :eq:`fixed-exptime-cut-total-time` with:
+
+.. math::
+    :label: variable-exptime-cut-total-time
+
+    \begin{eqnarray}
+    \sum_{j \in J} r_j &\leq& \frac{\delta - \beta}{\epsilon_\mathrm{min} n_K} \\
+    \sum_{j \in J} e_j &\leq& \frac{\delta - \beta}{n_K}
     \end{eqnarray}
 
 Objective

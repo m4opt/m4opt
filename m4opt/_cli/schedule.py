@@ -382,6 +382,17 @@ def schedule(
                     ]
                 )
 
+        with status("adding cuts"):
+            model.add_user_cut_constraint(
+                model.sum_vars_all_different(field_vars)
+                <= (deadline - delay).to_value(u.s) / (visits * min_exptime_s)
+            )
+            if adaptive_exptime:
+                model.add_user_cut_constraint(
+                    model.sum_vars_all_different(exptime_field_vars)
+                    <= (deadline - delay).to_value(u.s) / visits
+                )
+
         with status("adding objective function"):
             model.maximize(model.scal_prod_vars_all_different(pixel_vars, probs))
 
