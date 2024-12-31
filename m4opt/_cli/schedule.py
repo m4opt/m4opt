@@ -10,13 +10,15 @@ from astropy.coordinates import ICRS, Distance, SkyCoord
 from astropy.table import QTable, vstack
 from astropy.time import Time
 from astropy_healpix import HEALPix
+from ligo.skymap import distance
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
+from scipy import stats
 
 from .. import __version__, missions
 from ..fov import footprint_healpix
 from ..milp import Model
-from ..models import DustExtinction, observing
+from ..models import DustExtinction, TabularScaleFactor, observing
 from ..utils.console import progress, status
 from ..utils.dynamics import nominal_roll
 from ..utils.numpy import clump_nonzero_inclusive, full_indices
@@ -60,6 +62,16 @@ def invert_footprints_to_regions(footprints, n_pixels):
         np.asarray(fields, dtype=np.intp) for fields in region_to_fields_map.keys()
     ]
     return pixel_to_region_map, region_to_fields_map
+
+
+LARGE_EXPTIME = 1e10
+
+
+def prepare_piecewise_breakpoints(breakpoints):
+    isinf_indices = np.flatnonzero(breakpoints[:, 1] >= LARGE_EXPTIME)
+    if len(isinf_indices) > 0:
+        breakpoints = breakpoints[: isinf_indices[0]]
+    return [tuple(col.item() for col in row) for row in breakpoints]
 
 
 @app.command()
@@ -108,11 +120,18 @@ def schedule(
             help="Maximum exposure time for each observation",
         ),
     ] = "inf s",
-    absmag: Annotated[
+    absmag_mean: Annotated[
         float | None,
         typer.Option(
-            help="AB absolute magnitude of source",
+            help="Mean AB absolute magnitude of source",
             show_default="disable adaptive exposure time",
+        ),
+    ] = None,
+    absmag_stdev: Annotated[
+        float | None,
+        typer.Option(
+            help="Standard deviation of AB absolute magnitude of source",
+            show_default="AB absolute magnitude is fixed at the value provided by --absmag-mean",
         ),
     ] = None,
     snr: Annotated[float, typer.Option(help="Signal to noise ratio for detection")] = 5,
@@ -141,13 +160,14 @@ def schedule(
         ),
     ] = 0,
 ):
-    adaptive_exptime = absmag is not None
+    adaptive_exptime = absmag_mean is not None
+    absmag_distribution = absmag_stdev is not None
 
     """Schedule a target of opportunity observation."""
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
         skymap_moc = read_sky_map(skymap, moc=True)
-        probs = rasterize(skymap_moc["UNIQ", "PROBDENSITY"], hpx.level)["PROB"]
+        skymap_flat = rasterize(skymap_moc, hpx.level)
         event_time = Time(
             Time(skymap_moc.meta["gps_time"], format="gps").utc, format="iso"
         )
@@ -211,7 +231,8 @@ def schedule(
         n_fields = 50
         if len(target_coords) > n_fields:
             good = np.argpartition(
-                [-probs[footprint].sum() for footprint in footprints], n_fields
+                [-skymap_flat[footprint]["PROB"].sum() for footprint in footprints],
+                n_fields,
             )[:n_fields]
             target_coords = target_coords[good]
             rolls = rolls[good]
@@ -222,13 +243,13 @@ def schedule(
 
         # Throw away pixels that are not contained in any fields.
         good = np.unique(np.concatenate(footprints))
-        imap = np.empty(len(probs), dtype=np.intp)
+        imap = np.empty(len(skymap_flat), dtype=np.intp)
         imap[good] = np.arange(len(good))
-        probs = probs[good]
+        skymap_flat = skymap_flat[good]
         footprints = np.asarray(
             [imap[footprint] for footprint in footprints], dtype=object
         )
-        n_pixels = len(probs)
+        n_pixels = len(skymap_flat)
 
         if adaptive_exptime:
             pixel_to_region_map, region_to_fields_map = invert_footprints_to_regions(
@@ -240,32 +261,88 @@ def schedule(
 
     if adaptive_exptime:
         with status("evaluating exposure time map"):
-            distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
-            with observing(
-                observer_location=observer_locations[0],
-                target_coord=hpx.healpix_to_skycoord(good),
-                obstime=obstimes[0],
-            ):
-                exptime_pixel_s = mission.detector.get_exptime(
-                    snr,
-                    synphot.SourceSpectrum(
-                        synphot.ConstFlux1D(absmag * u.ABmag + distmod)
-                    )
-                    * DustExtinction(),
-                    bandpass,
-                ).to_value(u.s)
-            min_exptime_s = min(
-                max(min_exptime_s, exptime_pixel_s.min(initial=min_exptime_s)),
-                max_exptime.to_value(u.s),
-            )
-            max_exptime_s = max(
-                min(
+            if (
+                absmag_stdev is not None
+            ):  # same as `if absmag_distribution:` but allows m4opt to infer that absmag_stdev is not None
+                distmean, diststd, _ = distance.parameters_to_moments(
+                    skymap_flat["DISTMU"],
+                    skymap_flat["DISTSIGMA"],
+                )
+                logdist_sigma2 = np.log1p(np.square(diststd / distmean))
+                logdist_sigma = np.sqrt(logdist_sigma2)
+                logdist_mu = np.log(distmean) - 0.5 * logdist_sigma2
+                a = 5 / np.log(10)
+                appmag_mu = absmag_mean + a * logdist_mu + 25
+                appmag_sigma = np.sqrt(
+                    np.square(absmag_stdev) + np.square(a * logdist_sigma)
+                )
+                quantiles = np.linspace(0.05, 0.95, 5)
+                appmag_quantiles = stats.norm(
+                    loc=appmag_mu[:, np.newaxis], scale=appmag_sigma[:, np.newaxis]
+                ).ppf(quantiles)
+
+                with observing(
+                    observer_location=observer_locations[0],
+                    target_coord=hpx.healpix_to_skycoord(good)[:, np.newaxis],
+                    obstime=obstimes[0],
+                ):
+                    exptime_pixel_s = mission.detector.get_exptime(
+                        snr,
+                        synphot.SourceSpectrum(synphot.ConstFlux1D(0 * u.ABmag))
+                        * synphot.SpectralElement(
+                            TabularScaleFactor(
+                                (
+                                    appmag_quantiles * u.mag(u.dimensionless_unscaled)
+                                ).to_value(u.dimensionless_unscaled)
+                            )
+                        )
+                        * DustExtinction(),
+                        bandpass,
+                    ).to_value(u.s)
+                max_exptime_s = max(
+                    min(
+                        max_exptime.to_value(u.s),
+                        deadline.to_value(u.s),
+                    ),
+                    min_exptime.to_value(u.s),
+                )
+                piecewise_breakpoints = np.pad(
+                    np.stack(
+                        (
+                            np.tile(quantiles[np.newaxis, :], (len(skymap_flat), 1)),
+                            exptime_pixel_s,
+                        ),
+                        axis=-1,
+                    ),
+                    [(0, 0), (1, 0), (0, 0)],
+                )
+            else:
+                distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
+                with observing(
+                    observer_location=observer_locations[0],
+                    target_coord=hpx.healpix_to_skycoord(good),
+                    obstime=obstimes[0],
+                ):
+                    exptime_pixel_s = mission.detector.get_exptime(
+                        snr,
+                        synphot.SourceSpectrum(
+                            synphot.ConstFlux1D(absmag_mean * u.ABmag + distmod)
+                        )
+                        * DustExtinction(),
+                        bandpass,
+                    ).to_value(u.s)
+                min_exptime_s = min(
+                    max(min_exptime_s, exptime_pixel_s.min(initial=min_exptime_s)),
                     max_exptime.to_value(u.s),
-                    deadline.to_value(u.s),
-                    exptime_pixel_s.max(initial=max_exptime.to_value(u.s)),
-                ),
-                min_exptime.to_value(u.s),
-            )
+                )
+                max_exptime_s = max(
+                    min(
+                        max_exptime.to_value(u.s),
+                        deadline.to_value(u.s),
+                        exptime_pixel_s.max(initial=max_exptime.to_value(u.s)),
+                    ),
+                    min_exptime.to_value(u.s),
+                )
 
     with status("calculating slew times"):
         slew_i, slew_j = np.triu_indices(n_fields, 1)
@@ -278,7 +355,17 @@ def schedule(
 
     with status("assembling MILP model"):
         model = Model(timelimit=timelimit, jobs=jobs)
-        pixel_vars = model.binary_vars(n_pixels)
+        if absmag_distribution:
+            pixel_vars = model.continuous_vars(
+                n_pixels,
+                lb=0,
+                ub=[
+                    breakpoints[(breakpoints[:, 1] < LARGE_EXPTIME), 0].max()
+                    for breakpoints in piecewise_breakpoints
+                ],
+            )
+        else:
+            pixel_vars = model.binary_vars(n_pixels)
         field_vars = model.binary_vars(n_fields)
         time_field_visit_vars = model.continuous_vars(
             (n_fields, visits),
@@ -355,15 +442,28 @@ def schedule(
 
         with status("adding coverage constraints"):
             if adaptive_exptime:
-                model.add_indicators(
-                    pixel_vars,
-                    [
-                        exptime_region_vars[region] >= exptime_s
-                        for region, exptime_s in zip(
-                            pixel_to_region_map, exptime_pixel_s
-                        )
-                    ],
-                )
+                if absmag_distribution:
+                    for pixel_var, region_index, breakpoints in zip(
+                        pixel_vars, pixel_to_region_map, piecewise_breakpoints
+                    ):
+                        breakpoints = prepare_piecewise_breakpoints(breakpoints)
+                        if len(breakpoints) <= 1:
+                            assert pixel_var.ub == 0
+                        else:
+                            model.add_constraint_(
+                                exptime_region_vars[region_index]
+                                >= model.piecewise(0, breakpoints, 0)(pixel_var)
+                            )
+                else:
+                    model.add_indicators(
+                        pixel_vars,
+                        [
+                            exptime_region_vars[region] >= exptime_s
+                            for region, exptime_s in zip(
+                                pixel_to_region_map, exptime_pixel_s
+                            )
+                        ],
+                    )
                 model.add_constraints_(
                     [
                         model.max(*exptime_field_vars[field_indices]).item()
@@ -394,7 +494,9 @@ def schedule(
                 )
 
         with status("adding objective function"):
-            model.maximize(model.scal_prod_vars_all_different(pixel_vars, probs))
+            model.maximize(
+                model.scal_prod_vars_all_different(pixel_vars, skymap_flat["PROB"])
+            )
 
     with status("solving MILP model"):
         solution = model.solve()
@@ -454,7 +556,8 @@ def schedule(
                     "visits": visits,
                     "min_exptime": min_exptime,
                     "max_exptime": max_exptime,
-                    "absmag": absmag,
+                    "absmag_mean": absmag_mean,
+                    "absmag_stdev": absmag_stdev,
                     "bandpass": bandpass,
                     "snr": snr,
                 },

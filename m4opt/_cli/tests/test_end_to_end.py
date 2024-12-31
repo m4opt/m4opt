@@ -24,11 +24,11 @@ def gif_path(tmp_path):
 
 @pytest.fixture(params=[None, -10])
 def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, request):
-    absmag = request.param
+    absmag_mean = request.param
 
     def func(*args):
-        if absmag is not None:
-            args = [*args, f"--absmag={absmag}", "--bandpass=NUV"]
+        if absmag_mean is not None:
+            args = [*args, f"--absmag-mean={absmag_mean}", "--bandpass=NUV"]
         result = run_cli(app, "schedule", fits_path, ecsv_path, *args)
         assert result.exit_code == 0
         table = QTable.read(ecsv_path)

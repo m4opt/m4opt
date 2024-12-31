@@ -56,7 +56,7 @@ def animate(
         nside = table.meta["args"]["nside"]
         skymap = table.meta["args"]["skymap"]
         visits = table.meta["args"]["visits"]
-        absmag = table.meta["args"]["absmag"]
+        absmag_mean = table.meta["args"]["absmag_mean"]
         bandpass = table.meta["args"]["bandpass"]
         snr = table.meta["args"]["snr"]
         min_exptime = table.meta["args"]["min_exptime"]
@@ -139,7 +139,7 @@ def animate(
 
             observer_locations = mission.orbit(time_steps).earth_location
 
-        if absmag is not None:
+        if absmag_mean is not None:
             with status("adding exposure time map"):
                 distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
                 with observing(
@@ -150,7 +150,7 @@ def animate(
                     exptime = mission.detector.get_exptime(
                         snr,
                         synphot.SourceSpectrum(
-                            synphot.ConstFlux1D(absmag * u.ABmag + distmod)
+                            synphot.ConstFlux1D(absmag_mean * u.ABmag + distmod)
                         )
                         * DustExtinction(),
                         bandpass,
