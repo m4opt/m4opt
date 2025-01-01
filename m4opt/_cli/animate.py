@@ -47,6 +47,7 @@ def animate(
         ),
     ] = "1 hour",
 ):
+    """Generate an animation for a GW sky map."""
     with status("loading schedule"):
         table = QTable.read(schedule, format="ascii.ecsv")
         table["end_time"] = table["start_time"] + table["duration"]
