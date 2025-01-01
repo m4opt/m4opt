@@ -159,6 +159,12 @@ def schedule(
             help="Number of threads for parallel processing, or 0 for all cores",
         ),
     ] = 0,
+    cutoff: Annotated[
+        float | None,
+        typer.Option(
+            help="Objective cutoff. Give up if there are no feasible solutions with objective value greater than or equal to this value"
+        ),
+    ] = None,
 ):
     """Generate an observing plan for a GW sky map.
 
@@ -378,6 +384,8 @@ def schedule(
 
     with status("assembling MILP model"):
         model = Model(timelimit=timelimit, jobs=jobs)
+        if cutoff is not None:
+            model.context.cplex_parameters.mip.tolerances.lowercutoff = cutoff
         if absmag_distribution:
             pixel_vars = model.continuous_vars(
                 n_pixels,
