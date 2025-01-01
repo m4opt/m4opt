@@ -431,11 +431,11 @@ def schedule(
                         )
                     model.add_indicators(
                         visit_interval_vars,
-                        time_visit_vars[:, np.newaxis] >= begin + 0.5 * exptime,
+                        time_visit_vars[:, np.newaxis] - begin - 0.5 * exptime >= 0,
                     )
                     model.add_indicators(
                         visit_interval_vars,
-                        time_visit_vars[:, np.newaxis] <= end - 0.5 * exptime,
+                        time_visit_vars[:, np.newaxis] - end + 0.5 * exptime <= 0,
                     )
 
         if visits > 1:
