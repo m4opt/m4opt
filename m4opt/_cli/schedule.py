@@ -149,7 +149,7 @@ def schedule(
             help="Time limit for MILP solver",
         ),
     ] = "1e75 s",
-    nside: Annotated[int, typer.Option(help="Default HEALPix resolution")] = 512,
+    nside: Annotated[int, typer.Option(help="HEALPix resolution")] = 512,
     jobs: Annotated[
         int,
         typer.Option(
