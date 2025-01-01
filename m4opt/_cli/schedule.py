@@ -108,13 +108,13 @@ def schedule(
             help="Time step for evaluating field of regard",
         ),
     ] = "1 min",
-    min_exptime: Annotated[
+    exptime_min: Annotated[
         u.Quantity,
         typer.Option(
             help="Minimum exposure time for each observation",
         ),
     ] = "900 s",
-    max_exptime: Annotated[
+    exptime_max: Annotated[
         u.Quantity,
         typer.Option(
             help="Maximum exposure time for each observation",
@@ -167,7 +167,7 @@ def schedule(
 
     \b
     1. Fixed exposure time. Every field has the same exposure time given by the
-       --min-exptime option. This mode is selected if you omit the
+       --exptime-min option. This mode is selected if you omit the
        --absmag-mean option.
 
     \b
@@ -205,7 +205,7 @@ def schedule(
         target_coords = mission.skygrid
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
-        min_exptime_s = min_exptime.to_value(u.s)
+        exptime_min_s = exptime_min.to_value(u.s)
         cadence_s = cadence.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
         observable_intervals = np.asarray(
@@ -231,7 +231,7 @@ def schedule(
         # Keep only intervals that are at least as long as the exposure time.
         observable_intervals = np.asarray(
             [
-                intervals[intervals[:, 1] - intervals[:, 0] >= min_exptime_s]
+                intervals[intervals[:, 1] - intervals[:, 0] >= exptime_min_s]
                 for intervals in observable_intervals
             ],
             dtype=object,
@@ -322,12 +322,12 @@ def schedule(
                         * DustExtinction(),
                         bandpass,
                     ).to_value(u.s)
-                max_exptime_s = max(
+                exptime_max_s = max(
                     min(
-                        max_exptime.to_value(u.s),
+                        exptime_max.to_value(u.s),
                         deadline.to_value(u.s),
                     ),
-                    min_exptime.to_value(u.s),
+                    exptime_min.to_value(u.s),
                 )
                 piecewise_breakpoints = np.pad(
                     np.stack(
@@ -354,17 +354,17 @@ def schedule(
                         * DustExtinction(),
                         bandpass,
                     ).to_value(u.s)
-                min_exptime_s = min(
-                    max(min_exptime_s, exptime_pixel_s.min(initial=min_exptime_s)),
-                    max_exptime.to_value(u.s),
+                exptime_min_s = min(
+                    max(exptime_min_s, exptime_pixel_s.min(initial=exptime_min_s)),
+                    exptime_max.to_value(u.s),
                 )
-                max_exptime_s = max(
+                exptime_max_s = max(
                     min(
-                        max_exptime.to_value(u.s),
+                        exptime_max.to_value(u.s),
                         deadline.to_value(u.s),
-                        exptime_pixel_s.max(initial=max_exptime.to_value(u.s)),
+                        exptime_pixel_s.max(initial=exptime_max.to_value(u.s)),
                     ),
-                    min_exptime.to_value(u.s),
+                    exptime_min.to_value(u.s),
                 )
 
     with status("calculating slew times"):
@@ -396,9 +396,9 @@ def schedule(
         if adaptive_exptime:
             exptime_field_vars = (
                 model.semicontinuous_vars
-                if min_exptime_s > 0
+                if exptime_min_s > 0
                 else model.continuous_vars
-            )(n_fields, lb=min_exptime_s, ub=max_exptime_s)
+            )(n_fields, lb=exptime_min_s, ub=exptime_max_s)
             exptime_region_vars = model.continuous_vars(n_regions)
 
         # Add constraints on observability windows for each field
@@ -407,7 +407,7 @@ def schedule(
                 time_field_visit_vars,
                 exptime_field_vars
                 if adaptive_exptime
-                else np.full(n_fields, min_exptime_s),
+                else np.full(n_fields, exptime_min_s),
                 observable_intervals,
             ):
                 assert len(intervals) > 0
@@ -435,7 +435,7 @@ def schedule(
                 if adaptive_exptime:
                     rhs = cadence_s * field_vars + exptime_field_vars
                 else:
-                    rhs = (min_exptime_s + cadence_s) * field_vars
+                    rhs = (exptime_min_s + cadence_s) * field_vars
                 model.add_constraints_(
                     (time_field_visit_vars[:, 1:] - time_field_visit_vars[:, :-1])
                     >= rhs[:, np.newaxis]
@@ -448,7 +448,7 @@ def schedule(
                     exptime_field_vars[slew_i] + exptime_field_vars[slew_j]
                 ) + slew_time_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
             else:
-                rhs = (slew_time_s + min_exptime_s) * (
+                rhs = (slew_time_s + exptime_min_s) * (
                     field_vars[slew_i] + field_vars[slew_j] - 1
                 )
             model.add_constraints_(
@@ -461,7 +461,7 @@ def schedule(
 
         if adaptive_exptime:
             with status("adding exposure time constraints"):
-                model.add_constraints_(max_exptime_s * field_vars >= exptime_field_vars)
+                model.add_constraints_(exptime_max_s * field_vars >= exptime_field_vars)
 
         with status("adding coverage constraints"):
             if adaptive_exptime:
@@ -508,7 +508,7 @@ def schedule(
         with status("adding cuts"):
             model.add_user_cut_constraint(
                 model.sum_vars_all_different(field_vars)
-                <= (deadline - delay).to_value(u.s) / (visits * min_exptime_s)
+                <= (deadline - delay).to_value(u.s) / (visits * exptime_min_s)
             )
             if adaptive_exptime:
                 model.add_user_cut_constraint(
@@ -536,7 +536,7 @@ def schedule(
             if adaptive_exptime:
                 exptime_field_values = solution.get_values(exptime_field_vars)
             else:
-                exptime_field_values = np.full(n_fields, min_exptime_s)
+                exptime_field_values = np.full(n_fields, exptime_min_s)
             objective_value = solution.get_objective_value()
 
         table = QTable(
@@ -577,8 +577,8 @@ def schedule(
                     "time_step": time_step,
                     "skymap": skymap.name,
                     "visits": visits,
-                    "min_exptime": min_exptime,
-                    "max_exptime": max_exptime,
+                    "exptime_min": exptime_min,
+                    "exptime_max": exptime_max,
                     "absmag_mean": absmag_mean,
                     "absmag_stdev": absmag_stdev,
                     "bandpass": bandpass,

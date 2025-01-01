@@ -52,8 +52,8 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, request):
             len(observations) == num_visits * num_fields
         ), f"there are {num_fields} observations of each field"
 
-        assert (observations["duration"] >= table.meta["args"]["min_exptime"]).all()
-        assert (observations["duration"] <= table.meta["args"]["max_exptime"]).all()
+        assert (observations["duration"] >= table.meta["args"]["exptime_min"]).all()
+        assert (observations["duration"] <= table.meta["args"]["exptime_max"]).all()
 
         result = run_cli(app, "animate", ecsv_path, gif_path, "--time-step=8hour")
         assert result.exit_code == 0

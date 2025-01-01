@@ -23,10 +23,10 @@
 #     delay: !astropy.units.Quantity
 #       unit: *id001
 #       value: 6.0
-#     max_exptime: !astropy.units.Quantity
+#     exptime_max: !astropy.units.Quantity
 #       unit: &id002 !astropy.units.Unit {unit: s}
 #       value: .inf
-#     min_exptime: !astropy.units.Quantity
+#     exptime_min: !astropy.units.Quantity
 #       unit: *id002
 #       value: 900.0
 #     mission: uvex
