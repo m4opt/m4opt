@@ -382,266 +382,275 @@ def schedule(
             rolls[slew_j],
         ).to_value(u.s)
 
-    with status("assembling MILP model"):
-        model = Model(timelimit=timelimit, jobs=jobs)
-        if cutoff is not None:
-            model.context.cplex_parameters.mip.tolerances.lowercutoff = cutoff
-        if absmag_distribution:
-            pixel_vars = model.continuous_vars(
-                n_pixels,
-                lb=0,
-                ub=[
-                    breakpoints[(breakpoints[:, 1] < LARGE_EXPTIME), 0].max()
-                    for breakpoints in piecewise_breakpoints
-                ],
-            )
-        else:
-            pixel_vars = model.binary_vars(n_pixels)
-        field_vars = model.binary_vars(n_fields)
-        time_field_visit_vars = model.continuous_vars(
-            (n_fields, visits),
-        )
-        if adaptive_exptime:
-            exptime_field_vars = (
-                model.semicontinuous_vars
-                if exptime_min_s > 0
-                else model.continuous_vars
-            )(n_fields, lb=exptime_min_s, ub=exptime_max_s)
-            exptime_region_vars = model.continuous_vars(n_regions)
-
-        # Add constraints on observability windows for each field
-        with status("adding field of regard constraints"):
-            for time_visit_vars, exptime, intervals in zip(
-                time_field_visit_vars,
-                exptime_field_vars
-                if adaptive_exptime
-                else np.full(n_fields, exptime_min_s),
-                observable_intervals,
-            ):
-                assert len(intervals) > 0
-                begin, end = intervals.T
-                if len(intervals) == 1:
-                    model.add_constraints_(time_visit_vars - begin - 0.5 * exptime >= 0)
-                    model.add_constraints_(time_visit_vars - end + 0.5 * exptime <= 0)
-                else:
-                    visit_interval_vars = model.binary_vars((visits, len(intervals)))
-                    for interval_vars in visit_interval_vars:
-                        model.add_constraint_(
-                            model.sum_vars_all_different(interval_vars) >= 1
-                        )
-                    model.add_indicators(
-                        visit_interval_vars,
-                        time_visit_vars[:, np.newaxis] - begin - 0.5 * exptime >= 0,
-                    )
-                    model.add_indicators(
-                        visit_interval_vars,
-                        time_visit_vars[:, np.newaxis] - end + 0.5 * exptime <= 0,
-                    )
-
-        if visits > 1:
-            with status("adding cadence constraints"):
-                if adaptive_exptime:
-                    rhs = cadence_s * field_vars + exptime_field_vars
-                else:
-                    rhs = (exptime_min_s + cadence_s) * field_vars
-                model.add_constraints_(
-                    (time_field_visit_vars[:, 1:] - time_field_visit_vars[:, :-1])
-                    >= rhs[:, np.newaxis]
+    with Model(timelimit=timelimit, jobs=jobs) as model:
+        with status("assembling MILP model"):
+            if cutoff is not None:
+                model.context.cplex_parameters.mip.tolerances.lowercutoff = cutoff
+            if absmag_distribution:
+                pixel_vars = model.continuous_vars(
+                    n_pixels,
+                    lb=0,
+                    ub=[
+                        breakpoints[(breakpoints[:, 1] < LARGE_EXPTIME), 0].max()
+                        for breakpoints in piecewise_breakpoints
+                    ],
                 )
-
-        with status("adding slew constraints"):
-            p, q = full_indices(visits)
-            if adaptive_exptime:
-                rhs = 0.5 * (
-                    exptime_field_vars[slew_i] + exptime_field_vars[slew_j]
-                ) + slew_time_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
             else:
-                rhs = (slew_time_s + exptime_min_s) * (
-                    field_vars[slew_i] + field_vars[slew_j] - 1
-                )
-            model.add_constraints_(
-                model.abs(
-                    time_field_visit_vars[slew_i, p[:, np.newaxis]]
-                    - time_field_visit_vars[slew_j, q[:, np.newaxis]]
-                )
-                >= rhs
+                pixel_vars = model.binary_vars(n_pixels)
+            field_vars = model.binary_vars(n_fields)
+            time_field_visit_vars = model.continuous_vars(
+                (n_fields, visits),
             )
-
-        if adaptive_exptime:
-            with status("adding exposure time constraints"):
-                model.add_constraints_(exptime_max_s * field_vars >= exptime_field_vars)
-
-        with status("adding coverage constraints"):
             if adaptive_exptime:
-                if absmag_distribution:
-                    for pixel_var, region_index, breakpoints in zip(
-                        pixel_vars, pixel_to_region_map, piecewise_breakpoints
-                    ):
-                        breakpoints = prepare_piecewise_breakpoints(breakpoints)
-                        if len(breakpoints) <= 1:
-                            assert pixel_var.ub == 0
-                        else:
+                exptime_field_vars = (
+                    model.semicontinuous_vars
+                    if exptime_min_s > 0
+                    else model.continuous_vars
+                )(n_fields, lb=exptime_min_s, ub=exptime_max_s)
+                exptime_region_vars = model.continuous_vars(n_regions)
+
+            # Add constraints on observability windows for each field
+            with status("adding field of regard constraints"):
+                for time_visit_vars, exptime, intervals in zip(
+                    time_field_visit_vars,
+                    exptime_field_vars
+                    if adaptive_exptime
+                    else np.full(n_fields, exptime_min_s),
+                    observable_intervals,
+                ):
+                    assert len(intervals) > 0
+                    begin, end = intervals.T
+                    if len(intervals) == 1:
+                        model.add_constraints_(
+                            time_visit_vars - begin - 0.5 * exptime >= 0
+                        )
+                        model.add_constraints_(
+                            time_visit_vars - end + 0.5 * exptime <= 0
+                        )
+                    else:
+                        visit_interval_vars = model.binary_vars(
+                            (visits, len(intervals))
+                        )
+                        for interval_vars in visit_interval_vars:
                             model.add_constraint_(
-                                exptime_region_vars[region_index]
-                                >= model.piecewise(0, breakpoints, 0)(pixel_var)
+                                model.sum_vars_all_different(interval_vars) >= 1
                             )
+                        model.add_indicators(
+                            visit_interval_vars,
+                            time_visit_vars[:, np.newaxis] - begin - 0.5 * exptime >= 0,
+                        )
+                        model.add_indicators(
+                            visit_interval_vars,
+                            time_visit_vars[:, np.newaxis] - end + 0.5 * exptime <= 0,
+                        )
+
+            if visits > 1:
+                with status("adding cadence constraints"):
+                    if adaptive_exptime:
+                        rhs = cadence_s * field_vars + exptime_field_vars
+                    else:
+                        rhs = (exptime_min_s + cadence_s) * field_vars
+                    model.add_constraints_(
+                        (time_field_visit_vars[:, 1:] - time_field_visit_vars[:, :-1])
+                        >= rhs[:, np.newaxis]
+                    )
+
+            with status("adding slew constraints"):
+                p, q = full_indices(visits)
+                if adaptive_exptime:
+                    rhs = 0.5 * (
+                        exptime_field_vars[slew_i] + exptime_field_vars[slew_j]
+                    ) + slew_time_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
                 else:
-                    model.add_indicators(
-                        pixel_vars,
-                        [
-                            exptime_region_vars[region] >= exptime_s
-                            for region, exptime_s in zip(
-                                pixel_to_region_map, exptime_pixel_s
-                            )
-                        ],
+                    rhs = (slew_time_s + exptime_min_s) * (
+                        field_vars[slew_i] + field_vars[slew_j] - 1
                     )
                 model.add_constraints_(
-                    [
-                        model.max(*exptime_field_vars[field_indices]).item()
-                        >= exptime_var
-                        for field_indices, exptime_var in zip(
-                            region_to_fields_map, exptime_region_vars
+                    model.abs(
+                        time_field_visit_vars[slew_i, p[:, np.newaxis]]
+                        - time_field_visit_vars[slew_j, q[:, np.newaxis]]
+                    )
+                    >= rhs
+                )
+
+            if adaptive_exptime:
+                with status("adding exposure time constraints"):
+                    model.add_constraints_(
+                        exptime_max_s * field_vars >= exptime_field_vars
+                    )
+
+            with status("adding coverage constraints"):
+                if adaptive_exptime:
+                    if absmag_distribution:
+                        for pixel_var, region_index, breakpoints in zip(
+                            pixel_vars, pixel_to_region_map, piecewise_breakpoints
+                        ):
+                            breakpoints = prepare_piecewise_breakpoints(breakpoints)
+                            if len(breakpoints) <= 1:
+                                assert pixel_var.ub == 0
+                            else:
+                                model.add_constraint_(
+                                    exptime_region_vars[region_index]
+                                    >= model.piecewise(0, breakpoints, 0)(pixel_var)
+                                )
+                    else:
+                        model.add_indicators(
+                            pixel_vars,
+                            [
+                                exptime_region_vars[region] >= exptime_s
+                                for region, exptime_s in zip(
+                                    pixel_to_region_map, exptime_pixel_s
+                                )
+                            ],
                         )
-                    ]
-                )
-            else:
-                model.add_constraints_(
-                    pixel_vars
-                    <= [
-                        model.sum_vars_all_different(field_vars[field_indices])
-                        for field_indices in pixels_to_fields_map
-                    ]
-                )
+                    model.add_constraints_(
+                        [
+                            model.max(*exptime_field_vars[field_indices]).item()
+                            >= exptime_var
+                            for field_indices, exptime_var in zip(
+                                region_to_fields_map, exptime_region_vars
+                            )
+                        ]
+                    )
+                else:
+                    model.add_constraints_(
+                        pixel_vars
+                        <= [
+                            model.sum_vars_all_different(field_vars[field_indices])
+                            for field_indices in pixels_to_fields_map
+                        ]
+                    )
 
-        with status("adding cuts"):
-            model.add_user_cut_constraint(
-                model.sum_vars_all_different(field_vars)
-                <= (deadline - delay).to_value(u.s) / (visits * exptime_min_s)
-            )
-            if adaptive_exptime:
+            with status("adding cuts"):
                 model.add_user_cut_constraint(
-                    model.sum_vars_all_different(exptime_field_vars)
-                    <= (deadline - delay).to_value(u.s) / visits
+                    model.sum_vars_all_different(field_vars)
+                    <= (deadline - delay).to_value(u.s) / (visits * exptime_min_s)
+                )
+                if adaptive_exptime:
+                    model.add_user_cut_constraint(
+                        model.sum_vars_all_different(exptime_field_vars)
+                        <= (deadline - delay).to_value(u.s) / visits
+                    )
+
+            with status("adding objective function"):
+                model.maximize(
+                    model.scal_prod_vars_all_different(pixel_vars, skymap_flat["PROB"])
                 )
 
-        with status("adding objective function"):
-            model.maximize(
-                model.scal_prod_vars_all_different(pixel_vars, skymap_flat["PROB"])
-            )
+        with status("solving MILP model"):
+            solution = model.solve()
 
-    with status("solving MILP model"):
-        solution = model.solve()
-
-    with status("writing results"):
-        if solution is None:
-            field_values = np.zeros(field_vars.shape, dtype=bool)
-            time_field_visit_values = np.empty(time_field_visit_vars.shape)
-            exptime_field_values = np.empty(field_vars.shape)
-            objective_value = 0.0
-        else:
-            field_values = solution.get_values(field_vars).astype(bool)
-            time_field_visit_values = solution.get_values(time_field_visit_vars)
-            if adaptive_exptime:
-                exptime_field_values = solution.get_values(exptime_field_vars)
+        with status("writing results"):
+            if solution is None:
+                field_values = np.zeros(field_vars.shape, dtype=bool)
+                time_field_visit_values = np.empty(time_field_visit_vars.shape)
+                exptime_field_values = np.empty(field_vars.shape)
+                objective_value = 0.0
             else:
-                exptime_field_values = np.full(n_fields, exptime_min_s)
-            objective_value = solution.get_objective_value()
+                field_values = solution.get_values(field_vars).astype(bool)
+                time_field_visit_values = solution.get_values(time_field_visit_vars)
+                if adaptive_exptime:
+                    exptime_field_values = solution.get_values(exptime_field_vars)
+                else:
+                    exptime_field_values = np.full(n_fields, exptime_min_s)
+                objective_value = solution.get_objective_value()
 
-        table = QTable(
-            {
-                "action": np.full(field_values.sum() * visits, "observe"),
-                "start_time": obstimes[0]
-                + (
-                    time_field_visit_values[field_values]
-                    - 0.5 * exptime_field_values[field_values][:, np.newaxis]
-                ).ravel()
-                * u.s,
-                "duration": np.tile(
-                    exptime_field_values[field_values][:, np.newaxis], visits
-                ).ravel()
-                * u.s,
-                "target_coord": target_coords[
-                    np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
-                ].ravel(),
-                "roll": rolls[
-                    np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
-                ].ravel(),
-            },
-            descriptions={
-                "action": "Action for the spacecraft",
-                "start_time": "Start time of segment",
-                "duration": "Duration of segment",
-                "target_coord": "Coordinates of the center of the FOV",
-                "roll": "Position angle of the FOV",
-            },
-            meta={
-                "command": shlex.join(sys.argv),
-                "version": __version__,
-                "args": {
-                    "deadline": deadline,
-                    "delay": delay,
-                    "mission": mission.name,
-                    "nside": nside,
-                    "time_step": time_step,
-                    "skymap": skymap.name,
-                    "visits": visits,
-                    "exptime_min": exptime_min,
-                    "exptime_max": exptime_max,
-                    "absmag_mean": absmag_mean,
-                    "absmag_stdev": absmag_stdev,
-                    "bandpass": bandpass,
-                    "snr": snr,
-                },
-                "objective_value": objective_value,
-                "best_bound": model.solve_details.best_bound,
-                "solution_status": model.solve_details.status,
-                "solution_time": model.solve_details.time * u.s,
-            },
-        )
-        table.sort("start_time")
-
-        # Add orbit to table
-        table.add_column(
-            mission.orbit(table["start_time"]).earth_location,
-            index=3,
-            name="observer_location",
-        )
-        table["observer_location"].info.description = "Position of the spacecraft"
-
-        # Add slew segments to table.
-        if len(table) > 0:
-            nrows = len(table) - 1
-            slew_table = QTable(
+            table = QTable(
                 {
-                    "action": np.full(nrows, "slew"),
-                    "start_time": (table["start_time"] + table["duration"])[:-1],
-                    "duration": mission.slew.time(
-                        table["target_coord"][:-1],
-                        table["target_coord"][1:],
-                        table["roll"][:-1],
-                        table["roll"][1:],
-                    ),
-                }
+                    "action": np.full(field_values.sum() * visits, "observe"),
+                    "start_time": obstimes[0]
+                    + (
+                        time_field_visit_values[field_values]
+                        - 0.5 * exptime_field_values[field_values][:, np.newaxis]
+                    ).ravel()
+                    * u.s,
+                    "duration": np.tile(
+                        exptime_field_values[field_values][:, np.newaxis], visits
+                    ).ravel()
+                    * u.s,
+                    "target_coord": target_coords[
+                        np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
+                    ].ravel(),
+                    "roll": rolls[
+                        np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
+                    ].ravel(),
+                },
+                descriptions={
+                    "action": "Action for the spacecraft",
+                    "start_time": "Start time of segment",
+                    "duration": "Duration of segment",
+                    "target_coord": "Coordinates of the center of the FOV",
+                    "roll": "Position angle of the FOV",
+                },
+                meta={
+                    "command": shlex.join(sys.argv),
+                    "version": __version__,
+                    "args": {
+                        "deadline": deadline,
+                        "delay": delay,
+                        "mission": mission.name,
+                        "nside": nside,
+                        "time_step": time_step,
+                        "skymap": skymap.name,
+                        "visits": visits,
+                        "exptime_min": exptime_min,
+                        "exptime_max": exptime_max,
+                        "absmag_mean": absmag_mean,
+                        "absmag_stdev": absmag_stdev,
+                        "bandpass": bandpass,
+                        "snr": snr,
+                    },
+                    "objective_value": objective_value,
+                    "best_bound": model.solve_details.best_bound,
+                    "solution_status": model.solve_details.status,
+                    "solution_time": model.solve_details.time * u.s,
+                },
             )
-            table = vstack(
-                (
-                    table,
-                    slew_table,
+            table.sort("start_time")
+
+            # Add orbit to table
+            table.add_column(
+                mission.orbit(table["start_time"]).earth_location,
+                index=3,
+                name="observer_location",
+            )
+            table["observer_location"].info.description = "Position of the spacecraft"
+
+            # Add slew segments to table.
+            if len(table) > 0:
+                nrows = len(table) - 1
+                slew_table = QTable(
+                    {
+                        "action": np.full(nrows, "slew"),
+                        "start_time": (table["start_time"] + table["duration"])[:-1],
+                        "duration": mission.slew.time(
+                            table["target_coord"][:-1],
+                            table["target_coord"][1:],
+                            table["roll"][:-1],
+                            table["roll"][1:],
+                        ),
+                    }
                 )
+                table = vstack(
+                    (
+                        table,
+                        slew_table,
+                    )
+                )
+
+            table.sort("start_time")
+
+            # Calculate total time spent observing, slewing, etc.,
+            # as well as the amount of unused slack time
+            total_time_by_action = (
+                table["action", "duration"].group_by("action").groups.aggregate(np.sum)
             )
+            table.meta["total_time"] = {
+                str(row["action"]): row["duration"].to(u.s)
+                for row in total_time_by_action
+            }
+            table.meta["total_time"]["slack"] = (
+                deadline - delay - total_time_by_action["duration"].sum()
+            ).to(u.s)
 
-        table.sort("start_time")
-
-        # Calculate total time spent observing, slewing, etc.,
-        # as well as the amount of unused slack time
-        total_time_by_action = (
-            table["action", "duration"].group_by("action").groups.aggregate(np.sum)
-        )
-        table.meta["total_time"] = {
-            str(row["action"]): row["duration"].to(u.s) for row in total_time_by_action
-        }
-        table.meta["total_time"]["slack"] = (
-            deadline - delay - total_time_by_action["duration"].sum()
-        ).to(u.s)
-
-        table.write(schedule, format="ascii.ecsv", overwrite=True)
+            table.write(schedule, format="ascii.ecsv", overwrite=True)
