@@ -160,6 +160,29 @@ def schedule(
         ),
     ] = 0,
 ):
+    """Generate an observing plan for a GW sky map.
+
+    \b
+    The scheduler has three modes:
+
+    \b
+    1. Fixed exposure time. Every field has the same exposure time given by the
+       --min-exptime option. This mode is selected if you omit the
+       --absmag-mean option.
+
+    \b
+    2. Variable exposure time. Each field may have a different exposure time,
+       adjusted for the posterior median distance along each line of sight.
+       This mode is selected if you specify a value for the --absmag-mean
+       option.
+
+    \b
+    3. Variable exposure time with an absolute magnitude distribution. Each
+       field may have a different exposure time, adjusted to optimize the
+       detection probability given the posterior distance distribution and a
+       Gaussian distribution of absolute magnitudes. This mode is selected if
+       you specify both the --absmag-mean and --absmag-stdev options.
+    """
     adaptive_exptime = absmag_mean is not None
     absmag_distribution = absmag_stdev is not None
 
