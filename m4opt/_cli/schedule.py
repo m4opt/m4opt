@@ -600,6 +600,7 @@ def schedule(
                         "absmag_stdev": absmag_stdev,
                         "bandpass": bandpass,
                         "snr": snr,
+                        "cutoff": cutoff,
                     },
                     "objective_value": objective_value,
                     "best_bound": model.solve_details.best_bound,
