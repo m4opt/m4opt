@@ -160,11 +160,13 @@ def schedule(
         ),
     ] = 0,
     cutoff: Annotated[
-        float | None,
+        float,
         typer.Option(
-            help="Objective cutoff. Give up if there are no feasible solutions with objective value greater than or equal to this value"
+            min=0,
+            max=1,
+            help="Objective cutoff. Give up if there are no feasible solutions with objective value greater than or equal to this value",
         ),
-    ] = None,
+    ] = 0,
 ):
     """Generate an observing plan for a GW sky map.
 
@@ -384,8 +386,7 @@ def schedule(
 
     with Model(timelimit=timelimit, jobs=jobs) as model:
         with status("assembling MILP model"):
-            if cutoff is not None:
-                model.context.cplex_parameters.mip.tolerances.lowercutoff = cutoff
+            model.context.cplex_parameters.mip.tolerances.lowercutoff = cutoff
             if absmag_distribution:
                 pixel_vars = model.continuous_vars(
                     n_pixels,
