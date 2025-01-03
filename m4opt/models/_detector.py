@@ -105,10 +105,15 @@ class Detector:
         self,
         snr: float,
         exptime: u.Quantity[u.physical.time],
-        wavelength: u.Quantity[u.physical.length],
         source_spectrum: Model,
         bandpass: Hashable | None = None,
     ):
+        """Get the limiting magnitude for a given SNR and exposure time.
+
+        Note that the limiting magnitude is relative to the source spectrum,
+        so you should pass a source spectrum that has an apparent magnitude of
+        0.
+        """
         src, bkg = self._get_count_rates(source_spectrum, bandpass)
         a = amplitude_oir_ccd(
             snr,
@@ -120,6 +125,4 @@ class Detector:
             self.npix,
             self.gain,
         )
-        return (a * source_spectrum(wavelength)).to(
-            u.ABmag, equivalencies=u.spectral_density(wavelength)
-        )
+        return (a * u.dimensionless_unscaled).to(u.mag(u.dimensionless_unscaled))

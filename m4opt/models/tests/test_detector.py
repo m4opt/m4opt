@@ -84,13 +84,12 @@ def test_limmag_snr_roundtrip(
     limmag = detector.get_limmag(
         snr,
         exptime * u.s,
-        1000 * u.angstrom,
         SourceSpectrum(ConstFlux1D, amplitude=0 * u.ABmag),
     )
-    assert limmag.unit == u.ABmag
+    assert limmag.unit == u.mag(u.dimensionless_unscaled)
     assume(np.isfinite(limmag.value))
     snr_result = detector.get_snr(
-        exptime * u.s, SourceSpectrum(ConstFlux1D, amplitude=limmag)
+        exptime * u.s, SourceSpectrum(ConstFlux1D, amplitude=limmag.value * u.ABmag)
     )
     assume(np.isfinite(snr_result))
     assert snr_result == pytest.approx(snr)
