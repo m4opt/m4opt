@@ -94,14 +94,13 @@ class DustExtinctionBase(Model):
         # wavenumber in units of inverse microns.
         x = x.to(1 / u.micron, equivalencies=u.spectral())
 
-        shape = np.shape(x)
-        x = np.atleast_1d(x)
+        shape = np.broadcast_shapes(x.shape, Ebv.shape)
         lo, hi = reddening_law.x_range
         good = (x.value >= lo) & (x.value <= hi)
-        result = np.empty(x.shape)
+        result = np.empty(shape)
         result[good] = reddening_law.extinguish(x[good], Ebv=Ebv)
         result[~good] = np.nan
-        return result.reshape(shape)
+        return result
 
 
 class DustExtinctionForEbv(DustExtinctionBase):
