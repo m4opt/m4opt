@@ -29,3 +29,10 @@ def test_extinction(observer_location, target_coord, obstime, wavelength):
     result = DustExtinction(Ebv)(wavelength)
     assert result.unit == u.dimensionless_unscaled
     assert expected == pytest.approx(result.value)
+
+
+def test_broadcast_dust_extinction():
+    DustExtinction(Ebv=[0.1, 0.2])([1000] * u.angstrom)
+    DustExtinction(Ebv=[[0.1], [0.2]])([1000] * u.angstrom)
+    DustExtinction(Ebv=[[0.1], [0.2]])(1000 * u.angstrom)
+    DustExtinction(Ebv=0.1)([1000, 2000] * u.angstrom)
