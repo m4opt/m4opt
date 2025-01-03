@@ -122,10 +122,9 @@ Examples
                 uvex.detector.get_limmag(
                     5 * np.sqrt(dwell / exptime[:, np.newaxis, np.newaxis]),
                     1 * dwell,
-                    1000 * u.angstrom,
                     SourceSpectrum(ConstFlux1D, amplitude=0 * u.ABmag),
                     filt,
-                ).to_value(u.ABmag)
+                ).to_value(u.mag)
             )
     median_limmags = np.median(limmags, axis=[2, 3])
 
