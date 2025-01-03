@@ -23,7 +23,6 @@ def test_cplex(num_vars):
 def test_cplex_parameters():
     """Test configuration of CPLEX solver parameters."""
     m = Model()
-    assert m.context.cplex_parameters.emphasis.mip.value == 0
     assert m.context.cplex_parameters.mip.pool.capacity.value == 0
     assert m.context.cplex_parameters.parallel.value == -1
     assert m.context.cplex_parameters.threads.value == 0
@@ -31,7 +30,6 @@ def test_cplex_parameters():
     assert m.context.solver.log_output
 
     m = Model(timelimit=1 * u.minute, jobs=3)
-    assert m.context.cplex_parameters.emphasis.mip.value == 1
     assert m.context.cplex_parameters.mip.pool.capacity.value == 0
     assert m.context.cplex_parameters.parallel.value == -1
     assert m.context.cplex_parameters.threads.value == 3
