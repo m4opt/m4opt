@@ -5,9 +5,9 @@ from astropy.coordinates import SkyCoord
 from regions import Region, Regions
 
 from ..constraints import Constraint
+from ..dynamics import Slew
 from ..models import Detector
 from ..orbit import Orbit
-from ..utils.dynamics import Slew
 
 
 @dataclass(repr=False)
