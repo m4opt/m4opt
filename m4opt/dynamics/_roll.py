@@ -62,7 +62,7 @@ def nominal_roll(
         from astropy.time import Time
         from astropy import units as u
         from matplotlib import pyplot as plt
-        from m4opt.utils.dynamics import nominal_roll
+        from m4opt.dynamics import nominal_roll
         import numpy as np
 
         # Place the observer at the center of the Earth.
@@ -91,7 +91,7 @@ def nominal_roll(
         from astropy.time import Time
         from astropy import units as u
         from matplotlib import pyplot as plt
-        from m4opt.utils.dynamics import nominal_roll
+        from m4opt.dynamics import nominal_roll
         import numpy as np
 
         # Place the observer at the center of the Earth.
@@ -120,7 +120,7 @@ def nominal_roll(
     >>> from astropy.coordinates import GCRS, EarthLocation, SkyCoord
     >>> from astropy.time import Time
     >>> from astropy import units as u
-    >>> from m4opt.utils.dynamics import nominal_roll
+    >>> from m4opt.dynamics import nominal_roll
     >>> observer_location = EarthLocation.from_geocentric(
     ...     6000 * u.km, 8000 * u.km, -3000 * u.km)
     >>> obstime = Time("2024-12-25 12:00:00")

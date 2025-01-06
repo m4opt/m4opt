@@ -10,10 +10,10 @@ from ..constraints import (
     MoonSeparationConstraint,
     SunSeparationConstraint,
 )
+from ..dynamics import Slew
 from ..models import Detector
 from ..models.background import GalacticBackground, ZodiacalBackground
 from ..orbit import TLE
-from ..utils.dynamics import Slew
 from ._core import Mission
 
 uvex = Mission(

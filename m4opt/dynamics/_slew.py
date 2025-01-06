@@ -150,7 +150,7 @@ class Slew:
         --------
         >>> from astropy.coordinates import SkyCoord
         >>> from astropy import units as u
-        >>> from m4opt.utils.dynamics import Slew
+        >>> from m4opt.dynamics import Slew
         >>> c1 = SkyCoord(0 * u.deg, 20 * u.deg)
         >>> c2 = SkyCoord(0 * u.deg, 40 * u.deg)
         >>> roll1 = 20 * u.deg

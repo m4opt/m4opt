@@ -6,6 +6,7 @@ User Guide
    :maxdepth: 2
 
    constraints
+   dynamics
    fov
    models
    orbit
