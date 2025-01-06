@@ -105,7 +105,7 @@ For fields that have one observable segment (:math:`{n_M}_j = 1`), this constrai
 
     \forall j ,\; k \;, m \mid {n_M}_j = 1 :\quad \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2
 
-For fields that have more than one observable segment (:math:`{n_M}_j = 1`), we use the decision variable :math:`s_{jkm}` to determine which inequality is satisfied:
+For fields that have more than one observable segment (:math:`{n_M}_j > 1`), we use the decision variable :math:`s_{jkm}` to determine which inequality is satisfied:
 
 .. math::
     :label: fixed-exptime-constraint-for-many
