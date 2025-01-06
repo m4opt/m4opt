@@ -230,7 +230,7 @@ Same as above.
 Problem 3: Variable exposure time with prior distribution of absolute magnitude
 -------------------------------------------------------------------------------
 
-In this variation, we don't know the precise absolute magnitude :math:`X` of the source. In the case of kilonovae, our prior knowledge about the absolute magnitude is scant; for the sake of mathematical convenience, we assume that the absolute magnitude has a normal distribution, :math:`X \sim~ N[\mu_X, \sigma_X]`. We need to compute the distribution of *apparent* magnitudes :math:`x` in order to determine the probability of detection as a function of exposure time for each pixel.
+In this variation, we don't know the precise absolute magnitude :math:`X` of the source. In the case of kilonovae, our prior knowledge about the absolute magnitude is scant; for the sake of mathematical convenience, we assume that the absolute magnitude has a normal distribution, :math:`X \sim~ \mathcal{N}[\mu_X, \sigma_X]`. We need to compute the distribution of *apparent* magnitudes :math:`x` in order to determine the probability of detection as a function of exposure time for each pixel.
 
 Gravitational-wave sky maps provide the posterior distribution of distance, as a parametric ansatz distribution,
 
@@ -249,7 +249,7 @@ We calculate the mean :math:`m` and standard deviation :math:`s` from :math:`\mu
     {\sigma_{\ln r}}^2 &=& \ln \left(1 + \frac{s^2}{m^2}\right).
     \end{eqnarray}
 
-The logarithm of the distance then has the distribution :math:`\ln r \sim N[\mu_{\ln r}, \sigma_{\ln r}]`. The apparent magnitude is related to the absolute magnitude through :math:`x = X + 5 \log_{10} r + 25`, assuming that :math:`r` is in the units of Mpc. Therefore the apparent magnitude has the distribution :math:`x \sim N[\mu_x, \sigma_x]`, with
+The logarithm of the distance then has the distribution :math:`\ln r \sim \mathcal{N}[\mu_{\ln r}, \sigma_{\ln r}]`. The apparent magnitude is related to the absolute magnitude through :math:`x = X + 5 \log_{10} r + 25`, assuming that :math:`r` is in the units of Mpc. Therefore the apparent magnitude has the distribution :math:`x \sim \mathcal{N}[\mu_x, \sigma_x]`, with
 
 .. math::
     :label: appmag-parameters
