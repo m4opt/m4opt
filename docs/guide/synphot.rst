@@ -1,6 +1,6 @@
-*************************************
-Sensitivity Modeling (`m4opt.models`)
-*************************************
+**************************************
+Synthetic Photometry (`m4opt.synphot`)
+**************************************
 
 |M4OPT| can adaptively adjust the exposure times of planned observations in
 order to obtain a desired signal-to-noise, given a model of the foreground
@@ -36,5 +36,5 @@ can specify their values within a code block using a ``with:`` statement::
 See also the Examples section for
 :class:`~m4opt.models.background.ZodiacalBackground`.
 
-.. automodapi:: m4opt.models
-.. automodapi:: m4opt.models.background
+.. automodapi:: m4opt.synphot
+.. automodapi:: m4opt.synphot.background

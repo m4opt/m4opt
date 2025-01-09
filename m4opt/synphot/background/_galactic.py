@@ -51,9 +51,9 @@ def GalacticBackground():
         from astropy.time import Time
         from astropy import units as u
         from matplotlib import pyplot as plt
-        from m4opt.models.background import GalacticBackground
-        from m4opt.models.background._core import BACKGROUND_SOLID_ANGLE
-        from m4opt.models import observing
+        from m4opt.synphot.background import GalacticBackground
+        from m4opt.synphot.background._core import BACKGROUND_SOLID_ANGLE
+        from m4opt.synphot import observing
         import numpy as np
 
 
@@ -88,9 +88,9 @@ def GalacticBackground():
         from astropy.time import Time
         from astropy import units as u
         from matplotlib import pyplot as plt
-        from m4opt.models.background import GalacticBackground
-        from m4opt.models.background._core import BACKGROUND_SOLID_ANGLE
-        from m4opt.models import observing
+        from m4opt.synphot.background import GalacticBackground
+        from m4opt.synphot.background._core import BACKGROUND_SOLID_ANGLE
+        from m4opt.synphot import observing
         import numpy as np
         from matplotlib.colors import Normalize
         from matplotlib.cm import ScalarMappable

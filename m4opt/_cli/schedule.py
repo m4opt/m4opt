@@ -19,7 +19,7 @@ from .. import __version__, missions
 from ..dynamics import nominal_roll
 from ..fov import footprint_healpix
 from ..milp import Model
-from ..models import DustExtinction, TabularScaleFactor, observing
+from ..synphot import DustExtinction, TabularScaleFactor, observing
 from ..utils.console import progress, status
 from ..utils.numpy import clump_nonzero_inclusive, full_indices
 from .core import app

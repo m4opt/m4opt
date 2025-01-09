@@ -6,8 +6,8 @@ from regions import Region, Regions
 
 from ..constraints import Constraint
 from ..dynamics import Slew
-from ..models import Detector
 from ..orbit import Orbit
+from ..synphot import Detector
 
 
 @dataclass(repr=False)

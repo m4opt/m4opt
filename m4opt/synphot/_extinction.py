@@ -47,17 +47,17 @@ def DustExtinction(Ebv: float | None = None):
     You can create an extinction model with an explicitly set value of E(B-V):
 
     >>> from astropy import units as u
-    >>> from m4opt.models import DustExtinction
+    >>> from m4opt.synphot import DustExtinction
     >>> extinction = DustExtinction(Ebv=1.0)
     >>> extinction(10 * u.micron)
     <Quantity 0.7903132>
 
     Or you can leave it unspecified, to evaluate later for a given sky location
-    using :meth:`m4opt.models.observing`:
+    using :meth:`m4opt.synphot.observing`:
 
     >>> from astropy.coordinates import EarthLocation, SkyCoord
     >>> from astropy.time import Time
-    >>> from m4opt.models import observing
+    >>> from m4opt.synphot import observing
     >>> extinction = DustExtinction()
     >>> with observing(EarthLocation.of_site("Las Campanas Observatory"), SkyCoord.from_name("NGC 4993"), Time("2017-08-17")):
     ...     extinction(10 * u.micron)
