@@ -60,7 +60,7 @@ class SkyBackground:
     Examples
     --------
     >>> from astropy import units as u
-    >>> from m4opt.models.background import SkyBackground
+    >>> from m4opt.synphot.background import SkyBackground
 
     >>> background = SkyBackground.low()
     >>> background(5890 * u.angstrom, flux_unit=u.ABmag)
@@ -78,7 +78,7 @@ class SkyBackground:
         from matplotlib import pyplot as plt
         import numpy as np
 
-        from m4opt.models.background import SkyBackground
+        from m4opt.synphot.background import SkyBackground
 
         quantity_support()
 

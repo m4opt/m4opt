@@ -102,7 +102,7 @@ class ZodiacalBackground:
     conditions.
 
     >>> from astropy import units as u
-    >>> from m4opt.models.background import ZodiacalBackground
+    >>> from m4opt.synphot.background import ZodiacalBackground
     >>> background = ZodiacalBackground.low()
     >>> background(3000 * u.angstrom, flux_unit=u.ABmag)
     <Magnitude 26.16417045 mag(AB)>
@@ -122,7 +122,7 @@ class ZodiacalBackground:
       ...
     ValueError: Unknown target. Please evaluate the model by providing the \
     position and observing time in a `with:` statement, like this:
-        from m4opt.models import observing
+        from m4opt.synphot import observing
         with observing(observer_location=loc, target_coord=coord, obstime=time):
 
     >>> from astropy.coordinates import EarthLocation, SkyCoord
@@ -130,7 +130,7 @@ class ZodiacalBackground:
     >>> loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 0 * u.m)
     >>> coord = SkyCoord.from_name('NGC 4993')
     >>> time = Time('2017-08-17T12:41:04.4')
-    >>> from m4opt.models import observing
+    >>> from m4opt.synphot import observing
     >>> with observing(observer_location=loc, target_coord=coord, obstime=time):
     ...     background(3000 * u.angstrom, flux_unit=u.ABmag)
     <Magnitude 24.75101362 mag(AB)>
@@ -143,7 +143,7 @@ class ZodiacalBackground:
         from astropy import units as u
         from astropy.visualization import quantity_support
 
-        from m4opt.models.background import ZodiacalBackground
+        from m4opt.synphot.background import ZodiacalBackground
 
         quantity_support()
 
@@ -167,8 +167,8 @@ class ZodiacalBackground:
         import numpy as np
         import ligo.skymap.plot
 
-        from m4opt.models.background import ZodiacalBackground
-        from m4opt.models import observing
+        from m4opt.synphot.background import ZodiacalBackground
+        from m4opt.synphot import observing
 
         wave = 10000 * u.angstrom
         hpx = HEALPix(nside=512, frame=ICRS())

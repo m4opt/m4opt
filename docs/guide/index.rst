@@ -8,7 +8,7 @@ User Guide
    constraints
    dynamics
    fov
-   models
+   synphot
    orbit
    skygrid
    milp

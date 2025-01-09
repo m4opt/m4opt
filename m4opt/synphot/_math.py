@@ -27,10 +27,10 @@ def countrate(
     """
     >>> from astropy.coordinates import EarthLocation, SkyCoord
     >>> from astropy.time import Time
-    >>> from m4opt.models.background import ZodiacalBackground
-    >>> from m4opt.models import DustExtinction
-    >>> from m4opt.models import observing
-    >>> from m4opt.models._math import countrate
+    >>> from m4opt.synphot.background import ZodiacalBackground
+    >>> from m4opt.synphot import DustExtinction
+    >>> from m4opt.synphot import observing
+    >>> from m4opt.synphot._math import countrate
     >>> import numpy as np
     >>> import synphot
     >>> from astropy import units as u

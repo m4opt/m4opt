@@ -11,9 +11,9 @@ from ..constraints import (
     SunSeparationConstraint,
 )
 from ..dynamics import Slew
-from ..models import Detector
-from ..models.background import GalacticBackground, ZodiacalBackground
 from ..orbit import TLE
+from ..synphot import Detector
+from ..synphot.background import GalacticBackground, ZodiacalBackground
 from ._core import Mission
 
 ultrasat = Mission(
@@ -83,7 +83,7 @@ Examples
     from astropy_healpix import HEALPix
     from matplotlib import pyplot as plt
     from m4opt.missions import ultrasat
-    from m4opt.models import observing
+    from m4opt.synphot import observing
     import numpy as np
     from tqdm import tqdm 
     from synphot import SourceSpectrum

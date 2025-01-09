@@ -11,6 +11,6 @@ def prime():
     connectivity (for example, some computing clusters), you can run this
     command to download and cache the external data sources immediately.
     """
-    from ..models._extinction import dust_map
+    from ..synphot._extinction import dust_map
 
     dust_map()

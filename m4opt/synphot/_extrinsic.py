@@ -10,7 +10,7 @@ from astropy.utils.state import ScienceState
 error = """\
 Unknown target. Please evaluate the model by providing the position and \
 observing time in a `with:` statement, like this:
-    from m4opt.models import observing
+    from m4opt.synphot import observing
     with observing(observer_location=loc, target_coord=coord, obstime=time):
         ...  # evaluate model here\
 """
