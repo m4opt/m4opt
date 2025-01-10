@@ -167,7 +167,7 @@ def animate(
                     ),
                     label="Required exposure time (s)",
                     orientation="horizontal",
-                )
+                ).ax.xaxis.set_label_position("top")
 
         with status("adding field of regard"):
             instantaneous_field_of_regard = np.logical_and.reduce(
