@@ -91,23 +91,20 @@ def animate(
             ax_map = fig.add_subplot(gs[0], projection="astro hours mollweide")
             assert isinstance(ax_map, AutoScaledWCSAxes)
             transform = ax_map.get_transform("world")
-            ax_map.add_artist(
-                ax_map.legend(
-                    [
-                        Patch(facecolor=footprint_color, alpha=footprint_alpha),
-                        Patch(facecolor="none", edgecolor=skymap_color),
-                    ],
-                    [
-                        "observation footprints",
-                        "90% credible region",
-                    ],
-                    loc="upper left",
-                    borderaxespad=0,
-                    bbox_to_anchor=[0, 1],
-                    bbox_transform=fig.transFigure,
-                )
+            fig.legend(
+                [
+                    Patch(facecolor=footprint_color, alpha=footprint_alpha),
+                    Patch(facecolor="none", edgecolor=skymap_color),
+                ],
+                [
+                    "observation footprints",
+                    "90% credible region",
+                ],
+                loc="outside upper left",
+                bbox_to_anchor=[0, 1],
+                bbox_transform=fig.transFigure,
             )
-            ax_map.legend(
+            fig.legend(
                 [
                     Patch(facecolor=averaged_field_of_regard_color),
                     Patch(facecolor=field_of_regard_color),
@@ -116,9 +113,8 @@ def animate(
                     "averaged",
                     "instantaneous",
                 ],
-                loc="upper right",
+                loc="outside upper right",
                 title="outside field of regard",
-                borderaxespad=0,
                 bbox_to_anchor=[1, 1],
                 bbox_transform=fig.transFigure,
             )
