@@ -283,17 +283,20 @@ def animate(
                 color=now_color,
                 transform=BlendedAffine2D(ax_timeline.transData, ax_timeline.transAxes),
             )
-            ax_timeline.axvspan(0 * u.hour, delay, color="lightgray")
-            ax_timeline.text(
-                delay,
-                0.5,
-                "delay",
-                rotation=90,
-                rotation_mode="anchor",
-                horizontalalignment="center",
-                verticalalignment="bottom",
-                transform=BlendedAffine2D(ax_timeline.transData, ax_timeline.transAxes),
-            )
+            if delay != 0 * u.hour:
+                ax_timeline.axvspan(0 * u.hour, delay, color="lightgray")
+                ax_timeline.text(
+                    delay,
+                    0.5,
+                    "delay",
+                    rotation=90,
+                    rotation_mode="anchor",
+                    horizontalalignment="center",
+                    verticalalignment="bottom",
+                    transform=BlendedAffine2D(
+                        ax_timeline.transData, ax_timeline.transAxes
+                    ),
+                )
 
         with status("rendering frames"):
             field_of_regard_artist = None
