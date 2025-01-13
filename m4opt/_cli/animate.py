@@ -1,4 +1,5 @@
 from itertools import accumulate, chain
+from pathlib import Path
 from typing import Annotated, Iterable, cast
 
 import numpy as np
@@ -46,6 +47,10 @@ def animate(
             help="Time step for evaluating field of regard",
         ),
     ] = "1 hour",
+    still: Annotated[
+        typer.FileBinaryWrite | None,
+        typer.Option(help="Optional output file for still frame", metavar="STILL.pdf"),
+    ] = None,
 ):
     """Generate an animation for a GW sky map."""
     with status("loading schedule"):
@@ -332,3 +337,7 @@ def animate(
                 save_count=len(time_steps),
                 blit=True,
             ).save(output.name)
+
+        if still is not None:
+            with status("saving still frame"):
+                fig.savefig(still, format=Path(still.name).suffix.lstrip("."))
