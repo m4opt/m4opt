@@ -42,7 +42,6 @@ Getting Started
    :maxdepth: 2
 
    install/index
-   scenarios/index
    guide/index
    design/index
    dev/index
