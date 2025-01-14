@@ -15,4 +15,7 @@ python:
         - docs
         - all
 
+sphinx:
+  configuration: docs/conf.py
+
 formats: []
