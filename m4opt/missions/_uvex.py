@@ -64,8 +64,9 @@ uvex = Mission(
     skygrid=skygrid.geodesic(7.7 * u.deg**2, class_="III", base="icosahedron"),
     # Made up slew model.
     slew=Slew(
-        max_angular_velocity=0.1 * u.deg / u.s,
-        max_angular_acceleration=0.2 * u.deg / u.s**2,
+        max_angular_velocity=0.6 * u.deg / u.s,
+        max_angular_acceleration=0.006 * u.deg / u.s**2,
+        settling_time=60 * u.s,
     ),
 )
 uvex.__doc__ = r"""UVEX, the UltraViolet EXplorer.
