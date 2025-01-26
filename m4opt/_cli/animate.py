@@ -47,6 +47,12 @@ def animate(
             help="Time step for evaluating field of regard",
         ),
     ] = "1 hour",
+    duration: Annotated[
+        u.Quantity,
+        typer.Option(
+            help="Duration of animation",
+        ),
+    ] = "5 second",
     still: Annotated[
         typer.FileBinaryWrite | None,
         typer.Option(help="Optional output file for still frame", metavar="STILL.pdf"),
@@ -336,6 +342,7 @@ def animate(
                 frames=zip(time_steps, instantaneous_field_of_regard),
                 save_count=len(time_steps),
                 blit=True,
+                interval=duration.to_value(u.ms) / len(time_steps),
             ).save(output.name)
 
         if still is not None:
