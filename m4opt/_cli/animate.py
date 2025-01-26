@@ -6,7 +6,7 @@ import numpy as np
 import synphot
 import typer
 from astropy import units as u
-from astropy.coordinates import ICRS, Distance
+from astropy.coordinates import ICRS, Distance, get_body
 from astropy.table import QTable
 from astropy.time import Time
 from astropy.visualization.units import quantity_support
@@ -14,6 +14,7 @@ from astropy_healpix import HEALPix
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
 from ligo.skymap.plot.allsky import AutoScaledWCSAxes
+from ligo.skymap.plot.marker import earth, moon, sun
 from ligo.skymap.plot.poly import cut_prime_meridian
 from ligo.skymap.postprocess import find_greedy_credible_levels
 from matplotlib import pyplot as plt
@@ -102,6 +103,20 @@ def animate(
             ax_map = fig.add_subplot(gs[0], projection="astro hours mollweide")
             assert isinstance(ax_map, AutoScaledWCSAxes)
             transform = ax_map.get_transform("world")
+            earth_artist, sun_artist, moon_artist = [
+                ax_map.plot(
+                    0,
+                    0,
+                    zorder=10000,
+                    transform=transform,
+                    **kwargs,
+                )[0]
+                for kwargs in [
+                    dict(marker=earth, mec="black"),
+                    dict(marker=sun, mec="black"),
+                    dict(marker=moon(-115), mfc="black", mec="none"),
+                ]
+            ]
             fig.legend(
                 [
                     Patch(facecolor=footprint_color, alpha=footprint_alpha),
@@ -177,6 +192,11 @@ def animate(
                 ).ax.xaxis.set_label_position("top")
 
         with status("adding field of regard"):
+            earth_coords, sun_coords, moon_coords = [
+                get_body(body, time_steps, observer_locations)
+                for body in ["earth", "sun", "moon"]
+            ]
+
             instantaneous_field_of_regard = np.logical_and.reduce(
                 [
                     constraint(
@@ -309,11 +329,19 @@ def animate(
             field_of_regard_artist = None
 
             def draw_frame(args):
-                time, field_of_regard = args
-                blit = [now_line, now_label]
+                time, field_of_regard, earth_coord, sun_coord, moon_coord = args
+                blit = [now_line, now_label, earth_artist, sun_artist, moon_artist]
+
                 time_from_start = (time - event_time).to(u.hour)
                 now_line.set_xdata([time_from_start])
                 now_label.set_x(time_from_start)
+
+                for artist, coord in zip(
+                    [earth_artist, sun_artist, moon_artist],
+                    [earth_coord, sun_coord, moon_coord],
+                ):
+                    artist.set_data([[coord.ra.deg], [coord.dec.deg]])
+
                 for patches, visible in zip(
                     footprint_patches, table["start_time"] <= time
                 ):
@@ -339,7 +367,13 @@ def animate(
             FuncAnimation(
                 fig,
                 draw_frame,
-                frames=zip(time_steps, instantaneous_field_of_regard),
+                frames=zip(
+                    time_steps,
+                    instantaneous_field_of_regard,
+                    earth_coords,
+                    sun_coords,
+                    moon_coords,
+                ),
                 save_count=len(time_steps),
                 blit=True,
                 interval=duration.to_value(u.ms) / len(time_steps),
