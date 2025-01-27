@@ -329,6 +329,11 @@ Additional parameters
 - :math:`\left(\epsilon_{in}\right)_{i \in I, n \in N}`: exposure time required to achieve a detection efficiency of :math:`\xi_n` in pixel :math:`i`
 - :math:`\left(f_i\right)_{i \in I}`: piecewise linear function interpolating between the points :math:`(\xi_n, \epsilon_{in})_{i \in I, n \in N}`
 
+Additional decision variables
+"""""""""""""""""""""""""""""
+
+- :math:`\left(p_i\right)_{i \in I}`: change from a binary variable to a continuous variable
+
 Additional constraints
 """"""""""""""""""""""
 
