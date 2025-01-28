@@ -28,8 +28,8 @@ __ https://www.ibm.com/academic
 
 __ https://github.com/academic-initiative/documentation/blob/main/academic-initiative/how-to/How-to-create-an-IBM-Cloud-account/readme.md
 
-3. Scroll to the middle of the page and navigate to
-   :menuselection:`Software --> IBM ILOG CPLEX Optimization Studio`.
+3. Navigate to
+   :menuselection:`Data Science --> IBM ILOG CPLEX Optimization Studio`.
 
 4. Follow the download and installation instructions.
 
@@ -39,13 +39,11 @@ __ https://github.com/academic-initiative/documentation/blob/main/academic-initi
    with e.g. `./cplex_studio2211.linux_x86_64.bin`. The installation will
    proceed in the command line.
 
-5. In the Python environment in which you have installed |M4OPT|, run this
-   command::
-
-        python /opt/ibm/CPLEX_Studio201/python/setup.py install
-
-   Replace ``/opt/ibm/CPLEX_Studio201`` with the path where the software was
-   installed. On macOS, this may be in the ``/Applications`` directory.
+5. In the Python environment in which you have installed |M4OPT|, follow the
+   instructions at `Does CPLEX Optimization Studio 22.1.1 support Python 3.11?
+   <https://www.ibm.com/support/pages/does-cplex-optimization-studio-2211-support-python-311>`_
+   to update your Python environment to use your academic license version of
+   CPLEX.
 
 All others
 ----------
