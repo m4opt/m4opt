@@ -58,6 +58,13 @@ def animate(
         typer.FileBinaryWrite | None,
         typer.Option(help="Optional output file for still frame", metavar="STILL.pdf"),
     ] = None,
+    dpi: Annotated[
+        float | None,
+        typer.Option(
+            help="Output resolution [default: Matplotlib default setting]",
+            show_default=False,
+        ),
+    ] = None,
 ):
     """Generate an animation for a GW sky map."""
     with status("loading schedule"):
@@ -84,7 +91,7 @@ def animate(
 
     with status("making animation"), quantity_support():
         with status("setting up axes"):
-            fig = plt.figure()
+            fig = plt.figure(dpi=dpi)
             gs = fig.add_gridspec(2, 1, height_ratios=[4, 1])
             colormap = plt.get_cmap("Paired")
             assert isinstance(colormap, ListedColormap)
