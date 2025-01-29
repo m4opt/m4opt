@@ -10,6 +10,7 @@ from astropy.coordinates import ICRS, Distance, SkyCoord
 from astropy.table import QTable, vstack
 from astropy.time import Time
 from astropy_healpix import HEALPix
+from docplex.mp.progress import ProgressData, ProgressDataRecorder
 from ligo.skymap import distance
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
@@ -167,6 +168,13 @@ def schedule(
             help="Objective cutoff. Give up if there are no feasible solutions with objective value greater than or equal to this value",
         ),
     ] = 0,
+    record_progress: Annotated[
+        typer.FileTextWrite | None,
+        typer.Option(
+            help="Save a time series of the CPLEX objective value and best bound to this file",
+            metavar="PROGRESS.ecsv",
+        ),
+    ] = None,
 ):
     """Generate an observing plan for a GW sky map.
 
@@ -539,9 +547,19 @@ def schedule(
                 )
 
         with status("solving MILP model"):
+            if record_progress is not None:
+                model.add_progress_listener(recorder := ProgressDataRecorder())
             solution = model.solve()
 
         with status("writing results"):
+            if record_progress is not None:
+                QTable(
+                    # FIXME: workaround for https://github.com/astropy/astropy/issues/17688
+                    rows=recorder.recorded if recorder.number_of_records > 0 else None,
+                    names=ProgressData._fields,
+                    dtype=[int, bool, float, float, float, int, int, int, float, float],
+                ).write(record_progress, format="ascii.ecsv", overwrite=True)
+
             if solution is None:
                 field_values = np.zeros(field_vars.shape, dtype=bool)
                 time_field_visit_values = np.empty(time_field_visit_vars.shape)
