@@ -302,7 +302,7 @@ def schedule(
         with status("evaluating exposure time map"):
             if (
                 absmag_stdev is not None
-            ):  # same as `if absmag_distribution:` but allows m4opt to infer that absmag_stdev is not None
+            ):  # same as `if absmag_distribution:` but allows mypy to infer that absmag_stdev is not None
                 distmean, diststd, _ = distance.parameters_to_moments(
                     skymap_flat["DISTMU"],
                     skymap_flat["DISTSIGMA"],
