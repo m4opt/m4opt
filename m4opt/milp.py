@@ -72,6 +72,11 @@ class Model(_Model):
         timelimit_s = timelimit.to_value(u.s)
         if timelimit_s < 1e75:
             self.context.cplex_parameters.timelimit = timelimit_s
+            # Since we have a time limit,
+            # emphasize finding good feasible solutions over proving optimality.
+            self.context.cplex_parameters.emphasis.mip = (
+                self.cplex.parameters.emphasis.mip.values.feasibility
+            )
 
     def add_constraints_(self, cts, names=None):
         """Add any number of constraints to the model.
