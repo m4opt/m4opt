@@ -152,6 +152,13 @@ def schedule(
             rich_help_panel="Solver Options",
         ),
     ] = "1e75 s",
+    memory: Annotated[
+        u.Quantity,
+        typer.Option(
+            help="Maximum solver memory usage before spilling temporary files to disk",
+            rich_help_panel="Solver Options",
+        ),
+    ] = "inf GiB",
     jobs: Annotated[
         int,
         typer.Option(
@@ -396,7 +403,7 @@ def schedule(
             rolls[slew_j],
         ).to_value(u.s)
 
-    with Model(timelimit=timelimit, jobs=jobs) as model:
+    with Model(timelimit=timelimit, jobs=jobs, memory=memory) as model:
         with status("assembling MILP model"):
             model.context.cplex_parameters.mip.tolerances.lowercutoff = cutoff
             if absmag_distribution:
