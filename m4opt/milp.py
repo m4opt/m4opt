@@ -2,6 +2,7 @@
 
 import operator
 from collections.abc import Callable
+from tempfile import gettempdir
 from unittest.mock import patch
 
 import numpy as np
@@ -84,6 +85,7 @@ class Model(_Model):
             )
 
         if np.isfinite(memory):
+            self.context.cplex_parameters.workdir = gettempdir()
             self.context.cplex_parameters.workmem = memory.to_value(u.MiB)
             self.context.cplex_parameters.mip.strategy.file = (
                 self.cplex.parameters.mip.strategy.file.values.disk_compressed
