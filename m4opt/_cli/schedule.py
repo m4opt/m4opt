@@ -144,13 +144,14 @@ def schedule(
         u.Quantity,
         typer.Option(help="Minimum time separation between visits"),
     ] = "30 min",
+    nside: Annotated[int, typer.Option(help="HEALPix resolution")] = 512,
     timelimit: Annotated[
         u.Quantity,
         typer.Option(
             help="Time limit for MILP solver",
+            rich_help_panel="Solver Options",
         ),
     ] = "1e75 s",
-    nside: Annotated[int, typer.Option(help="HEALPix resolution")] = 512,
     jobs: Annotated[
         int,
         typer.Option(
@@ -158,6 +159,7 @@ def schedule(
             "-j",
             min=0,
             help="Number of threads for parallel processing, or 0 for all cores",
+            rich_help_panel="Solver Options",
         ),
     ] = 0,
     cutoff: Annotated[
@@ -166,6 +168,7 @@ def schedule(
             min=0,
             max=1,
             help="Objective cutoff. Give up if there are no feasible solutions with objective value greater than or equal to this value",
+            rich_help_panel="Solver Options",
         ),
     ] = 0,
     record_progress: Annotated[
@@ -173,6 +176,7 @@ def schedule(
         typer.Option(
             help="Save a time series of the CPLEX objective value and best bound to this file",
             metavar="PROGRESS.ecsv",
+            rich_help_panel="Solver Options",
         ),
     ] = None,
 ):
