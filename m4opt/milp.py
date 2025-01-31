@@ -20,7 +20,10 @@ class Model(_Model):
     """Convenience class to add Numpy variable arrays to a CPLEX model."""
 
     def __init__(
-        self, timelimit: u.Quantity[u.physical.time] = 1e75 * u.s, jobs: int = 0
+        self,
+        timelimit: u.Quantity[u.physical.time] = 1e75 * u.s,
+        jobs: int = 0,
+        memory: u.Quantity[u.physical.data_quantity] = np.inf * u.byte,
     ):
         """Initialize a model with default `CPLEX parameters`_ for M4OPT.
 
@@ -33,6 +36,8 @@ class Model(_Model):
         jobs
             Number of threads. If 0, then automatically configure the number of
             threads based on the number of CPUs present.
+        memory
+            Maximum memory usage before spilling temporary data to disk.
 
         Notes
         -----
@@ -76,6 +81,12 @@ class Model(_Model):
             # emphasize finding good feasible solutions over proving optimality.
             self.context.cplex_parameters.emphasis.mip = (
                 self.cplex.parameters.emphasis.mip.values.feasibility
+            )
+
+        if np.isfinite(memory):
+            self.context.cplex_parameters.workmem = memory.to_value(u.byte)
+            self.context.cplex_parameters.mip.strategy.file = (
+                self.cplex.parameters.mip.strategy.file.values.disk_compressed
             )
 
     def add_constraints_(self, cts, names=None):

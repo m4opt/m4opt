@@ -27,6 +27,8 @@ def test_cplex_parameters():
     assert m.context.cplex_parameters.parallel.value == -1
     assert m.context.cplex_parameters.threads.value == 0
     assert m.context.cplex_parameters.timelimit.value == 1e75
+    assert m.context.cplex_parameters.mip.strategy.file.value == 1
+    assert m.context.cplex_parameters.workmem.value == 2048
     assert m.context.solver.log_output
 
     m = Model(timelimit=1 * u.minute, jobs=3)
@@ -34,6 +36,17 @@ def test_cplex_parameters():
     assert m.context.cplex_parameters.parallel.value == -1
     assert m.context.cplex_parameters.threads.value == 3
     assert m.context.cplex_parameters.timelimit.value == 60
+    assert m.context.cplex_parameters.mip.strategy.file.value == 1
+    assert m.context.cplex_parameters.workmem.value == 2048
+    assert m.context.solver.log_output
+
+    m = Model(timelimit=1 * u.minute, jobs=3, memory=1 * u.MiB)
+    assert m.context.cplex_parameters.mip.pool.capacity.value == 0
+    assert m.context.cplex_parameters.parallel.value == -1
+    assert m.context.cplex_parameters.threads.value == 3
+    assert m.context.cplex_parameters.timelimit.value == 60
+    assert m.context.cplex_parameters.mip.strategy.file.value == 3
+    assert m.context.cplex_parameters.workmem.value == 1024 * 1024
     assert m.context.solver.log_output
 
 
