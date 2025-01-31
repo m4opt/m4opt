@@ -84,7 +84,7 @@ class Model(_Model):
             )
 
         if np.isfinite(memory):
-            self.context.cplex_parameters.workmem = memory.to_value(u.byte)
+            self.context.cplex_parameters.workmem = memory.to_value(u.MiB)
             self.context.cplex_parameters.mip.strategy.file = (
                 self.cplex.parameters.mip.strategy.file.values.disk_compressed
             )
