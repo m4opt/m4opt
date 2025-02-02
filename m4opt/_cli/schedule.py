@@ -178,7 +178,7 @@ def schedule(
             rich_help_panel="Solver Options",
         ),
     ] = 0,
-    record_progress: Annotated[
+    write_progress: Annotated[
         typer.FileTextWrite | None,
         typer.Option(
             help="Save a time series of the CPLEX objective value and best bound to this file",
@@ -558,18 +558,18 @@ def schedule(
                 )
 
         with status("solving MILP model"):
-            if record_progress is not None:
+            if write_progress is not None:
                 model.add_progress_listener(recorder := ProgressDataRecorder())
             solution = model.solve()
 
         with status("writing results"):
-            if record_progress is not None:
+            if write_progress is not None:
                 QTable(
                     # FIXME: workaround for https://github.com/astropy/astropy/issues/17688
                     rows=recorder.recorded if recorder.number_of_records > 0 else None,
                     names=ProgressData._fields,
                     dtype=[int, bool, float, float, float, int, int, int, float, float],
-                ).write(record_progress, format="ascii.ecsv", overwrite=True)
+                ).write(write_progress, format="ascii.ecsv", overwrite=True)
 
             if solution is None:
                 field_values = np.zeros(field_vars.shape, dtype=bool)
