@@ -6,6 +6,7 @@ from shutil import copyfileobj
 from tempfile import NamedTemporaryFile
 from typing import Annotated
 
+import cplex
 import numpy as np
 import synphot
 import typer
@@ -207,14 +208,14 @@ def schedule(
         ),
     ] = 0,
     cutoff: Annotated[
-        float,
+        float | None,
         typer.Option(
             min=0,
             max=1,
             help="Objective cutoff. Give up if there are no feasible solutions with objective value greater than or equal to this value",
             rich_help_panel="Solver Options",
         ),
-    ] = 0,
+    ] = None,
     write_progress: Annotated[
         typer.FileTextWrite | None,
         typer.Option(
@@ -450,7 +451,27 @@ def schedule(
 
     with Model(timelimit=timelimit, jobs=jobs, memory=memory) as model:
         with status("assembling MILP model"):
-            model.context.cplex_parameters.mip.tolerances.lowercutoff = cutoff
+            if cutoff is not None:
+                # FIXME: Setting lowercutoff drastically hurts solution quality.
+                # See https://github.com/IBMDecisionOptimization/docplex/issues/20
+                #
+                # model.context.cplex_parameters.mip.tolerances.lowercutoff = cutoff
+
+                class LowerCutoffCallback:
+                    def invoke(self, context: cplex.callbacks.Context):
+                        best_bound = context.get_double_info(
+                            cplex.callbacks.CallbackInfo.best_bound
+                        )
+                        if best_bound <= cutoff:
+                            print(
+                                f"giving up because best bound ({best_bound}) <= cutoff ({cutoff})"
+                            )
+                            context.abort()
+
+                model.get_cplex().set_callback(
+                    LowerCutoffCallback(), cplex.callbacks.Context.id.global_progress
+                )
+
             if absmag_distribution:
                 pixel_vars = model.continuous_vars(
                     n_pixels,
