@@ -1,5 +1,9 @@
+import gzip
 import shlex
 import sys
+from pathlib import Path
+from shutil import copyfileobj
+from tempfile import NamedTemporaryFile
 from typing import Annotated
 
 import numpy as np
@@ -73,6 +77,39 @@ def prepare_piecewise_breakpoints(breakpoints):
     if len(isinf_indices) > 0:
         breakpoints = breakpoints[: isinf_indices[0]]
     return [tuple(col.item() for col in row) for row in breakpoints]
+
+
+def write_model_to_stream(model: Model, out_file: typer.FileBinaryWrite):
+    valid_formats = {"lp", "mps", "sav"}
+    out_filename = out_file.name
+    out_path = Path(out_filename)
+    suffixes = Path(out_path).suffixes
+
+    if (
+        len(suffixes) == 0
+        or (format := suffixes[0].lstrip(".").lower()) not in valid_formats
+    ):
+        valid_extensions = [f".{fmt}" for fmt in valid_formats]
+        valid_extensions = [
+            *valid_extensions,
+            *(f"{ext}.gz" for ext in valid_extensions),
+        ]
+        raise typer.BadParameter(
+            f'Invalid model filename "{out_filename}". The extension must be one of the following: {" ".join(valid_extensions)}'
+        )
+    export_method = getattr(model, f"export_as_{format}")
+
+    should_gzip = suffixes[-1].lower() == ".gz"
+
+    if should_gzip:
+        with NamedTemporaryFile(suffix=f".{format}") as temp_file:
+            export_method(temp_file.name)
+            with gzip.GzipFile(
+                f"{out_path.name}{suffixes[0]}", "wb", fileobj=out_file
+            ) as zip_file:
+                copyfileobj(temp_file, zip_file)
+    else:
+        export_method(out_filename)
 
 
 @app.command()
@@ -183,6 +220,14 @@ def schedule(
         typer.Option(
             help="Save a time series of the CPLEX objective value and best bound to this file",
             metavar="PROGRESS.ecsv",
+            rich_help_panel="Solver Options",
+        ),
+    ] = None,
+    write_model: Annotated[
+        typer.FileBinaryWrite | None,
+        typer.Option(
+            help="Export the MILP model in LP, SAV, or MPS format. Mainly useful for troubleshooting purposes",
+            metavar="MODEL.{lp,mps,sav}[.gz]",
             rich_help_panel="Solver Options",
         ),
     ] = None,
@@ -560,6 +605,10 @@ def schedule(
         with status("solving MILP model"):
             if write_progress is not None:
                 model.add_progress_listener(recorder := ProgressDataRecorder())
+
+            if write_model is not None:
+                write_model_to_stream(model, write_model)
+
             solution = model.solve()
 
         with status("writing results"):
