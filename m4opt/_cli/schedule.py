@@ -632,7 +632,7 @@ def schedule(
                         "cutoff": cutoff,
                     },
                     "objective_value": objective_value,
-                    "best_bound": model.solve_details.best_bound,
+                    "best_bound": model.best_bound,
                     "solution_status": model.solve_details.status,
                     "solution_time": model.solve_details.time * u.s,
                 },

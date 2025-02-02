@@ -55,6 +55,14 @@ def test_cplex_parameters():
     assert m.context.solver.log_output
 
 
+def test_best_bound():
+    m = Model()
+    x = m.binary_var()
+    m.maximize(x)
+    m.solve()
+    assert m.best_bound == m.solve_details.best_bound == m.objective_value == 1
+
+
 @pytest.mark.parametrize(
     "tp", ["binary", "continuous", "integer", "semicontinuous", "semiinteger"]
 )

@@ -8,6 +8,7 @@ from unittest.mock import patch
 import numpy as np
 from astropy import units as u
 from docplex.mp.model import Model as _Model
+from docplex.mp.progress import ProgressClock, ProgressData, ProgressListener
 from docplex.mp.solution import SolveSolution as _SolveSolution
 from numpy import typing as npt
 
@@ -15,6 +16,21 @@ from .utils.console import status
 from .utils.numpy import atmost_1d
 
 __all__ = ("Model", "SolveSolution")
+
+
+# FIXME: remove once
+# https://github.com/IBMDecisionOptimization/docplex/issues/17 is fixed.
+class BestBoundProgressListener(ProgressListener):
+    def __init__(self):
+        super().__init__(ProgressClock.BestBound)
+        self._best_bound = np.nan
+
+    def notify_progress(self, progress_data: ProgressData):
+        self._best_bound = progress_data.best_bound
+
+    @property
+    def best_bound(self):
+        return self._best_bound
 
 
 class Model(_Model):
@@ -60,6 +76,9 @@ class Model(_Model):
         """
         super().__init__()
 
+        self._best_bound_progress_listener = BestBoundProgressListener()
+        self.add_progress_listener(self._best_bound_progress_listener)
+
         self.abs: Callable[[npt.ArrayLike], npt.ArrayLike] = np.vectorize(self.abs)
 
         self.context.solver.log_output = True
@@ -90,6 +109,23 @@ class Model(_Model):
             self.context.cplex_parameters.mip.strategy.file = (
                 self.cplex.parameters.mip.strategy.file.values.disk_compressed
             )
+
+    # FIXME: remove once
+    # https://github.com/IBMDecisionOptimization/docplex/issues/17 is fixed.
+    @property
+    def best_bound(self):
+        """Get best bound for the last solve.
+
+        Notes
+        -----
+        This is provided as a workaround for a bug in DOcplex where
+        :obj:`docplex.mp.sdetails.SolveDetails` is not updated if CPLEX reaches
+        its time limit without finding an integer solution. See
+        https://github.com/IBMDecisionOptimization/docplex/issues/17.
+        """
+        if np.isfinite(best_bound := self.solve_details.best_bound):
+            return best_bound
+        return self._best_bound_progress_listener.best_bound
 
     def add_constraints_(self, cts, names=None):
         """Add any number of constraints to the model.
