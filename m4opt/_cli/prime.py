@@ -11,6 +11,9 @@ def prime():
     connectivity (for example, some computing clusters), you can run this
     command to download and cache the external data sources immediately.
     """
+    from astropy.coordinates import EarthLocation
+
     from ..synphot._extinction import dust_map
 
+    EarthLocation.get_site_names()
     dust_map()
