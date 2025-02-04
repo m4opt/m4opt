@@ -193,7 +193,7 @@ def schedule(
     memory: Annotated[
         u.Quantity,
         typer.Option(
-            help="Maximum solver memory usage before spilling temporary files to disk",
+            help="Maximum solver memory usage before terminating",
             rich_help_panel="Solver Options",
         ),
     ] = "inf GiB",
