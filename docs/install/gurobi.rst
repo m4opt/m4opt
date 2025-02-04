@@ -1,7 +1,7 @@
 .. highlight:: sh
 
-Install Gurobi
-==============
+Install Gurobi (not currently used)
+===================================
 
 Gurobi for Python is distributed as the lightweight `gurobipy`__ Python
 package. It is installed automatically when you :doc:`install M4OPT using pip
