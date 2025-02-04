@@ -28,3 +28,4 @@ __ https://www.gurobi.com
 
    cplex
    gurobi
+   deploy

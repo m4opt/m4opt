@@ -1,6 +1,6 @@
-#################
-Deploying |M4OPT|
-#################
+###########################
+Production Deployment Notes
+###########################
 
 Review the following deployment notes if you are planning to use |M4OPT| in any of the following production applications:
 
@@ -32,8 +32,8 @@ We have categorized these deployment notes using a *risk matrix*, a visualizatio
     |                   | Very Low  |                               |                               | :ref:`astropy-data`           |                               | :ref:`cplex-license`          |
     +-------------------+-----------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+
 
-Risks
------
+Deployment Notes
+----------------
 
 .. _`astropy-data`:
 
