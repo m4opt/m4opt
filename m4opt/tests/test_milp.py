@@ -1,7 +1,5 @@
 """Test production problem size limits for MILP solvers."""
 
-from tempfile import gettempdir
-
 import docplex.mp.model
 import numpy as np
 import pytest
@@ -29,9 +27,7 @@ def test_cplex_parameters():
     assert m.context.cplex_parameters.parallel.value == -1
     assert m.context.cplex_parameters.threads.value == 0
     assert m.context.cplex_parameters.timelimit.value == 1e75
-    assert m.context.cplex_parameters.mip.strategy.file.value == 1
-    assert m.context.cplex_parameters.workdir.value == "."
-    assert m.context.cplex_parameters.workmem.value == 2048
+    assert m.context.cplex_parameters.mip.limits.treememory.value == 1e75
     assert m.context.solver.log_output
 
     m = Model(timelimit=1 * u.minute, jobs=3)
@@ -39,9 +35,7 @@ def test_cplex_parameters():
     assert m.context.cplex_parameters.parallel.value == -1
     assert m.context.cplex_parameters.threads.value == 3
     assert m.context.cplex_parameters.timelimit.value == 60
-    assert m.context.cplex_parameters.mip.strategy.file.value == 1
-    assert m.context.cplex_parameters.workdir.value == "."
-    assert m.context.cplex_parameters.workmem.value == 2048
+    assert m.context.cplex_parameters.mip.limits.treememory.value == 1e75
     assert m.context.solver.log_output
 
     m = Model(timelimit=1 * u.minute, jobs=3, memory=5 * u.GiB)
@@ -49,9 +43,7 @@ def test_cplex_parameters():
     assert m.context.cplex_parameters.parallel.value == -1
     assert m.context.cplex_parameters.threads.value == 3
     assert m.context.cplex_parameters.timelimit.value == 60
-    assert m.context.cplex_parameters.mip.strategy.file.value == 3
-    assert m.context.cplex_parameters.workdir.value == gettempdir()
-    assert m.context.cplex_parameters.workmem.value == 5120
+    assert m.context.cplex_parameters.mip.limits.treememory.value == 5120
     assert m.context.solver.log_output
 
 
