@@ -2,128 +2,72 @@
 Deploying |M4OPT|
 #################
 
-|M4OPT| is an observation planning toolkit. It can be deployed in much the same
-way as one would use the `Astropy` Python library, i.e., ``import m4opt``.
-However, since |M4OPT| will be deployed in planning operations, there are several
-risks that users must be aware of.
+Review the following deployment notes if you are planning to use |M4OPT| in any of the following production applications:
 
-1. Lack of Licensing for Gurobi and CPLEX
+- **Operations**: In a mission operations center or observatory control room for real time, automated planning of observations
+- **HPC Cluster**: In a high performance computing cluster for large-scale simulations
+- **Cloud**: In a cloud instance or serverless container as part of a web application
 
-|M4OPT| utilizes mixed-integer linear programming in order to find and schedule
-optimal observing plans across multiple observatories. It primarily uses
-commercial libraries, specifically Gurobi and CPLEX. These require licenses
-(or connection to a license server) for operation, although academic licenses are also
-available.
+Risk Matrix
+-----------
 
-|M4OPT| is also planned to support some non-commercial, open-source solvers. However,
-these are not anticipated to perform nearly as well as the commercial
-solvers.
-
-2. Access failures due to lack of internet access
-
-Since |M4OPT| uses :doc:`astropy:coordinates/index` to identify observatory and
-target locations, users should know that
-:meth:`astropy.coordinates.SkyCoord.from_name` and
-:meth:`astropy.coordinates.EarthLocation.of_site` both require
-:doc:`an internet connection to access <astropy:coordinates/remote_methods>`
-remote data. If |M4OPT| must be deployed offline, users should consider saving
-a list of :class:`~astropy.coordinates.SkyCoord` and
-:class:`~astropy.coordinates.EarthLocation` corresponding to needed locations,
-:ref:`as mentioned in the Astropy documentation <astropy:iers-working-offline>`.
-
-Lack of internet access may also affect connection to a license server (see point 1).
-
-Risk Assessment Matrix
-----------------------
-A risk assessment matrix is a tool used in systems engineering to aid in the
-evaluation of project risks. It is used to identify risks, assess their
-frequency (or likelihood), and evaluate their potential impact (e.g., damage
-or service interruption).
-
-In the matrix, the likelihood (on the vertical axis) and
-consequence (on the horizontal axis) are measured from 1 - 5, with 5 being
-the most likely (or most consequential). The cells in the matrix are shaded
-red, yellow, or green: these correspond to high, medium, or low risk.
-
-|M4OPT|'s risk assessment matrix is as follows:
+We have categorized these deployment notes using a *risk matrix*, a visualization used in systems engineering to aid in the evaluation of project risks. In the matrix, the likelihood (on the vertical axis) and consequence (on the horizontal axis) are measured from very low to very high. The cells in the matrix are shaded red, yellow, or green: these correspond to high, medium, or low risk.
 
 .. table::
     :class: risktable
 
-    +------------+---+---------+----------+---------+---------+---------+
-    |            | 5 |         |          |         |         |         |
-    +            +---+---------+----------+---------+---------+---------+
-    |            | 4 |         |          |  `2`_   |         |         |
-    +            +---+---------+----------+---------+---------+---------+
-    | Likelihood | 3 |         |          |         |         |         |
-    +            +---+---------+----------+---------+---------+---------+
-    |            | 2 |         |    `1`_  |         |         |         |
-    +            +---+---------+----------+---------+---------+---------+
-    |            | 1 |         |          |         |         |         |
-    +            +---+---------+----------+---------+---------+---------+
-    |            |   |    1    |     2    |    3    |    4    |    5    |
-    +------------+---+---------+----------+---------+---------+---------+
-    |            |   |                 Consequences                     |
-    +------------+---+---------+----------+---------+---------+---------+
+    +-------------------------------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+
+    |                               | **Consequence**                                                                                                                                               |
+    +-------------------+-----------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+
+    |                               | Very Low                      | Low                           | Moderate                      | High                          | Very High                     |
+    +-------------------+-----------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+
+    | **Likelihood**    | Very High |                               |                               |                               |                               |                               |
+    |                   +-----------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+
+    |                   | High      |                               |                               |                               |                               |                               |
+    |                   +-----------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+
+    |                   | Moderate  |                               |                               |                               |                               |                               |
+    |                   +-----------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+
+    |                   | Low       |                               |                               |                               |                               | :ref:`cplex-memory`           |
+    |                   +-----------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+
+    |                   | Very Low  |                               |                               | :ref:`astropy-data`           |                               | :ref:`cplex-license`          |
+    +-------------------+-----------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+-------------------------------+
 
+Risks
+-----
 
-List of Risks
--------------
+.. _`astropy-data`:
 
-ID: Example
-^^^^^^^^^^^
+Astropy Data Sources
+^^^^^^^^^^^^^^^^^^^^
 
-Title: Example Title
+In normal use, |M4OPT| downloads and caches a variety of Astropy-related data sources that may be time-consuming to download or may be unavailable if your network connection is down:
 
-Affinity: Code, External, Cost, Schedule, Project Requirements, Process, Resources
+- Well-known bservatory locations for :meth:`astropy.coordinates.SkyCoord.from_name`
+- Dust map for :obj:`m4opt.synphot.DustExtinction`
+- Precise Earth orientation data for :class:`~astropy.coordinates.SkyCoord` :class:`~astropy.coordinates.EarthLocation` transformations (see :ref:`Astropy documentation on working offline <astropy:iers-working-offline>`)
 
-Description/Status: This is an example risk that is described here.
+.. rubric:: Mitigation
 
-Mitigation: Plan to mitigate (if any)
+Run `m4opt prime <../guide/cli.html#m4opt-prime>`_ once before deployment to download and cache data sources. Ensure that you have a reliable Internet connection.
 
-Likelihood: Very Low, Low, Moderate, High, Very High
+.. _`cplex-license`:
 
-Consequence: Very Low, Low, Moderate, High, Very High
+CPLEX License
+^^^^^^^^^^^^^
 
-.. _1:
+Free versions of CPLEX have a limit on problem size. A full, unlimited problem size, version of CPLEX is required. If the CPLEX license is not correctly configured, then all invocations of the scheduler will fail.
 
-ID: 1
-^^^^^
+.. rubric:: Mitigation
 
-Title: Lack of Internet Access
+Follow the :doc:`insructions to install CPLEX </install/cplex>`. If you are using a non-academic version of CPLEX, then ensure that you have a reliable connection to the Internet for CPLEX to reach IBM's license server.
 
-Affinity: External
+.. _`cplex-memory`:
 
-Description/Status: Some `astropy` commands require internet access, namely
-:meth:`astropy.coordinates.SkyCoord.from_name` and
-:meth:`astropy.coordinates.EarthLocation.of_site`. Depending on how targets and
-observatory locations will be defined in the user code, this may impact |M4OPT|
-usability.
+CPLEX Memory
+^^^^^^^^^^^^
 
-Mitigation: Raise awareness and document wherever needed.
+CPLEX's memory usage grows as it explores potential solutions. By default, there is no limit on how much memory CPLEX may use. For challenging problems, CPLEX may exhaust available memory.
 
-Likelihood: Low
+.. rubric:: Mitigation
 
-Consequence: Low
-
-.. _2 :
-
-ID: 2
-^^^^^
-
-Title: Lack of Solver Licensing
-
-Affinity: External
-
-Description/Status: |M4OPT| has dependencies on several mixed-integer linear
-programming solvers, specifically CPLEX and Gurobi. These libraries require
-paid commercial licenses, though academic licenses are available. This will
-impact program performance if user does not have access to
-CPLEX or Gurobi.
-
-Mitigation: Provide interface to open-source libraries. Document differences
-in results and run-time between open-source MILP solvers, CPLEX, and Gurobi.
-
-Likelihood: High
-
-Consequence: Moderate
+Make sure that you reserve at least 8 GiB, and preferably 16 GiB or more, for running |M4OPT|. Set the ``--memory`` command-line option for the `m4opt schedule <../guide/cli.html#m4opt-prime>`_ command to at least 4 GiB less than the maximum amount of memory that you want it to use.

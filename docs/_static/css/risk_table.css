@@ -1,122 +1,45 @@
-table.risktable tbody tr {height: 50px;width:100px;}
-
-table.risktable th {
-    background-color: rgb(255, 255, 255);
-    border-style: solid solid solid solid;
-    border-width: 0px 0px 0px 0px;
-    border-color: #000000;
-    text-align: center;
-}
-table.risktable td {
-    border-style: solid solid solid solid;
-    border-width: 0px 0px 0px 0px;
-    border-color: #000000;
-    text-align: center;
+table.risktable tr:nth-child(3) td:nth-child(1) {
+    vertical-align: top;
 }
 
-table.risktable tr {
-    border-style: solid solid solid solid;
-    border-width: 0px 0px 0px 0px;
-    border-color: #000000;
-    text-align: center;
+table.risktable tr:nth-child(3) td:nth-child(1) p {
+    transform: rotate(90deg);
+    width: 0.5rlh;
 }
 
-table.risktable tr:nth-child(1) td:nth-child(3){
-    background-color: #63f363;
+table.risktable tr:nth-child(3) td:nth-child(3),
+table.risktable tr:nth-child(4) td:nth-child(2),
+table.risktable tr:nth-child(5) td:nth-child(2),
+table.risktable tr:nth-child(6) td:nth-child(2),
+table.risktable tr:nth-child(7) td:nth-child(2),
+table.risktable tr:nth-child(5) td:nth-child(3),
+table.risktable tr:nth-child(6) td:nth-child(3),
+table.risktable tr:nth-child(7) td:nth-child(3),
+table.risktable tr:nth-child(7) td:nth-child(4),
+table.risktable tr:nth-child(7) td:nth-child(5)
+{
+    background-color: palegreen;
 }
 
-table.risktable tr:nth-child(2) td:nth-child(2){
-    background-color: #63f363;
+table.risktable tr:nth-child(3) td:nth-child(4),
+table.risktable tr:nth-child(4) td:nth-child(3),
+table.risktable tr:nth-child(4) td:nth-child(4),
+table.risktable tr:nth-child(5) td:nth-child(4),
+table.risktable tr:nth-child(5) td:nth-child(5),
+table.risktable tr:nth-child(6) td:nth-child(4),
+table.risktable tr:nth-child(6) td:nth-child(5),
+table.risktable tr:nth-child(6) td:nth-child(6),
+table.risktable tr:nth-child(7) td:nth-child(6)
+{
+    background-color: lightyellow;
 }
 
-table.risktable tr:nth-child(3) td:nth-child(2){
-    background-color: #63f363;
-}
-
-table.risktable tr:nth-child(4) td:nth-child(2){
-    background-color: #63f363;
-}
-
-table.risktable tr:nth-child(5) td:nth-child(2){
-    background-color: #63f363;
-}
-
-table.risktable tr:nth-child(1) td:nth-child(4){
-    background-color: #f3f363;
-}
-
-table.risktable tr:nth-child(2) td:nth-child(3){
-    background-color: #f3f363;
-}
-
-table.risktable tr:nth-child(3) td:nth-child(3){
-    background-color: #63f363;
-}
-table.risktable tr:nth-child(4) td:nth-child(3){
-    background-color: #63f363;
-}
-table.risktable tr:nth-child(5) td:nth-child(3){
-    background-color: #63f363;
-}
-
-table.risktable tr:nth-child(1) td:nth-child(5){
-    background-color: #f36363;
-}
-
-table.risktable tr:nth-child(2) td:nth-child(4){
-    background-color: #f3f363;
-}
-
-table.risktable tr:nth-child(3) td:nth-child(4){
-    background-color: #f3f363;
-}
-table.risktable tr:nth-child(4) td:nth-child(4){
-    background-color: #f3f363;
-}
-table.risktable tr:nth-child(5) td:nth-child(4){
-    background-color: #63f363;
-}
-
-table.risktable tr:nth-child(1) td:nth-child(6){
-    background-color: #f36363;
-}
-
-table.risktable tr:nth-child(2) td:nth-child(5){
-    background-color: #f36363;
-}
-
-table.risktable tr:nth-child(3) td:nth-child(5){
-    background-color: #f3f363;
-}
-table.risktable tr:nth-child(4) td:nth-child(5){
-    background-color: #f3f363;
-}
-table.risktable tr:nth-child(5) td:nth-child(5){
-    background-color: #63f363;
-}
-
-table.risktable tr:nth-child(1) td:nth-child(7){
-    background-color: #f36363;
-}
-
-table.risktable tr:nth-child(2) td:nth-child(6){
-    background-color: #f36363;
-}
-
-table.risktable tr:nth-child(3) td:nth-child(6){
-    background-color: #f36363;
-}
-table.risktable tr:nth-child(4) td:nth-child(6){
-    background-color: #f3f363;
-}
-table.risktable tr:nth-child(5) td:nth-child(6){
-    background-color: #f3f363;
-}
-
-table.risktable tr:nth-child(6){
-    height: 15px;
-}
-
-table.risktable tr:nth-child(7){
-    height: 15px;
+table.risktable tr:nth-child(3) td:nth-child(5),
+table.risktable tr:nth-child(3) td:nth-child(6),
+table.risktable tr:nth-child(3) td:nth-child(7),
+table.risktable tr:nth-child(4) td:nth-child(5),
+table.risktable tr:nth-child(4) td:nth-child(6),
+table.risktable tr:nth-child(5) td:nth-child(6)
+{
+    background-color: lightcoral;
 }
