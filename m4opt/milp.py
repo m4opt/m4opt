@@ -37,7 +37,7 @@ class Model(_Model):
             Number of threads. If 0, then automatically configure the number of
             threads based on the number of CPUs present.
         memory
-            Maximum memory usage before spilling temporary data to disk.
+            Maximum memory usage before terminating the solver.
 
         Notes
         -----
