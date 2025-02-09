@@ -71,6 +71,6 @@ def test_end_to_end_no_solution(run_scheduler):
     assert table.meta["total_time"]["slack"] == 1 * u.day
 
 
-def test_end_to_end_optimal(run_scheduler):
-    table = run_scheduler("--deadline=2day")
+def test_end_to_end_solution(run_scheduler):
+    table = run_scheduler("--deadline=2day", "--timelimit=60s")
     assert len(table) >= 3
