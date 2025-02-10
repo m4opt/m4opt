@@ -1,8 +1,8 @@
 **************************************
-Sky Grid Tesselation (`m4opt.skygrid`)
+Sky Grid Tessellation (`m4opt.skygrid`)
 **************************************
 
-Methods for tesselating the sky into survey tiles.
+Methods for tessellating the sky into survey tiles.
 
 The functions in this module provide a variety of different methods of
 selecting points on the unit sphere with approximately uniform density per unit

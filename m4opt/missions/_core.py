@@ -24,7 +24,7 @@ class Mission:
     """Field of regard constraints."""
 
     detector: Detector
-    """Detector mdoel."""
+    """Detector model."""
 
     orbit: Orbit
     """Orbit of spacecraft."""

@@ -3,7 +3,7 @@ Fields of View (`m4opt.fov`)
 ****************************
 
 This module provides functions to compute the footprint of the field of view of
-a detector on the sky when oriented toward arbitary coordinates. We provide two
+a detector on the sky when oriented toward arbitrary coordinates. We provide two
 functions: :meth:`~m4opt.fov.footprint` which transforms the field of view to
 any sky coordinate (and optional positional angle), and
 :meth:`~m4opt.fov.footprint_healpix` which computes the HEALPix pixels

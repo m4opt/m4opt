@@ -28,7 +28,7 @@ Related Projects
   goal of maximizing transient discovery rate. As with Dorado Scheduling and
   MUSHROOMS, lessons learnt when producing this algorithm will be applied
   during |M4OPT| development.
-* `Las Cumbres Observatory Adaptive Scheduler`_: MILP scheduling of heterogenous telescope networks, using Google OR Tools or Gurobi.
+* `Las Cumbres Observatory Adaptive Scheduler`_: MILP scheduling of heterogeneous telescope networks, using Google OR Tools or Gurobi.
 
 .. _`Astroplan Scheduling Software`: https://github.com/astropy/astroplan
 .. _`Gwemopt`: https://github.com/mcoughlin/gwemopt

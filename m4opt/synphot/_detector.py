@@ -57,7 +57,7 @@ class Detector:
     aperture_correction: float = 1.0
     """Fraction of the signal from a point source in the photometry aperture.
 
-    The default value of 1 is appopriate for PSF photometry."""
+    The default value of 1 is appropriate for PSF photometry."""
 
     gain: float = 1.0
     """Detector gain."""

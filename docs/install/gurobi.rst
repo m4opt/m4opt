@@ -42,7 +42,7 @@ __ https://www.gurobi.com/academia/academic-program-and-licenses/
 All others
 ----------
 
-For commerical and government users, `Gurobi offers a variety of license
+For commercial and government users, `Gurobi offers a variety of license
 types`__. Contact `Gurobi sales`__ for pricing.
 
 __ https://www.gurobi.com/products/licensing-options/

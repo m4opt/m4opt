@@ -22,7 +22,7 @@ __ https://en.wikipedia.org/wiki/Integer_programming
 __ https://www.ibm.com/products/ilog-cplex-optimization-studio
 __ https://www.gurobi.com
 
-|M4OPT| is designed from the `Astropy affiliated pacakge`__ template, and is
+|M4OPT| is designed from the `Astropy affiliated package`__ template, and is
 meant to follow those standards, including interoperability with the
 `Astropy`__ ecosystem. It also complies with `NASA Procedural Requirements
 (NPR) 7150`__ for `Class C software`__ and is suitable for non-safety-critical

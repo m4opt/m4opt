@@ -56,7 +56,7 @@ def geodesic(
         for example, :samp:`10 * astropy.units.deg**2` or
         :samp:`0.1 * astropy.units.steradian`.
     base
-        The base polyhedron of the tesselation.
+        The base polyhedron of the tessellation.
     class_
         The class of the geodesic polyhedron, which constrains the allowed
         values of the number of points. Class III permits the most freedom.

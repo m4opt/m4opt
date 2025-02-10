@@ -119,7 +119,7 @@ def footprint(
     region as if the instrument is pointed at the given target coordinate and
     optional rotation.
 
-    The target coorinate and rotation may be arrays; in that case the return
+    The target coordinate and rotation may be arrays; in that case the return
     value is a Numpy array of regions.
 
     Parameters
@@ -271,7 +271,7 @@ def footprint_healpix(
     region as if the instrument is pointed at the given target coordinate and
     optional rotation.
 
-    The target coorinate and rotation may be arrays; in that case the return
+    The target coordinate and rotation may be arrays; in that case the return
     value is a Numpy array of arrays of uneven length.
 
     Parameters

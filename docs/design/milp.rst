@@ -98,7 +98,7 @@ Constraints
 
 **Field of regard.** An observation of a reference field can only occur while the coordinates of the reference field are within the field of regard.
 
-For fields that have one observable segment (:math:`{n_M}_j = 1`), this constraint is simpy an inequality:
+For fields that have one observable segment (:math:`{n_M}_j = 1`), this constraint is simply an inequality:
 
 .. math::
     :label: fixed-exptime-constraint-for-one

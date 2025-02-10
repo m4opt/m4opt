@@ -118,3 +118,10 @@ write_to = "m4opt/_version.py"
 [tool.mypy]
 exclude = ["^docs/"]
 ignore_missing_imports = true
+
+[tool.codespell]
+ignore-words-list = """
+    aas,
+    sav,
+    ser,
+"""

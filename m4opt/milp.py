@@ -285,7 +285,7 @@ def add_var_array_method(cls, tp):
                 vars = vars.item()
             return vars
 
-    func.__doc__ = f"""Create an arbitary N-dimensional array of {tp} decision variables.
+    func.__doc__ = f"""Create an arbitrary N-dimensional array of {tp} decision variables.
 
     Parameters
     ----------

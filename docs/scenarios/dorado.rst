@@ -26,7 +26,7 @@ right ascension, declination, and luminosity distance.
 
 A model kilonova light curve gives the predicted luminosity of the source in
 the Dorado band as a function of time. The Dorado threshold for detection is
-modeled using the CCD S/N equation for PSF photometry, including attentuation
+modeled using the CCD S/N equation for PSF photometry, including attenuation
 of the source due to spatially varying Galactic dust extinction and sky noise
 due to spatially varying Galactic, zodiacal, and airglow backgrounds.
 
