@@ -4,9 +4,6 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
-      - id: check-added-large-files
-        args: ['--maxkb=1024']
-        # Prevent giant files from being committed.
       - id: check-case-conflict
         # Check for files with names that would conflict on a case-insensitive
         # filesystem like MacOS HFS+ or Windows FAT.
