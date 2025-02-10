@@ -4,6 +4,7 @@ import operator
 from collections.abc import Callable
 from unittest.mock import patch
 
+import cplex
 import numpy as np
 from astropy import units as u
 from docplex.mp.model import Model as _Model
@@ -16,6 +17,19 @@ from .utils.numpy import atmost_1d
 __all__ = ("Model", "SolveSolution")
 
 
+class LowerCutoffCallback:
+    def __init__(self, cutoff: float):
+        self._cutoff = cutoff
+
+    def invoke(self, context: cplex.callbacks.Context):
+        best_bound = context.get_double_info(cplex.callbacks.CallbackInfo.best_bound)
+        if best_bound <= self._cutoff:
+            print(
+                f"giving up because best bound ({best_bound}) <= cutoff ({self._cutoff})"
+            )
+            context.abort()
+
+
 class Model(_Model):
     """Convenience class to add Numpy variable arrays to a CPLEX model."""
 
@@ -24,6 +38,7 @@ class Model(_Model):
         timelimit: u.Quantity[u.physical.time] = 1e75 * u.s,
         jobs: int = 0,
         memory: u.Quantity[u.physical.data_quantity] = np.inf * u.byte,
+        lowercutoff: float | None = None,
     ):
         """Initialize a model with default `CPLEX parameters`_ for M4OPT.
 
@@ -38,6 +53,9 @@ class Model(_Model):
             threads based on the number of CPUs present.
         memory
             Maximum memory usage before terminating the solver.
+        lowercutoff
+            Optional lower cutoff. Terminate the solver if the best bound drops
+            below this value.
 
         Notes
         -----
@@ -85,6 +103,17 @@ class Model(_Model):
 
         if np.isfinite(memory):
             self.context.cplex_parameters.mip.limits.treememory = memory.to_value(u.MiB)
+
+        if lowercutoff is not None:
+            # FIXME: Setting lowercutoff drastically hurts solution quality.
+            # As a workaround, we install a callback instead.
+            # See https://github.com/IBMDecisionOptimization/docplex/issues/20
+            #
+            # model.context.cplex_parameters.mip.tolerances.lowercutoff = cutoff
+            self.get_cplex().set_callback(
+                LowerCutoffCallback(lowercutoff),
+                cplex.callbacks.Context.id.global_progress,
+            )
 
     # FIXME: remove once
     # https://github.com/IBMDecisionOptimization/docplex/issues/17 is fixed.
