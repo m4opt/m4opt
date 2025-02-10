@@ -59,7 +59,7 @@ Free versions of CPLEX have a limit on problem size. A full, unlimited problem s
 
 .. rubric:: Mitigation
 
-Follow the :doc:`insructions to install CPLEX </install/cplex>`. If you are using a non-academic version of CPLEX, then ensure that you have a reliable connection to the Internet for CPLEX to reach IBM's license server.
+Follow the :doc:`insructions to install CPLEX </install/cplex>`. If you are using a "developer subscription" or "download-and-go" style license, then ensure that you have a reliable connection to the Internet for CPLEX to reach IBM's license server.
 
 .. _`cplex-memory`:
 
