@@ -83,11 +83,9 @@ doctest_optionflags = [
 
 [tool.coverage.run]
 omit = [
-    "m4opt/_astropy_init*",
     "m4opt/*setup_package*",
     "m4opt/extern/*",
     "m4opt/_version*",
-    "*/m4opt/_astropy_init*",
     "*/m4opt/*setup_package*",
     "*/m4opt/extern/*",
     "*/m4opt/_version*",
