@@ -1,1 +1,4 @@
-from ._astropy_init import *  # noqa
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = ""
