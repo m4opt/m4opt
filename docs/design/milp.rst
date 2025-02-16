@@ -174,7 +174,7 @@ The constraints are slightly different:
 .. math::
     :label: variable-exptime-constraint-exptime
 
-    \forall j \in J :\quad \epsilon_\mathrm{max} r_j \geq e_\mathrm{j}
+    \forall j \in J :\quad (\epsilon_\mathrm{max} - \epsilon_\mathrm{min}) r_j \geq e_\mathrm{j} - \epsilon_\mathrm{min}
 
 **Cadence.** This is similar to Equation :eq:`fixed-exptime-constraint-cadence`, except that we replace the right-hand side of the inequality.
 
