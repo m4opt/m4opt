@@ -542,8 +542,7 @@ def schedule(
             if adaptive_exptime:
                 with status("adding exposure time constraints"):
                     model.add_constraints_(
-                        (exptime_max_s - exptime_min_s) * field_vars
-                        >= exptime_field_vars - exptime_min_s
+                        exptime_max_s * field_vars >= exptime_field_vars
                     )
 
             with status("adding coverage constraints"):
