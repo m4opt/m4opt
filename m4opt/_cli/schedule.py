@@ -627,10 +627,11 @@ def schedule(
                 exptime_field_values = np.empty(field_vars.shape)
                 objective_value = 0.0
             else:
-                field_values = np.rint(solution.get_values(field_vars)).astype(bool)
+                field_values = solution.get_values(field_vars) >= 0.5
                 time_field_visit_values = solution.get_values(time_field_visit_vars)
                 if adaptive_exptime:
                     exptime_field_values = solution.get_values(exptime_field_vars)
+                    field_values &= exptime_field_values > 0
                 else:
                     exptime_field_values = np.full(n_fields, exptime_min_s)
                 objective_value = solution.get_objective_value()
