@@ -42,7 +42,7 @@ Astropy Data Sources
 
 In normal use, |M4OPT| downloads and caches a variety of Astropy-related data sources that may be time-consuming to download or may be unavailable if your network connection is down:
 
-- Well-known bservatory locations for :meth:`astropy.coordinates.SkyCoord.from_name`
+- Well-known observatory locations for :meth:`astropy.coordinates.SkyCoord.from_name`
 - Dust map for :obj:`m4opt.synphot.DustExtinction`
 - Precise Earth orientation data for :class:`~astropy.coordinates.SkyCoord` :class:`~astropy.coordinates.EarthLocation` transformations (see :ref:`Astropy documentation on working offline <astropy:iers-working-offline>`)
 
