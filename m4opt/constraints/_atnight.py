@@ -34,9 +34,11 @@ class AtNightConstraint(Constraint):
         >>> time = Time("2017-08-17T00:41:04Z")
         >>> target = SkyCoord.from_name("NGC 4993")
         >>> location = EarthLocation.of_site("Rubin Observatory")
-        >>> constraint = AtNightConstraint.twilight_civil()
-        >>> constraint(location, None, time)
-        np.True_
+        >>> constraint_civil = AtNightConstraint.twilight_civil()
+        >>> constraint_nautical = AtNightConstraint.twilight_nautical()
+        >>> constraint_astronomical = AtNightConstraint.twilight_astronomical()
+        >>> constraint_civil(location, None, time), constraint_nautical(location, None, time),   constraint_astronomical(location, None, time)
+        (np.True_, np.True_, np.True_)
     """
 
     @u.quantity_input(horizon=u.deg)
