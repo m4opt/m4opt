@@ -71,9 +71,7 @@ class AltitudeConstraint(Constraint):
 
         if self.boolean_constraint:
             return (self.min <= alt) & (alt <= self.max)
-        return AltitudeConstraint.max_best_rescale(
-            alt, self.min, self.max, greater_than_max=0
-        )
+        return self.max_best_rescale(alt, self.min, self.max, greater_than_max=0)
 
     @staticmethod
     def max_best_rescale(vals, min_val, max_val, greater_than_max=1):
@@ -100,6 +98,7 @@ class AltitudeConstraint(Constraint):
         Examples
         --------
         >>> import numpy as np
+        >>> from m4opt.constraints._altitude import AltitudeConstraint
         >>> AltitudeConstraint.max_best_rescale(np.array([20, 30, 40, 45, 55, 70]), 35, 60)
         array([0. , 0. , 0.2, 0.4, 0.8, 1. ])
         """
