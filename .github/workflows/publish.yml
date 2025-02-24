@@ -1,0 +1,19 @@
+name: Publish
+
+on:
+  schedule:
+    # run every day at 4am UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+
+jobs:
+  publish:
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish_pure_python.yml@8c0fde6f7e926df6ed7057255d29afa9c1ad5320  # v1.16.0
+    secrets:
+      pypi_token: ${{ secrets.pypi_token }}
