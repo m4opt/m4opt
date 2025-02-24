@@ -14,7 +14,7 @@ Multi-Mission Multi-Messenger Observation Planning Toolkit
     :target: https://m4opt.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: docs/_static/example.gif
+.. image:: https://m4opt.readthedocs.io/en/latest/_images/example.gif
     :alt: Visualization of an example observing plan for UVEX generated M4OPT
 
 M4OPT is an open-source toolkit for multi-facility scheduling of astrophysics
