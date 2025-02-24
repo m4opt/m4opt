@@ -1,6 +1,9 @@
 Multi-Mission Multi-Messenger Observation Planning Toolkit
 ----------------------------------------------------------
 
+.. image:: https://img.shields.io/pypi/v/m4opt
+    :target: https://pypi.org/project/m4opt/
+    :alt: Python Package Index status
 .. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
     :target: http://www.astropy.org
     :alt: Powered by Astropy Badge
