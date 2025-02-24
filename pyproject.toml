@@ -27,6 +27,17 @@ dependencies = [
     "typing_extensions; python_version < \"3.12\"",
     "xdg-base-dirs",
 ]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Typing :: Typed",
+]
 
 [project.optional-dependencies]
 test = [
