@@ -131,4 +131,6 @@ ignore-words-list = """
     aas,
     sav,
     ser,
+    ToO,
+    ToOs,
 """
