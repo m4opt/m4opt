@@ -67,6 +67,12 @@ the `Astropy package template <https://github.com/astropy/package-template>`_
 which is licensed under the BSD 3-clause license. See the licenses folder for
 more information.
 
+How to Cite
+-----------
+
+If you use M4OPT in your research, then please cite the following paper:
+
+   Singer, L. P., Criswell, A. W., Leggio, S. C., et al. (2025). Optimal Follow-Up of Gravitational-Wave Events with the UltraViolet EXplorer (UVEX) (Version 1). https://doi.org/10.48550/ARXIV.2502.17560
 
 Contributing
 ------------
