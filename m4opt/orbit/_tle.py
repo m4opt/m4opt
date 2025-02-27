@@ -38,10 +38,7 @@ class TLE(Orbit):
 
     >>> time = Time('2024-08-08 01:10:41')
     >>> orbit(time)
-    <SkyCoord (ITRS: obstime=2024-08-08 01:10:41.000, location=(0.0, 0.0, 0.0) km): (x, y, z) in km
-        (4172.83527806, -514.30119564, -5254.79810552)
-     (v_x, v_y, v_z) in km / s
-        (1.5531795, 7.20225602, 0.52399427)>
+    <EarthLocation (4172.83539674, -514.29983197, -5254.79814474) km>
 
     Or evaluate at an array of times:
 
@@ -107,7 +104,7 @@ class TLE(Orbit):
             z=z * u.km,
             v_z=vz * u.km / u.s,
             frame=TEME(obstime=time),
-        ).itrs
+        ).itrs.earth_location
         if shape:
             coord = coord.reshape(shape)
         else:
