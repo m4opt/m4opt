@@ -42,23 +42,6 @@ class AltitudeConstraint(Constraint):
 
     @override
     def __call__(self, observer_location, target_coord, obstime):
-        """
-        Compute the altitude constraint.
-
-        Parameters
-        ----------
-        observer_location : `~astropy.coordinates.EarthLocation`
-            The observing location.
-        target_coord : `~astropy.coordinates.SkyCoord`
-            The celestial coordinates of the target.
-        obstime : `~astropy.time.Time`
-            The observation time.
-
-        Returns
-        -------
-        `numpy.ndarray`
-            Boolean mask indicating whether the altitude constraint is met.
-        """
         altaz = target_coord.transform_to(
             AltAz(obstime=obstime, location=observer_location)
         )
