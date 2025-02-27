@@ -2,7 +2,7 @@ import numpy as np
 import numpy.typing as npt
 import spiceypy as spice
 from astropy import units as u
-from astropy.coordinates import ITRS, SkyCoord
+from astropy.coordinates import EarthLocation
 from astropy.time import Time
 from astropy.utils.data import download_file
 
@@ -38,8 +38,7 @@ class Spice(Orbit):
     ...     'https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00010.tpc')
     >>> t0 = Time('2021-10-31 00:00')
     >>> orbit(t0)
-    <SkyCoord (ITRS: obstime=2021-10-31 00:00:00.000, location=(0.0, 0.0, 0.0) km): (x, y, z) in km
-        (259589.01504305, 267775.69181568, -6003.44398346)>
+    <EarthLocation (259589.01504305, 267775.69181568, -6003.44398346) km>
     >>> orbit(t0 + np.arange(4) * u.hour).shape
     (4,)
 
@@ -66,4 +65,4 @@ class Spice(Orbit):
     def __call__(self, time):
         et = _time_to_et(time)
         pos, _ = _spkgps(self._target, et, "IAU_EARTH", self._body)
-        return SkyCoord(*pos.T, unit=u.km, frame=ITRS(obstime=time))
+        return EarthLocation.from_geocentric(*pos.T, unit=u.km)

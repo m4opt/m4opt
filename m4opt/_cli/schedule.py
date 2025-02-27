@@ -271,7 +271,7 @@ def schedule(
         obstimes = event_time + np.arange(
             delay, deadline + time_step, time_step, like=time_step
         )
-        observer_locations = mission.orbit(obstimes).earth_location
+        observer_locations = mission.orbit(obstimes)
 
     with status("evaluating field of regard"):
         target_coords = mission.skygrid
@@ -692,7 +692,7 @@ def schedule(
 
             # Add orbit to table
             table.add_column(
-                mission.orbit(table["start_time"]).earth_location,
+                mission.orbit(table["start_time"]),
                 index=3,
                 name="observer_location",
             )
