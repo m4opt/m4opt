@@ -42,8 +42,7 @@ class AltitudeConstraint(Constraint):
 
     @override
     def __call__(self, observer_location, target_coord, obstime):
-        altaz = target_coord.transform_to(
+        alt = target_coord.transform_to(
             AltAz(obstime=obstime, location=observer_location)
-        )
-        alt = altaz.alt
+        ).alt
         return (self.min <= alt) & (alt <= self.max)
