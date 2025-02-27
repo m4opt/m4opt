@@ -12,5 +12,5 @@ __all__ = (
     "EarthLimbConstraint",
     "GalacticLatitudeConstraint",
     "MoonSeparationConstraint",
-    "SunSeparationConstraint"
+    "SunSeparationConstraint",
 )
