@@ -19,6 +19,7 @@ class TwilightConstraint(Constraint):
         sun_altitude = get_sun(obstime).transform_to(altaz_frame).alt
         return sun_altitude <= self.max_solar_altitude
 
+
 class AtNightConstraint(TwilightConstraint):
     """
     Constrain observations to times when the Sun is below a specified altitude.
