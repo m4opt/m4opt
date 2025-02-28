@@ -57,11 +57,7 @@ class AirmassConstraint(AltitudeConstraint):
             if min_airmass is None
             else Angle(np.degrees(np.arcsin(1 / min_airmass)) * u.deg)
         )
-        max_alt = (
-            Angle(np.nan * u.deg)
-            if max_airmass is None
-            else Angle(np.degrees(np.arcsin(1 / max_airmass)) * u.deg)
-        )
+        max_alt = np.arcsin(1 / max_airmass) * u.rad
 
         super().__init__(min=min_alt, max=max_alt)
 
