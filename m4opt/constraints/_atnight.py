@@ -29,7 +29,7 @@ class AtNightConstraint(TwilightConstraint):
 
     Parameters
     ----------
-    twilight_type : str, optional
+    twilight_type : str
         The type of twilight to use as the night threshold.
         Options: 'twilight_civil', 'twilight_nautical', 'twilight_astronomical'.
     max_solar_altitude : `~astropy.units.Quantity`, optional
@@ -63,7 +63,7 @@ class AtNightConstraint(TwilightConstraint):
 
     def __init__(
         self,
-        twilight_type: str = None,
+        twilight_type: str,
         max_solar_altitude: Optional[u.Quantity] = 0 * u.deg,
     ):
         if not isinstance(max_solar_altitude, u.Quantity):
@@ -71,11 +71,10 @@ class AtNightConstraint(TwilightConstraint):
                 f"max_solar_altitude must be an astropy Quantity with angular units, got {type(max_solar_altitude)} instead."
             )
 
-        if twilight_type is not None:
-            if twilight_type not in self.twilight_levels:
-                raise ValueError(
-                    f"Unknown twilight type: {twilight_type}. Choose from {list(self.twilight_levels.keys())}"
-                )
+        if twilight_type not in self.twilight_levels:
+            raise ValueError(
+                f"Unknown twilight type: {twilight_type}. Choose from {list(self.twilight_levels.keys())}"
+            )
 
         if max_solar_altitude.value == 0:
             max_solar_altitude = self.twilight_levels[twilight_type]
