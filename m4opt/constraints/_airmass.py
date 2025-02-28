@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from astropy import units as u
 
@@ -19,7 +17,7 @@ class AirmassConstraint(AltitudeConstraint):
     ----------
     max_airmass : float
         Maximum airmass of the target (corresponds to minimum altitude).
-    min_airmass : float, optional
+    min_airmass : float,
         Minimum airmass of the target (corresponds to maximum altitude).
         Default is `1` (the zenith).
 
@@ -45,7 +43,7 @@ class AirmassConstraint(AltitudeConstraint):
     def __init__(
         self,
         max_airmass: float,
-        min_airmass: Optional[float] = 1,
+        min_airmass: float= 1.0,
     ):
         min_alt = np.arcsin(1 / max_airmass) * u.rad
         max_alt = np.arcsin(1 / min_airmass) * u.rad
