@@ -50,9 +50,6 @@ class AtNightConstraint(Constraint):
         return AtNightConstraint(solar_altitude_limit=-18 * u.deg)
 
     def __call__(self, observer_location, target_coord, obstime):
-        """
-        Compute the nighttime constraint.
-        """
         solar_altitude = (
             get_sun(obstime)
             .transform_to(
