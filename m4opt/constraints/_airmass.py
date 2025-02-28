@@ -45,6 +45,7 @@ class AirmassConstraint(AltitudeConstraint):
         max_airmass: float,
         min_airmass: float = 1.0,
     ):
+        min_airmass, max_airmass = sorted([min_airmass, max_airmass])
         min_alt = np.arcsin(1 / max_airmass) * u.rad
         max_alt = np.arcsin(1 / min_airmass) * u.rad
 
