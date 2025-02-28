@@ -2,9 +2,8 @@ from typing import Optional
 
 import numpy as np
 from astropy import units as u
-from astropy.coordinates import Angle
 
-from .altitude import AltitudeConstraint
+from ._altitude import AltitudeConstraint
 
 
 class AirmassConstraint(AltitudeConstraint):
@@ -18,44 +17,37 @@ class AirmassConstraint(AltitudeConstraint):
 
     Parameters
     ----------
-    min_airmass : float or `None`, optional
-        Minimum airmass of the target. Default is `1` (the zenith).
-        `None` indicates no lower limit.
-    max_airmass : float or `None`, optional
-        Maximum airmass of the target. `None` indicates no upper limit.
-
-    Examples
-    --------
-    To create a constraint that ensures the airmass is below 3, i.e., at a
-    higher altitude than that corresponding to airmass=3::
-
-        >>> from astropy.coordinates import EarthLocation, SkyCoord
-        >>> from astropy.time import Time
-        >>> from astropy import units as u
-        >>> from m4opt.constraints import AirmassConstraint
-        >>> time = Time("2017-08-17T00:41:04Z")
-        >>> target = SkyCoord.from_name("NGC 4993")
-        >>> location = EarthLocation.of_site("Rubin Observatory")
-        >>> constraint = AirmassConstraint(min_airmass=1, max_airmass=3)
-        >>> constraint(location, target, time)
-        np.True_
+    max_airmass : float
+        Maximum airmass of the target (corresponds to minimum altitude).
+    min_airmass : float, optional
+        Minimum airmass of the target (corresponds to maximum altitude).
+        Default is `1` (the zenith).
 
     Notes
     -----
-    - The conversion from airmass to altitude follows the relation:
-        `altitude = arcsin(1 / airmass)`, which assumes a standard atmosphere.
+    - The conversion from airmass to altitude follows:
+        `altitude = arcsin(1 / airmass)`, assuming a standard atmosphere.
+
+    Examples
+    --------
+    >>> from astropy.coordinates import EarthLocation, SkyCoord
+    >>> from astropy.time import Time
+    >>> from astropy import units as u
+    >>> from m4opt.constraints import AirmassConstraint
+    >>> time = Time("2017-08-17T00:41:04Z")
+    >>> target = SkyCoord.from_name("NGC 4993")
+    >>> location = EarthLocation.of_site("Rubin Observatory")
+    >>> constraint = AirmassConstraint(max_airmass=3, min_airmass=1)
+    >>> constraint(location, target, time)
+    np.True_
     """
 
     def __init__(
         self,
+        max_airmass: float,
         min_airmass: Optional[float] = 1,
-        max_airmass: Optional[float] = None,
     ):
-        min_alt = (
-            Angle(90 * u.deg)
-            if min_airmass is None
-            else Angle(np.degrees(np.arcsin(1 / min_airmass)) * u.deg)
-        )
-        max_alt = np.arcsin(1 / max_airmass) * u.rad
+        min_alt = np.arcsin(1 / max_airmass) * u.rad
+        max_alt = np.arcsin(1 / min_airmass) * u.rad
 
         super().__init__(min=min_alt, max=max_alt)
