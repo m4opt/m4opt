@@ -39,8 +39,9 @@ class AtNightConstraint(Constraint):
     def __init__(self, solar_altitude_limit: Optional[u.Quantity] = 0 * u.deg):
         self.solar_altitude_limit = solar_altitude_limit
 
-    def civil():
-        return AtNightConstraint(solar_altitude_limit=-6 * u.deg)
+    @classmethod
+    def civil(cls):
+        return cls(solar_altitude_limit=-6 * u.deg)
 
     def nautical():
         return AtNightConstraint(solar_altitude_limit=-12 * u.deg)
