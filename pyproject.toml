@@ -13,9 +13,7 @@ dependencies = [
     "cplex",
     "docplex",
     "dust-extinction",
-    # FIXME: use dev version of dustmaps until
-    # https://github.com/gregreen/dustmaps/pull/58 is merged
-    "dustmaps @ git+https://github.com/gregreen/dustmaps.git",
+    "dustmaps",
     "ligo.skymap >= 2.2.0",
     "numpy >= 2.1.0",
     "regions",
@@ -28,6 +26,17 @@ dependencies = [
     "typer",
     "typing_extensions; python_version < \"3.12\"",
     "xdg-base-dirs",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Typing :: Typed",
 ]
 
 [project.optional-dependencies]
@@ -122,4 +131,6 @@ ignore-words-list = """
     aas,
     sav,
     ser,
+    ToO,
+    ToOs,
 """

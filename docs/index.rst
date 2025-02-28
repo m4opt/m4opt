@@ -34,9 +34,17 @@ __ https://nodis3.gsfc.nasa.gov/displayDir.cfm?t=NPR&c=7150&s=2C
 __ https://nodis3.gsfc.nasa.gov/displayDir.cfm?Internal_ID=N_PR_7150_002C_&page_name=AppendixD
 __ https://nodis3.gsfc.nasa.gov/displayDir.cfm?t=NPR&c=8705&s=4A
 
-***************
-Getting Started
-***************
+***********
+How to Cite
+***********
+
+If you use |M4OPT| in your research, then please cite the following paper:
+
+   Singer, L. P., Criswell, A. W., Leggio, S. C., et al. (2025). Optimal Follow-Up of Gravitational-Wave Events with the UltraViolet EXplorer (UVEX) (Version 1). https://doi.org/10.48550/ARXIV.2502.17560
+
+*****************
+Table of Contents
+*****************
 
 .. toctree::
    :maxdepth: 2
