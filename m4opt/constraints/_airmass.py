@@ -4,7 +4,6 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import Angle
 
-from ..utils.typing_extensions import override
 from .altitude import AltitudeConstraint
 
 
@@ -60,4 +59,3 @@ class AirmassConstraint(AltitudeConstraint):
         max_alt = np.arcsin(1 / max_airmass) * u.rad
 
         super().__init__(min=min_alt, max=max_alt)
-
