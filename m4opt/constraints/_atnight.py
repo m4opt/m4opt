@@ -29,9 +29,10 @@ class AtNightConstraint(TwilightConstraint):
 
     Parameters
     ----------
-    twilight_type : str
+    twilight_type : str,
         The type of twilight to use as the night threshold.
         Options: 'twilight_civil', 'twilight_nautical', 'twilight_astronomical'.
+        Default type : 'twilight_civil'.
     max_solar_altitude : `~astropy.units.Quantity`, optional
         A custom maximum solar altitude threshold. If provided, it overrides the
         twilight type setting.
@@ -63,7 +64,7 @@ class AtNightConstraint(TwilightConstraint):
 
     def __init__(
         self,
-        twilight_type: str,
+        twilight_type: str = "twilight_civil",
         max_solar_altitude: Optional[u.Quantity] = 0 * u.deg,
     ):
         if not isinstance(max_solar_altitude, u.Quantity):
