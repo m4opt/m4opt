@@ -61,9 +61,3 @@ class AirmassConstraint(AltitudeConstraint):
 
         super().__init__(min=min_alt, max=max_alt)
 
-    @override
-    def __call__(self, observer_location, target_coord, obstime):
-        """
-        Compute the airmass constraint by leveraging altitude constraints.
-        """
-        return super().__call__(observer_location, target_coord, obstime)
