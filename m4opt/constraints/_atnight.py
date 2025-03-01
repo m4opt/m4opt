@@ -8,7 +8,26 @@ from ._core import Constraint
 
 
 class TwilightConstraint(Constraint):
-    def __init__(self, max_solar_altitude: Optional[u.Quantity] = 0 * u.deg):
+    """
+    A base constraint to limit observations based on the Sun's altitude.
+
+    This class is designed to be used as a parent class for specific twilight
+    constraints, such as `AtNightConstraint`. It allows setting a maximum solar
+    altitude to determine when observations are permissible.
+
+    Notes
+    -----
+    - The pressure is set to zero when calculating the Sun's altitude.
+      This avoids errors due to atmospheric refraction at very low altitudes.
+
+    """
+
+    def __init__(self, max_solar_altitude: Optional[u.Quantity]):
+        if not isinstance(max_solar_altitude, u.Quantity):
+            raise TypeError(
+                f"max_solar_altitude must be an astropy Quantity with angular units, "
+                f"got {type(max_solar_altitude)} instead."
+            )
         self.max_solar_altitude = max_solar_altitude
 
     @override
@@ -22,25 +41,21 @@ class TwilightConstraint(Constraint):
 
 class AtNightConstraint(TwilightConstraint):
     """
-    Constrain observations to times when the Sun is below a specified altitude.
-
-    This constraint ensures that observations occur only when the Sun is below
-    a given threshold altitude, which can be adjusted to match different twilight phases.
+    Constrain observations to specific twilight phases based on the altitude of the Sun.
 
     Parameters
     ----------
-    twilight_type : str,
-        The type of twilight to use as the night threshold.
-        Options: 'twilight_civil', 'twilight_nautical', 'twilight_astronomical'.
-        Default type : 'twilight_civil'.
-    max_solar_altitude : `~astropy.units.Quantity`, optional
-        A custom maximum solar altitude threshold. If provided, it overrides the
-        twilight type setting.
+    max_solar_altitude : `~astropy.units.Quantity`
+        A user-defined maximum solar altitude threshold. This parameter is required
+        when not using specific twilight methods (`twilight_civil`, `twilight_nautical`, `twilight_astronomical`).
+        It sets the maximum altitude of the Sun for which observations are allowed.
 
     Notes
     -----
-    The pressure is set to zero when calculating the Sun's altitude.
-    This avoids errors due to atmospheric refraction at very low altitudes.
+    - The twilight phase options correspond to the following solar altitudes:
+      * 'twilight_civil': -6 degrees
+      * 'twilight_nautical': -12 degrees
+      * 'twilight_astronomical': -18 degrees
 
     Examples
     --------
@@ -51,7 +66,7 @@ class AtNightConstraint(TwilightConstraint):
     >>> time = Time("2017-08-17T00:41:04Z")
     >>> target = SkyCoord.from_name("NGC 4993")
     >>> location = EarthLocation.of_site("Rubin Observatory")
-    >>> constraint = AtNightConstraint("twilight_nautical")
+    >>> constraint = AtNightConstraint.twilight_civil()
     >>> constraint(observer_location=location, target_coord=target, obstime=time)
     np.True_
     """
@@ -62,37 +77,26 @@ class AtNightConstraint(TwilightConstraint):
         "twilight_astronomical": -18 * u.deg,
     }
 
-    def __init__(
-        self,
-        twilight_type: str = "twilight_civil",
-        max_solar_altitude: Optional[u.Quantity] = 0 * u.deg,
-    ):
-        if not isinstance(max_solar_altitude, u.Quantity):
-            raise TypeError(
-                f"max_solar_altitude must be an astropy Quantity with angular units, got {type(max_solar_altitude)} instead."
-            )
-
-        if twilight_type not in self.twilight_levels:
-            raise ValueError(
-                f"Unknown twilight type: {twilight_type}. Choose from {list(self.twilight_levels.keys())}"
-            )
-
-        if max_solar_altitude.value == 0:
-            max_solar_altitude = self.twilight_levels[twilight_type]
-
+    def __init__(self, max_solar_altitude: u.Quantity):
         super().__init__(max_solar_altitude=max_solar_altitude)
 
     @classmethod
     def twilight_civil(cls):
-        """Returns an instance where night starts at civil twilight (-6°)."""
-        return cls("twilight_civil")
+        """
+        Create an AtNightConstraint for civil twilight (-6°).
+        """
+        return cls(cls.twilight_levels["twilight_civil"])
 
     @classmethod
     def twilight_nautical(cls):
-        """Returns an instance where night starts at nautical twilight (-12°)."""
-        return cls("twilight_nautical")
+        """
+        Create an AtNightConstraint for nautical twilight (-12°).
+        """
+        return cls(cls.twilight_levels["twilight_nautical"])
 
     @classmethod
     def twilight_astronomical(cls):
-        """Returns an instance where night starts at astronomical twilight (-18°)."""
-        return cls("twilight_astronomical")
+        """
+        Create an AtNightConstraint for astronomical twilight (-18°).
+        """
+        return cls(cls.twilight_levels["twilight_astronomical"])
