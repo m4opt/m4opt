@@ -11,7 +11,7 @@ from ..constraints import (
     SunSeparationConstraint,
 )
 from ..dynamics import Slew
-from ..orbit import TLE
+from ..observer import TleObserverLocation
 from ..synphot import Detector
 from ..synphot.background import GalacticBackground, ZodiacalBackground
 from ._core import Mission
@@ -49,7 +49,7 @@ ultrasat = Mission(
     # ULTRASAT will be in a geosynchronous orbit similar to GOES-17.
     # This is the TLE downloaded from Celestrak at 2024-11-15T09:15:20Z.
     # https://celestrak.org/NORAD/elements/weather.txt
-    orbit=TLE(
+    observer_location=TleObserverLocation(
         "1 43226U 18022A   24320.05692005 -.00000082  00000+0  00000+0 0  9997",
         "2 43226   0.0007  47.5006 0003498 198.5164  84.4417  1.00271931 24622",
     ),

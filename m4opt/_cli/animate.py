@@ -167,7 +167,7 @@ def animate(
             ax_map.contour_hpx(cls, levels=[0.9], colors=[skymap_color], nested=True)
             ax_map.grid()
 
-            observer_locations = mission.orbit(time_steps)
+            observer_locations = mission.observer_location(time_steps)
 
         if absmag_mean is not None:
             with status("adding exposure time map"):

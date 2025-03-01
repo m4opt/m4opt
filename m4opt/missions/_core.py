@@ -6,7 +6,7 @@ from regions import Region, Regions
 
 from ..constraints import Constraint
 from ..dynamics import Slew
-from ..orbit import Orbit
+from ..observer import ObserverLocation
 from ..synphot import Detector
 
 
@@ -26,7 +26,7 @@ class Mission:
     detector: Detector
     """Detector model."""
 
-    orbit: Orbit
+    observer_location: ObserverLocation
     """Orbit of spacecraft."""
 
     slew: Slew
