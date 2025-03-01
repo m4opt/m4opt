@@ -11,7 +11,7 @@ from ..constraints import (
     SunSeparationConstraint,
 )
 from ..dynamics import Slew
-from ..orbit import TLE
+from ..observer import TleObserverLocation
 from ..synphot import Detector
 from ..synphot.background import GalacticBackground, ZodiacalBackground
 from ._core import Mission
@@ -54,7 +54,7 @@ uvex = Mission(
     ),
     # UVEX will be in a highly elliptical TESS-like orbit.
     # This is the TESS TLE downloaded from Celestrak at 2024-09-10T00:43:57Z.
-    orbit=TLE(
+    observer_location=TleObserverLocation(
         "1 43435U 18038A   24262.33225493 -.00001052  00000+0  00000+0 0  9993",
         "2 43435  51.7454  60.8303 4593193 124.3403   0.2501  0.07594463  1386",
     ),

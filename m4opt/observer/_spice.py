@@ -7,7 +7,7 @@ from astropy.time import Time
 from astropy.utils.data import download_file
 
 from ..utils.typing_extensions import override
-from ._core import Orbit
+from ._core import ObserverLocation
 
 
 def _time_to_et(time: Time) -> float | npt.NDArray[np.floating]:
@@ -19,7 +19,7 @@ def _time_to_et(time: Time) -> float | npt.NDArray[np.floating]:
 _spkgps = np.vectorize(spice.spkgps, excluded=[0, 2, 3], signature="()->(m),()")
 
 
-class Spice(Orbit):
+class SpiceObserverLocation(ObserverLocation):
     """A satellite whose orbit is specified by `Spice <https://naif.jpl.nasa.gov/naif/>`_ kernels.
 
     Examples
@@ -29,9 +29,9 @@ class Spice(Orbit):
 
     >>> from astropy.time import Time
     >>> from astropy import units as u
-    >>> from m4opt.orbit import Spice
+    >>> from m4opt.observer import SpiceObserverLocation
     >>> import numpy as np
-    >>> orbit = Spice(
+    >>> orbit = SpiceObserverLocation(
     ...     'MGS SIMULATION',
     ...     'https://archive.stsci.edu/missions/tess/models/TESS_EPH_PRE_LONG_2021252_21.bsp',
     ...     'https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_latest_high_prec.bpc',
@@ -41,13 +41,6 @@ class Spice(Orbit):
     <EarthLocation (259589.01504305, 267775.69181568, -6003.44398346) km>
     >>> orbit(t0 + np.arange(4) * u.hour).shape
     (4,)
-
-    Note that the Spice orbit class does not implement the period property:
-
-    >>> orbit.period
-    Traceback (most recent call last):
-      ...
-    NotImplementedError
     """  # noqa: E501
 
     def __init__(self, target: str, *kernels: str):
@@ -55,11 +48,6 @@ class Spice(Orbit):
             spice.furnsh(download_file(kernel, cache=True))
         self._target = spice.bodn2c(target)
         self._body = spice.bodn2c("EARTH")
-
-    @property
-    @override
-    def period(self):
-        raise NotImplementedError
 
     @override
     def __call__(self, time):
