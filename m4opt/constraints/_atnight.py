@@ -43,21 +43,21 @@ class AtNightConstraint(Constraint):
         """
         Create an :class:`~m4opt.constraints.AtNightConstraint` for civil twilight (-6°).
         """
-        return cls(max_solar_altitude=-6 * u.deg)
+        return cls(-6 * u.deg)
 
     @classmethod
     def twilight_nautical(cls):
         """
         Create an :class:`~m4opt.constraints.AtNightConstraint` for nautical twilight (-12°).
         """
-        return cls(max_solar_altitude=-12 * u.deg)
+        return cls(-12 * u.deg)
 
     @classmethod
     def twilight_astronomical(cls):
         """
         Create an :class:`~m4opt.constraints.AtNightConstraint` for astronomical twilight (-18°).
         """
-        return cls(max_solar_altitude=-18 * u.deg)
+        return cls(-18 * u.deg)
 
     @override
     def __call__(self, observer_location, target_coord, obstime):
