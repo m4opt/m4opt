@@ -33,6 +33,12 @@ class AtNightConstraint(Constraint):
     >>> constraint = AtNightConstraint.twilight_civil()
     >>> constraint(observer_location=location, target_coord=target, obstime=time)
     np.True_
+    >>> constraint = AtNightConstraint.twilight_nautical()
+    >>> constraint(observer_location=location, target_coord=target, obstime=time)
+    np.True_
+    >>> constraint = AtNightConstraint.twilight_astronomical()
+    >>> constraint(observer_location=location, target_coord=target, obstime=time)
+    np.True_
     """
 
     def __init__(self, max_solar_altitude: u.Quantity[u.physical.angle] = 0 * u.deg):
