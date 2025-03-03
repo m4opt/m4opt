@@ -1,5 +1,3 @@
-from typing import Optional
-
 from astropy import units as u
 from astropy.coordinates import AltAz, get_sun
 
@@ -7,41 +5,9 @@ from ..utils.typing_extensions import override
 from ._core import Constraint
 
 
-class TwilightConstraint(Constraint):
+class AtNightConstraint(Constraint):
     """
-    A base constraint to limit observations based on the Sun's altitude.
-
-    This class is designed to be used as a parent class for specific twilight
-    constraints, such as `AtNightConstraint`. It allows setting a maximum solar
-    altitude to determine when observations are permissible.
-
-    Notes
-    -----
-    - The pressure is set to zero when calculating the Sun's altitude.
-      This avoids errors due to atmospheric refraction at very low altitudes.
-
-    """
-
-    def __init__(self, max_solar_altitude: Optional[u.Quantity]):
-        if not isinstance(max_solar_altitude, u.Quantity):
-            raise TypeError(
-                f"max_solar_altitude must be an astropy Quantity with angular units, "
-                f"got {type(max_solar_altitude)} instead."
-            )
-        self.max_solar_altitude = max_solar_altitude
-
-    @override
-    def __call__(self, observer_location, target_coord, obstime):
-        altaz_frame = AltAz(
-            obstime=obstime, location=observer_location, pressure=0 * u.hPa
-        )
-        sun_altitude = get_sun(obstime).transform_to(altaz_frame).alt
-        return sun_altitude <= self.max_solar_altitude
-
-
-class AtNightConstraint(TwilightConstraint):
-    """
-    Constrain observations to specific twilight phases based on the altitude of the Sun.
+     Constrain observations to specific twilight phases or a user-defined solar altitude limit.
 
     Parameters
     ----------
@@ -52,10 +18,8 @@ class AtNightConstraint(TwilightConstraint):
 
     Notes
     -----
-    - The twilight phase options correspond to the following solar altitudes:
-      * 'twilight_civil': -6 degrees
-      * 'twilight_nautical': -12 degrees
-      * 'twilight_astronomical': -18 degrees
+    - The pressure is set to zero when calculating the Sun's altitude.
+      This avoids errors due to atmospheric refraction at very low altitudes.
 
     Examples
     --------
@@ -71,32 +35,34 @@ class AtNightConstraint(TwilightConstraint):
     np.True_
     """
 
-    twilight_levels = {
-        "twilight_civil": -6 * u.deg,
-        "twilight_nautical": -12 * u.deg,
-        "twilight_astronomical": -18 * u.deg,
-    }
-
-    def __init__(self, max_solar_altitude: u.Quantity):
-        super().__init__(max_solar_altitude=max_solar_altitude)
+    def __init__(self, max_solar_altitude: u.Quantity[u.physical.angle] = 0 * u.deg):
+        self.max_solar_altitude = max_solar_altitude
 
     @classmethod
     def twilight_civil(cls):
         """
-        Create an AtNightConstraint for civil twilight (-6°).
+        Create an :class:`~m4opt.constraints.AtNightConstraint` for civil twilight (-6°).
         """
-        return cls(cls.twilight_levels["twilight_civil"])
+        return cls(max_solar_altitude=-6 * u.deg)
 
     @classmethod
     def twilight_nautical(cls):
         """
-        Create an AtNightConstraint for nautical twilight (-12°).
+        Create an :class:`~m4opt.constraints.AtNightConstraint` for nautical twilight (-12°).
         """
-        return cls(cls.twilight_levels["twilight_nautical"])
+        return cls(max_solar_altitude=-12 * u.deg)
 
     @classmethod
     def twilight_astronomical(cls):
         """
-        Create an AtNightConstraint for astronomical twilight (-18°).
+        Create an :class:`~m4opt.constraints.AtNightConstraint` for astronomical twilight (-18°).
         """
-        return cls(cls.twilight_levels["twilight_astronomical"])
+        return cls(max_solar_altitude=-18 * u.deg)
+
+    @override
+    def __call__(self, observer_location, target_coord, obstime):
+        altaz_frame = AltAz(
+            obstime=obstime, location=observer_location, pressure=0 * u.hPa
+        )
+        sun_altitude = get_sun(obstime).transform_to(altaz_frame).alt
+        return sun_altitude <= self.max_solar_altitude
