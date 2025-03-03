@@ -8,7 +8,7 @@ from ._core import ObserverLocation
 
 
 class TleObserverLocation(ObserverLocation):
-    """An Earth satellite whose orbit is specified by its two-line element (TLE).
+    """An Earth satellite whose orbit is specified by its `two-line element (TLE) <https://www.space-track.org/documentation#tle>`_.
 
     Notes
     -----
