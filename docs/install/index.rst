@@ -5,9 +5,7 @@ Installation
 
 The recommended way to install |M4OPT| is using :doc:`pip:index`::
 
-    $ git clone https://github.com/m4opt/m4opt
-    $ cd m4opt
-    $ pip install -e .
+    $ pip install m4opt
 
 .. rubric:: Optional: Third-Party Solvers
 

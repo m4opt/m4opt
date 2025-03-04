@@ -1,15 +1,14 @@
-import numpy as np
 from astropy import units as u
 from astropy.coordinates import TEME, SkyCoord
 from satellite_tle import fetch_tle_from_celestrak
 from sgp4.api import SGP4_ERRORS, Satrec
 
 from ..utils.typing_extensions import override
-from ._core import Orbit
+from ._core import ObserverLocation
 
 
-class TLE(Orbit):
-    """An Earth satellite whose orbit is specified by its two-line element (TLE).
+class TleObserverLocation(ObserverLocation):
+    """An Earth satellite whose orbit is specified by its `two-line element (TLE) <https://www.space-track.org/documentation#tle>`_.
 
     Notes
     -----
@@ -24,24 +23,16 @@ class TLE(Orbit):
     >>> from astropy.time import Time
     >>> from astropy import units as u
     >>> import numpy as np
-    >>> from m4opt.orbit import TLE
+    >>> from m4opt.observer import TleObserverLocation
     >>> line1 = '1 59562U 98067WM  24220.55604657  .00200610  00000+0  13802-2 0  9999'
     >>> line2 = '2 59562  51.6321  52.1851 0005233 205.4266 154.6476 15.73479335 17375'
-    >>> orbit = TLE(line1, line2)
-
-    Get the orbital period:
-
-    >>> orbit.period
-    <Quantity 91.51693117 min>
+    >>> orbit = TleObserverLocation(line1, line2)
 
     Evaluate the position and velocity of the satellite at one specific time:
 
     >>> time = Time('2024-08-08 01:10:41')
     >>> orbit(time)
-    <SkyCoord (ITRS: obstime=2024-08-08 01:10:41.000, location=(0.0, 0.0, 0.0) km): (x, y, z) in km
-        (4172.83527806, -514.30119564, -5254.79810552)
-     (v_x, v_y, v_z) in km / s
-        (1.5531795, 7.20225602, 0.52399427)>
+    <EarthLocation (4172.83539674, -514.29983197, -5254.79814474) km>
 
     Or evaluate at an array of times:
 
@@ -65,7 +56,7 @@ class TLE(Orbit):
         self._tle = Satrec.twoline2rv(line1, line2)
 
     @classmethod
-    def from_id(cls, norad_id: int) -> "TLE":
+    def from_id(cls, norad_id: int) -> "TleObserverLocation":
         """Get the latest TLE for a satellite from Celestrak.
 
         Examples
@@ -73,16 +64,11 @@ class TLE(Orbit):
 
         Look up the latest TLE for the Fermi Gamma-Ray Space Telescope.
 
-        >>> from m4opt.orbit import TLE
-        >>> tle = TLE.from_id(33053)
+        >>> from m4opt.observer import TleObserverLocation
+        >>> tle = TleObserverLocation.from_id(33053)
         """
         *_, line1, line2 = fetch_tle_from_celestrak(norad_id)
         return cls(line1, line2)
-
-    @property
-    def period(self):
-        """The orbital period at the epoch of the TLE."""
-        return 2 * np.pi / self._tle.no * u.minute
 
     @override
     def __call__(self, time):
@@ -107,7 +93,7 @@ class TLE(Orbit):
             z=z * u.km,
             v_z=vz * u.km / u.s,
             frame=TEME(obstime=time),
-        ).itrs
+        ).itrs.earth_location
         if shape:
             coord = coord.reshape(shape)
         else:

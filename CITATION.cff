@@ -1,0 +1,100 @@
+cff-version: 1.2.0
+message: Please cite the following works when using this software.
+type: software
+abstract: Multi-Mission Multi-Messenger Observation Planning Toolkit
+authors:
+  - family-names: Singer
+    given-names: Leo
+  - name: pre-commit-ci[bot]
+  - name: dependabot[bot]
+  - family-names: Parazin
+    given-names: B
+  - family-names: Tollerud
+    given-names: Erik
+  - family-names: Bard
+    given-names: Chris
+  - family-names: Healy
+    given-names: Brian
+  - family-names: Bellm
+    given-names: Eric
+  - family-names: Kiendrébéogo
+    given-names: Ramodgwendé Weizmann
+  - family-names: Wagh
+    given-names: Yogesh
+date-released: 2025-02-24
+identifiers:
+  - type: url
+    value: https://github.com/m4opt/m4opt
+title: m4opt/m4opt
+url: https://github.com/m4opt/m4opt
+version: v0.1.1
+preferred-citation:
+  abstract: >-
+    The UltraViolet EXplorer (UVEX) is a wide-field ultraviolet space telescope
+    selected as a NASA Medium-Class Explorer (MIDEX) mission for launch in 2030.
+    UVEX will undertake deep, cadenced surveys of the entire sky to probe low
+    mass galaxies and explore the ultraviolet (UV) time-domain sky, and it will
+    carry the first rapidly deployable UV spectroscopic capability for a broad
+    range of science applications. One of UVEX's prime objectives is to follow
+    up gravitational wave (GW) binary neutron star mergers as targets of
+    opportunity (ToOs), rapidly scanning across their localization regions to
+    search for their kilonova (KN) counterparts. Early-time multiband
+    ultraviolet light curves of KNe are key to explaining the interplay between
+    jet and ejecta in binary neutron star mergers. Owing to high Galactic
+    extinction in the ultraviolet and the variation of GW distance estimates
+    over the sky, the sensitivity to kilonovae can vary significantly across the
+    GW localization and even across the footprint of a single image given UVEX's
+    large field of view. Good ToO observing strategies to trade off between area
+    and depth are neither simple nor obvious. We present an optimal strategy for
+    GW follow-up with UVEX in which exposure time is adjusted dynamically for
+    each field individually to maximize the overall probability of detection. We
+    model the scheduling problem using the expressive and powerful mathematical
+    framework of mixed integer linear programming (MILP), and employ a
+    state-of-the-art MILP solver to automatically generate observing plan
+    timelines that achieve high probabilities of kilonova detection. We have
+    implemented this strategy in an open-source astronomical scheduling software
+    package called the Multi-Mission Multi-Messenger Observation Planning
+    Toolkit (M4OPT), on GitHub at https://github.com/m4opt/m4opt.
+  authors:
+    - family-names: Singer
+      given-names: Leo P.
+    - family-names: Criswell
+      given-names: Alexander W.
+    - family-names: Leggio
+      given-names: Sydney C.
+    - family-names: Kiendrebeogo
+      given-names: R. Weizmann
+    - family-names: Coughlin
+      given-names: Michael W.
+    - family-names: Earnshaw
+      given-names: Hannah P.
+    - family-names: Gezari
+      given-names: Suvi
+    - family-names: Grefenstette
+      given-names: Brian W.
+    - family-names: Harrison
+      given-names: Fiona A.
+    - family-names: Kasliwal
+      given-names: Mansi M.
+    - family-names: Morris
+      given-names: Brett M.
+    - family-names: Tollerud
+      given-names: Erik
+    - family-names: Cenko
+      given-names: S. Bradley
+  doi: 10.48550/ARXIV.2502.17560
+  identifiers:
+    - type: doi
+      value: 10.48550/ARXIV.2502.17560
+    - type: url
+      value: https://arxiv.org/abs/2502.17560
+  title: >-
+    Optimal Follow-Up of Gravitational-Wave Events with the UltraViolet EXplorer
+    (UVEX)
+  url: https://arxiv.org/abs/2502.17560
+  version: '1'
+  date-published: 2025-01-01
+  year: 2025
+  publisher:
+    name: arXiv
+  type: article

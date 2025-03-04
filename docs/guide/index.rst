@@ -9,7 +9,7 @@ User Guide
    dynamics
    fov
    synphot
-   orbit
+   observer
    skygrid
    milp
    missions

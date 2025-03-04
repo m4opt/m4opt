@@ -1,6 +1,9 @@
 Multi-Mission Multi-Messenger Observation Planning Toolkit
 ----------------------------------------------------------
 
+.. image:: https://img.shields.io/pypi/v/m4opt
+    :target: https://pypi.org/project/m4opt/
+    :alt: Python Package Index status
 .. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
     :target: http://www.astropy.org
     :alt: Powered by Astropy Badge
@@ -11,7 +14,7 @@ Multi-Mission Multi-Messenger Observation Planning Toolkit
     :target: https://m4opt.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: docs/_static/example.gif
+.. image:: https://m4opt.readthedocs.io/en/latest/_images/example.gif
     :alt: Visualization of an example observing plan for UVEX generated M4OPT
 
 M4OPT is an open-source toolkit for multi-facility scheduling of astrophysics
@@ -64,6 +67,12 @@ the `Astropy package template <https://github.com/astropy/package-template>`_
 which is licensed under the BSD 3-clause license. See the licenses folder for
 more information.
 
+How to Cite
+-----------
+
+If you use M4OPT in your research, then please cite the following paper:
+
+   Singer, L. P., Criswell, A. W., Leggio, S. C., et al. (2025). Optimal Follow-Up of Gravitational-Wave Events with the UltraViolet EXplorer (UVEX) (Version 1). https://doi.org/10.48550/ARXIV.2502.17560
 
 Contributing
 ------------

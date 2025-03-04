@@ -1,20 +1,14 @@
 from abc import ABC, abstractmethod
 
-from astropy import units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import EarthLocation
 from astropy.time import Time
 
 
-class Orbit(ABC):
+class ObserverLocation(ABC):
     """Base class for an Earth satellite with a specified orbit."""
 
-    @property
     @abstractmethod
-    def period(self) -> u.Quantity[u.physical.time]:
-        """The orbital period."""
-
-    @abstractmethod
-    def __call__(self, time: Time) -> SkyCoord:
+    def __call__(self, time: Time) -> EarthLocation:
         """Get the position and velocity of the satellite.
 
         Parameters
@@ -25,5 +19,5 @@ class Orbit(ABC):
         Returns
         -------
         :
-            The coordinates of the satellite in the ITRS frame.
+            The Earth-relative coordinates of the satellite.
         """
