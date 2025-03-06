@@ -42,6 +42,7 @@ classifiers = [
 [project.optional-dependencies]
 test = [
     "astroplan",
+    "networkx",
     "pytest-astropy",
 ]
 docs = [
