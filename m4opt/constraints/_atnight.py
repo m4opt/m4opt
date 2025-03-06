@@ -67,8 +67,6 @@ class AtNightConstraint(Constraint):
 
     @override
     def __call__(self, observer_location, target_coord, obstime):
-        altaz_frame = AltAz(
-            obstime=obstime, location=observer_location, pressure=0 * u.hPa
-        )
+        altaz_frame = AltAz(obstime=obstime, location=observer_location)
         sun_altitude = get_sun(obstime).transform_to(altaz_frame).alt
         return sun_altitude <= self.max_solar_altitude
