@@ -5,6 +5,8 @@ from resource import RUSAGE_SELF, getrusage
 
 import numpy as np
 
+__all__ = ("get_maxrss_bytes",)
+
 
 def _get_maxrss_raw():
     return getrusage(RUSAGE_SELF).ru_maxrss
