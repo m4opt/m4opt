@@ -1,5 +1,3 @@
-from typing import Optional
-
 from astropy import units as u
 from astropy.coordinates import AltAz
 
@@ -13,9 +11,9 @@ class AltitudeConstraint(Constraint):
 
     Parameters
     ----------
-    min : `~astropy.units.Quantity`, optional
+    min
         Minimum altitude of the target (inclusive). Default is `-90 deg`.
-    max : `~astropy.units.Quantity`, optional
+    max
         Maximum altitude of the target (inclusive). Default is `90 deg`.
 
     Examples
@@ -34,11 +32,10 @@ class AltitudeConstraint(Constraint):
 
     def __init__(
         self,
-        min: Optional[u.Quantity] = -90 * u.deg,
-        max: Optional[u.Quantity] = 90 * u.deg,
+        min: u.Quantity[u.physical.angle] = -90 * u.deg,
+        max: u.Quantity[u.physical.angle] = 90 * u.deg,
     ):
-        self.min = min
-        self.max = max
+        self.min, self.max = sorted([min, max])
 
     @override
     def __call__(self, observer_location, target_coord, obstime):

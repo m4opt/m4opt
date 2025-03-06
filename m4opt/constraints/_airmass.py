@@ -4,6 +4,25 @@ from astropy import units as u
 from ._altitude import AltitudeConstraint
 
 
+def airmass_to_altitude(
+    airmass: float | u.Quantity[u.physical.dimensionless],
+) -> u.Quantity[u.physical.angle]:
+    """Convert airmass to altitude using the cosecant formula.
+
+    Examples
+    --------
+    You can pass either floating-point values or dimensionless values with units.
+
+    >>> from astropy import units as u
+    >>> from m4opt.constraints._airmass import airmass_to_altitude
+    >>> airmass_to_altitude(2.5)
+    <Quantity 0.41151685 rad>
+    >>> airmass_to_altitude(2.5 * u.dimensionless_unscaled)
+    <Quantity 0.41151685 rad>
+    """
+    return np.arcsin(u.dimensionless_unscaled / airmass)
+
+
 class AirmassConstraint(AltitudeConstraint):
     """
     Constrains the airmass of a target by converting airmass limits to altitude limits.
@@ -15,9 +34,9 @@ class AirmassConstraint(AltitudeConstraint):
 
     Parameters
     ----------
-    max_airmass : float
+    max
         Maximum airmass of the target (corresponds to minimum altitude).
-    min_airmass : float,
+    min
         Minimum airmass of the target (corresponds to maximum altitude).
         Default is `1` (the zenith).
 
@@ -35,18 +54,14 @@ class AirmassConstraint(AltitudeConstraint):
     >>> time = Time("2017-08-17T00:41:04Z")
     >>> target = SkyCoord.from_name("NGC 4993")
     >>> location = EarthLocation.of_site("Rubin Observatory")
-    >>> constraint = AirmassConstraint(max_airmass=3, min_airmass=1)
+    >>> constraint = AirmassConstraint(3)
     >>> constraint(location, target, time)
     np.True_
     """
 
     def __init__(
         self,
-        max_airmass: float,
-        min_airmass: float = 1.0,
+        max: float | u.Quantity[u.physical.dimensionless],
+        min: float | u.Quantity[u.physical.dimensionless] = 1.0,
     ):
-        min_airmass, max_airmass = sorted([min_airmass, max_airmass])
-        min_alt = np.arcsin(1 / max_airmass) * u.rad
-        max_alt = np.arcsin(1 / min_airmass) * u.rad
-
-        super().__init__(min=min_alt, max=max_alt)
+        super().__init__(*airmass_to_altitude([max, min]))
