@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -31,7 +32,7 @@ def random_distance_matrix(n: int):
 @given(st.integers(min_value=2, max_value=59))
 def test_solve_tsp(n):
     dist = random_distance_matrix(n)
-    result = solve_tsp(dist)
+    result, result_length = solve_tsp(dist)
     approx = solve_tsp_approx(dist)
 
     # Check that both solutions visit each node exactly once.
@@ -45,6 +46,9 @@ def test_solve_tsp(n):
             "The tour must visit all nodes exactly once",
         )
 
-    assert tour_total_length(dist, result) <= tour_total_length(dist, approx), (
+    assert result_length == pytest.approx(tour_total_length(dist, result)), (
+        "Objective value must equal tour length"
+    )
+    assert result_length <= tour_total_length(dist, approx), (
         "The exact solution must have a shorter path than the approximate solution"
     )

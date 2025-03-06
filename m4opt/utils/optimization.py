@@ -7,7 +7,7 @@ from ..milp import Model
 __all__ = ("solve_tsp",)
 
 
-def solve_tsp(distances: np.ndarray) -> np.ndarray:
+def solve_tsp(distances: np.ndarray) -> tuple[np.ndarray, float]:
     """Solve the Traveling Salesman problem.
 
     Parameters
@@ -18,10 +18,12 @@ def solve_tsp(distances: np.ndarray) -> np.ndarray:
 
     Returns
     -------
-    indices
+    sequence
         The indices that place the nodes in the order to visit, of length 1
         greater than the rank of the distance matrix. The first and last value
         must be equal.
+    length
+        The total path length of the tour.
 
     Notes
     -----
@@ -69,4 +71,4 @@ def solve_tsp(distances: np.ndarray) -> np.ndarray:
     result = np.empty(n + 1, dtype=np.intp)
     result[sequence] = np.arange(1, n)
     result[0] = result[-1] = 0
-    return result
+    return result, solution.get_objective_value()
