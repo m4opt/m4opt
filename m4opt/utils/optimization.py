@@ -29,6 +29,29 @@ def solve_tsp(distances: np.ndarray) -> tuple[np.ndarray, float]:
     -----
     This uses the `Miller-Tucker-Zemlin formulation
     <https://en.wikipedia.org/wiki/Travelling_salesman_problem#Miller–Tucker–Zemlin_formulation>`_.
+
+    Examples
+    --------
+
+    .. plot::
+
+        from scipy.spatial.distance import pdist, squareform
+        import numpy as np
+        from matplotlib import pyplot as plt
+        from m4opt.utils.optimization import solve_tsp
+
+        # Construct a random cloud of points.
+        points = np.random.default_rng(1234).random((50, 2))
+
+        # Calculate the Euclidean distances between each pair of points.
+        dist = squareform(pdist(points))
+
+        # Find the shortest path, and the path length.
+        indices, path_length = solve_tsp(dist)
+
+        # Plot the points and the path.
+        ax = plt.axes(aspect=1, xlim=(0, 1), ylim=(0, 1))
+        ax.plot(*points[indices].T, "o-")
     """
     n = len(distances)
     assert n >= 2
