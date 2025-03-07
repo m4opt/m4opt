@@ -41,7 +41,7 @@ def solve_tsp(distances: np.ndarray) -> tuple[np.ndarray, float]:
         from m4opt.utils.optimization import solve_tsp
 
         # Construct a random cloud of points.
-        points = np.random.default_rng(1234).random((50, 2))
+        points = np.random.default_rng(1234).random((30, 2))
 
         # Calculate the Euclidean distances between each pair of points.
         dist = squareform(pdist(points))

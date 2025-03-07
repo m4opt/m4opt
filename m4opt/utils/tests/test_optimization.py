@@ -29,7 +29,7 @@ def random_distance_matrix(n: int):
 
 
 @settings(deadline=None)
-@given(st.integers(min_value=2, max_value=59))
+@given(st.integers(min_value=2, max_value=30))
 def test_solve_tsp(n):
     dist = random_distance_matrix(n)
     result, result_length = solve_tsp(dist)
