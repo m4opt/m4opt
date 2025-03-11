@@ -23,7 +23,6 @@ lsst = Mission(
     constraints=[
         AirmassConstraint(max=2.5),
         AltitudeConstraint(min=20 * u.deg, max=85 * u.deg),
-        AtNightConstraint.twilight_civil(),
         AtNightConstraint.twilight_astronomical(),
         MoonSeparationConstraint(30 * u.deg),
     ],
