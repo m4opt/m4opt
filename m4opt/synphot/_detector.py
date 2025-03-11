@@ -33,12 +33,6 @@ class Detector:
     plate_scale: u.physical.solid_angle
     """Solid angle per pixel."""
 
-    dark_noise: u.Quantity[u.physical.frequency]
-    """Dark noise count rate."""
-
-    read_noise: float
-    """Number of noise counts due to readout."""
-
     area: u.Quantity[u.physical.area]
     """Effective collecting area."""
 
@@ -47,6 +41,12 @@ class Detector:
 
     background: SourceSpectrum
     """Background: 1D model mapping wavelength to surface brightness."""
+
+    dark_noise: u.Quantity[u.physical.frequency] = 0 * u.Hz
+    """Dark noise count rate."""
+
+    read_noise: float = 0.0
+    """Number of noise counts due to readout."""
 
     npix: float = 4 * np.pi
     """Effective number of pixels in the photometry aperture.
