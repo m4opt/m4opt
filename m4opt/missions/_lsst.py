@@ -21,7 +21,7 @@ lsst = Mission(
     name="lsst",
     fov=CircleSkyRegion(center=SkyCoord(0 * u.deg, 0 * u.deg), radius=1.75 * u.deg),
     constraints=[
-        AirmassConstraint(max=2.5, min=1),
+        AirmassConstraint(max=2.5),
         AltitudeConstraint(min=20 * u.deg, max=85 * u.deg),
         AtNightConstraint.twilight_civil(),
         AtNightConstraint.twilight_astronomical(),
