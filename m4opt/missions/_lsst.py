@@ -30,7 +30,7 @@ lsst = Mission(
         npix=6,  # https://github.com/lsst/rubin_sim/blob/2bf176a6d98ff4c84c352912c5e0721e330fc217/rubin_sim/skybrightness/sky_model.py#L144C19-L144C26
         plate_scale=(0.2 * u.arcsec) ** 2,
         # Circular aperture with a diameter of 6.423 m
-        area=np.pi * np.square(0.5 * 6.423 * 100 * u.cm),
+        area=np.pi * np.square(0.5 * 6.423 * u.m),
         bandpasses={
             "sdssu": SpectralElement(
                 Gaussian1D,
