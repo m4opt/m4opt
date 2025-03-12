@@ -65,10 +65,14 @@ ultrasat.__doc__ = r"""ULTRASAT, the Ultraviolet Transient Astronomy Satellite.
 
 `ULTRASAT <http://www.weizmann.ac.il/ultrasat>`_ is an Israeli ultraviolet 
 space telescope currently under development. It is designed to monitor the 
-transient sky with a wide-field imager (:arxiv:`2304.14482`).
+transient sky with a wide-field imager :footcite:`2024ApJ...964...74S`.
 Expected to launch in 2027, ULTRASAT aims to provide continuous monitoring of
 large areas of the sky to detect and study transient astronomical events in the
 ultraviolet spectrum.
+
+References
+----------
+.. footbibliography::
 
 Examples
 --------

@@ -77,16 +77,21 @@ a long-slit spectrograph and a 3.5° square field of view camera with two UV
 filters.
 
 Note that the imaging mode exposure time calculator is a toy model based on
-the publicly available description of the mission from the UVEX science paper,
-:arXiv:`2111.15608`, and that roughly reproduces the `public sensitivity plots
-<https://www.uvex.caltech.edu/page/for-astronomers>`_. It will be replaced with
-realistic filter bandpasses when those are publicly released.
+the publicly available description of the mission from the UVEX science paper
+:footcite:`2021arXiv211115608K`, and that roughly reproduces the
+`public sensitivity plots <https://www.uvex.caltech.edu/page/for-astronomers>`_.
+It will be replaced with realistic filter bandpasses when those are publicly
+released.
 
 We make these simplifying assumptions:
 
 - The filter bandpasses are Gassians that mimic the filter shapes on the UVEX
   web site.
 - Assume that the PSF is critically sampled.
+
+References
+----------
+.. footbibliography::
 
 Examples
 --------
