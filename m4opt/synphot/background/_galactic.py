@@ -35,16 +35,20 @@ def GalacticBackground():
     """
     Diffuse Galactic ultraviolet background emission.
 
-    Model the diffuse Galactic ultraviolet background using the piecewise
-    cosecant model of Murthy (2014, :doi:`10.1088/0067-0049/213/2/32`).
+    Model the diffuse Galactic ultraviolet background using a piecewise
+    cosecant model :footcite:`2014ApJS..213...32M`.
 
     The spectral energy distribution interpolates linearly between the GALEX
     filter wavelengths of 1539 and 2316 Å, and extrapolates linearly outside.
 
+    References
+    ----------
+    .. footbibliography::
+
     Examples
     --------
     .. plot::
-        :caption: Galactic difffuse emission in the GALEX bands. This should match Figure 7 of :doi:`10.1088/0067-0049/213/2/32`.
+        :caption: Galactic difffuse emission in the GALEX bands. This should match Figure 7 of :footcite:`2014ApJS..213...32M`.
         :include-source: False
 
         from astropy.coordinates import EarthLocation, Galactic, SkyCoord

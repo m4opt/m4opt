@@ -6,10 +6,11 @@ GOLDEN_ANGLE = np.pi * (3 - np.sqrt(5)) * u.rad
 
 
 def golden_angle_spiral(area: u.Quantity[u.physical.solid_angle]):
-    """Generate a tile grid from a spiral employing the golden angle.
+    """Generate a tile grid from a spiral employing the
+    `golden angle <https://mathworld.wolfram.com/GoldenAngle.html>`_.
 
     This is a spiral-based spherical packing scheme that was used by GRANDMA
-    during LIGO/Virgo O3 (see :doi:`10.1093/mnras/staa1846`).
+    during LIGO/Virgo O3 :footcite:`2020MNRAS.497.5518A`.
 
     Parameters
     ----------
@@ -25,7 +26,7 @@ def golden_angle_spiral(area: u.Quantity[u.physical.solid_angle]):
 
     References
     ----------
-    https://en.wikipedia.org/wiki/Golden_angle
+    .. footbibliography::
 
     """
     n = int(np.ceil(1 / area.to_value(u.spat)))

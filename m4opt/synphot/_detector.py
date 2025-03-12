@@ -52,7 +52,12 @@ class Detector:
     """Effective number of pixels in the photometry aperture.
 
     The default value of 4π is appropriate for a PSF that is critically sampled
-    by the pixels (see :doi:`10.1111/j.1365-2966.2005.09208.x`)."""
+    by the pixels :footcite:`2005MNRAS.361..861M`.
+
+    References
+    ----------
+    .. footbibliography::
+    """
 
     aperture_correction: float = 1.0
     """Fraction of the signal from a point source in the photometry aperture.

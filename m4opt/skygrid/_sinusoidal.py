@@ -4,11 +4,12 @@ from astropy.coordinates import SkyCoord
 
 
 def sinusoidal(area: u.Quantity[u.physical.solid_angle]):
-    """Generate a uniform grid on a sinusoidal equal area projection.
+    """Generate a uniform grid on a
+    `sinusoidal projection <https://mathworld.wolfram.com/SinusoidalProjection.html>`_.
 
     This is similar to what was used for GRANDMA follow-up in LIGO/Virgo
-    Observing Run 3 (O3), but is more efficient at tiling the poles.
-    See :doi:`10.3847/2041-8213/ab3399`.
+    Observing Run 3 (O3), but is more efficient at tiling the poles
+    :footcite:`2019ApJ...881L..16A`.
 
     Parameters
     ----------
@@ -24,7 +25,7 @@ def sinusoidal(area: u.Quantity[u.physical.solid_angle]):
 
     References
     ----------
-    https://en.wikipedia.org/wiki/Sinusoidal_projection
+    .. footbibliography::
 
     """
     # Diameter of the field of view

@@ -48,6 +48,7 @@ test = [
 docs = [
     "pysiaf",
     "sphinx-astropy[confv2]",
+    "sphinxcontrib-bibtex",
     "sphinxcontrib-typer",
 ]
 
