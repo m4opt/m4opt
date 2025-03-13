@@ -7,6 +7,6 @@ this package is more organized.
 """
 
 from ._roll import nominal_roll
-from ._slew import Slew
+from ._slew import EigenAxisSlew, Slew
 
-__all__ = ("nominal_roll", "Slew")
+__all__ = ("nominal_roll", "EigenAxisSlew", "Slew")

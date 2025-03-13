@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import numpy as np
@@ -5,21 +6,55 @@ from astropy import units as u
 from astropy.coordinates import Angle, SkyCoord
 from astropy.coordinates.matrix_utilities import rotation_matrix
 
+from ..utils.typing_extensions import override
+
 
 def matrix_trace(matrix):
     return np.trace(matrix, axis1=-2, axis2=-1)
 
 
-@dataclass
-class Slew:
-    """Model the slew time for a spacecraft.
+class Slew(ABC):
+    """Base class for spacecraft slew time models."""
 
-    Notes
-    -----
-    The optimal slew consists of an acceleration phase at the maximum
-    acceleration, possibly a coasting phase at the maximum angular velocity,
-    and a deceleration phase at the maximum acceleration, as shown in the
-    figure below.
+    @abstractmethod
+    def time(
+        self,
+        center1: SkyCoord,
+        center2: SkyCoord,
+        roll1: u.Quantity[u.physical.angle] = 0 * u.rad,
+        roll2: u.Quantity[u.physical.angle] = 0 * u.rad,
+    ) -> u.Quantity[u.physical.time]:
+        """Calculate the time to execute an optimal slew.
+
+        Parameters
+        ----------
+        center1:
+            Initial boresight position.
+        center2:
+            Final boresight position.
+        roll1:
+            Initial roll angle.
+        roll2:
+            Final roll angle.
+
+        Returns
+        -------
+        :
+            Time to slew between the two orientations.
+        """
+
+
+@dataclass
+class EigenAxisSlew(Slew):
+    """Model slew time for a spacecraft employing an eigenaxis maneuver.
+
+    An eigenaxis maneuver is a rotation along the path of shortest angular
+    separation, about a single axis. Assuming that the spaceraft has a maximum
+    angular acceleration and angular rate, the fastest possible eigenaxis
+    maneuver is a "bang-bang" trajectory consisting of an acceleration phase at
+    the maximum acceleration, possibly a coasting phase at the maximum angular
+    velocity, and a deceleration phase at the maximum acceleration, as shown in
+    the figure below.
 
     .. plot::
         :include-source: False
@@ -67,6 +102,16 @@ class Slew:
         axs[2, 0].set_yticklabels(['0'])
         axs[2, 0].set_xticks([])
         axs[2, 1].set_xticks([])
+
+    Notes
+    -----
+    An eigenaxis maneuver is generally *not* the fastest possible slew
+    maneuver, even for a spacecraft with symmetric moment of inertia and
+    symmetric torque limits :footcite:`1993JGCD...16..446B`.
+
+    References
+    ----------
+    .. footbibliography::
     """
 
     max_angular_velocity: u.Quantity[u.physical.angular_velocity]
@@ -88,6 +133,7 @@ class Slew:
         xc = np.square(v) / a
         return np.where(x <= xc, 2 * np.sqrt(x / a), (x + xc) / v) + s
 
+    @override
     def time(
         self,
         center1: SkyCoord,
@@ -150,16 +196,16 @@ class Slew:
         --------
         >>> from astropy.coordinates import SkyCoord
         >>> from astropy import units as u
-        >>> from m4opt.dynamics import Slew
+        >>> from m4opt.dynamics import EigenAxisSlew
         >>> c1 = SkyCoord(0 * u.deg, 20 * u.deg)
         >>> c2 = SkyCoord(0 * u.deg, 40 * u.deg)
         >>> roll1 = 20 * u.deg
         >>> roll2 = 40 * u.deg
-        >>> Slew.separation(c1, c2)
+        >>> EigenAxisSlew.separation(c1, c2)
         <Angle 20. deg>
-        >>> Slew.separation(c1, c1, roll1, roll2)
+        >>> EigenAxisSlew.separation(c1, c1, roll1, roll2)
         <Angle 20. deg>
-        >>> Slew.separation(c1, c2, roll1, roll2)
+        >>> EigenAxisSlew.separation(c1, c2, roll1, roll2)
         <Angle 28.21208852 deg>
 
         """

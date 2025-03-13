@@ -10,7 +10,7 @@ from ..constraints import (
     MoonSeparationConstraint,
     SunSeparationConstraint,
 )
-from ..dynamics import Slew
+from ..dynamics import EigenAxisSlew
 from ..observer import TleObserverLocation
 from ..synphot import Detector
 from ..synphot.background import GalacticBackground, ZodiacalBackground
@@ -56,7 +56,7 @@ ultrasat = Mission(
     # Sky grid optimized for ULTRASAT's wide field of view.
     skygrid=skygrid.healpix(200 * u.deg**2),
     # Slew model tailored for ULTRASAT's operational requirements.
-    slew=Slew(
+    slew=EigenAxisSlew(
         max_angular_velocity=1 * u.deg / u.s,
         max_angular_acceleration=0.025 * u.deg / u.s**2,
     ),
