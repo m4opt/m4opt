@@ -10,7 +10,7 @@ from ..constraints import (
     MoonSeparationConstraint,
     SunSeparationConstraint,
 )
-from ..dynamics import Slew
+from ..dynamics import EigenAxisSlew
 from ..observer import TleObserverLocation
 from ..synphot import Detector
 from ..synphot.background import GalacticBackground, ZodiacalBackground
@@ -63,7 +63,7 @@ uvex = Mission(
     # at all roll angles).
     skygrid=skygrid.geodesic(7.7 * u.deg**2, class_="III", base="icosahedron"),
     # Made up slew model.
-    slew=Slew(
+    slew=EigenAxisSlew(
         max_angular_velocity=0.6 * u.deg / u.s,
         max_angular_acceleration=0.006 * u.deg / u.s**2,
         settling_time=60 * u.s,
