@@ -10,6 +10,7 @@ dependencies = [
     "antiprism-python",
     "astropy >= 7.0.0",
     "astropy-healpix",
+    "astroquery",
     "cplex",
     "docplex",
     "dust-extinction",
