@@ -40,12 +40,15 @@ lsst = Mission(
     # The LSST (Vera C. Rubin Observatory) is a ground-based telescope
     observer_location=EarthFixedObserverLocation.of_site("LSST"),
     # Sky grid optimized for LSST's large field of view.
+    # FIXME: Add the correct area
     skygrid=skygrid.geodesic(9.6 * u.deg**2, class_="III", base="icosahedron"),
     # Slew model tailored for LSST (Vera C. Rubin Observatory), a ground-based telescope in Chile.
+    # FIXME: The slew values differ between the paper and the repository.
+    # Verify which source is correct and update accordingly.
     slew=EigenAxisSlew(
-        max_angular_velocity=6.3 * u.deg / u.s,
-        max_angular_acceleration=5.25 * u.deg / u.s**2,
-        settling_time=15 * u.s,
+        max_angular_velocity=3.5 * u.deg / u.s,
+        max_angular_acceleration=3.5 * u.deg / u.s**2,
+        settling_time=3 * u.s,
     ),
 )
 lsst.__doc__ = r"""LSST, the Legacy Survey of Space and Time.
