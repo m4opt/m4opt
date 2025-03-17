@@ -28,9 +28,8 @@
 import datetime
 import os
 import sys
-from importlib import import_module
-
 import tomllib
+from importlib import import_module
 
 try:
     from sphinx_astropy.conf.v2 import *  # noqa
