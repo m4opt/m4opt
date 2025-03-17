@@ -13,9 +13,9 @@ from ...observer import EarthFixedObserverLocation
 from ...synphot import Detector, bandpass_from_svo
 from ...synphot.background import GalacticBackground, ZodiacalBackground
 from .._core import Mission
-from .lsst_camera import LSSTfieldOfView
+from .camera import LSSTCameraFOV
 
-lsst_fov = LSSTfieldOfView()
+lsst_fov = LSSTCameraFOV()
 
 lsst = Mission(
     name="lsst",
@@ -37,18 +37,18 @@ lsst = Mission(
         dark_noise=0.2 * u.Hz,
         gain=1,
     ),
-    # The LSST (Vera C. Rubin Observatory) is a ground-based telescope
+    # The LSST (Vera C. Rubin Observatory) is a ground-based telescope in Chile.
     observer_location=EarthFixedObserverLocation.of_site("LSST"),
-    # Sky grid optimized for LSST's large field of view.
-    # FIXME: Add the correct area
-    skygrid=skygrid.geodesic(9.6 * u.deg**2, class_="III", base="icosahedron"),
+    # Sky grid optimized for LSST’s large field of view.
+    skygrid=skygrid.geodesic(3.5 * u.deg**2, class_="III", base="icosahedron"),
     # Slew model tailored for LSST (Vera C. Rubin Observatory), a ground-based telescope in Chile.
-    # FIXME: The slew values differ between the paper and the repository.
-    # Verify which source is correct and update accordingly.
+    # FIXME: The Telescope Mount Assembly is faster than the dome for long slews.
+    # Therefore, we use the dome setup instead of the slew model
+    # https://github.com/lsst/rubin_scheduler/blob/main/rubin_scheduler/scheduler/model_observatory/kinem_model.py#L232-L233
     slew=EigenAxisSlew(
-        max_angular_velocity=3.5 * u.deg / u.s,
-        max_angular_acceleration=3.5 * u.deg / u.s**2,
-        settling_time=3 * u.s,
+        max_angular_velocity=1.5 * u.deg / u.s,
+        max_angular_acceleration=0.75 * u.deg / u.s**2,
+        settling_time=1 * u.s,
     ),
 )
 lsst.__doc__ = r"""LSST, the Legacy Survey of Space and Time.
@@ -58,4 +58,12 @@ located in Chile as part of the Vera C. Rubin Observatory. It is designed
 to conduct a 10-year survey of the southern sky with a large field of view 
 to detect transient events, including potential gravitational wave counterparts 
 (:arxiv:`0805.2366`).
+
+The LSST camera's focal plane consists of 189 detectors arranged in 21 rafts, 
+each containing a :math:`3 \times 3` CCD, placed in a :math:`5 \times 5` grid, 
+as shown in `Figure 12 <https://iopscience.iop.org/article/10.3847/1538-4357/ab042c>`_.
+We have two types of detectors: `ITL`, with a pixel resolution of [4071, 3999], 
+and `E2V`, with [4095, 4003] pixels. 
+
+LSST features a plate scale of 0.2 arcsec/pixel with a pixel size of 0.01 mm.
 """
