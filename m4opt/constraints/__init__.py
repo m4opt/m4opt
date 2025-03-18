@@ -4,6 +4,7 @@ from ._body_separation import MoonSeparationConstraint, SunSeparationConstraint
 from ._core import Constraint
 from ._earth_limb import EarthLimbConstraint
 from ._galactic import GalacticLatitudeConstraint
+from ._logical import LogicalAndConstraint, LogicalNotConstraint, LogicalOrConstraint
 from ._positional import (
     AltitudeConstraint,
     AzimuthConstraint,
@@ -22,6 +23,9 @@ __all__ = (
     "EarthLimbConstraint",
     "GalacticLatitudeConstraint",
     "HourAngleConstraint",
+    "LogicalAndConstraint",
+    "LogicalNotConstraint",
+    "LogicalOrConstraint",
     "MoonSeparationConstraint",
     "RightAscensionConstraint",
     "SunSeparationConstraint",
