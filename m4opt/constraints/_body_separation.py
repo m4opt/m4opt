@@ -21,8 +21,6 @@ class BodySeparationConstraint(Constraint):
 
 
 class MoonSeparationConstraint(BodySeparationConstraint):
-    _body = "moon"
-
     def __init__(self, min: u.Quantity[u.physical.angle]):
         """
         Constrain the minimum separation from the Moon.
@@ -50,8 +48,6 @@ class MoonSeparationConstraint(BodySeparationConstraint):
 
 
 class SunSeparationConstraint(BodySeparationConstraint):
-    _body = "sun"
-
     def __init__(self, min: u.Quantity[u.physical.angle]):
         """
         Constrain the minimum separation from the Sun.
