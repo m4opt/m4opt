@@ -1,7 +1,7 @@
 import numpy as np
 from astropy import units as u
 
-from ._altitude import AltitudeConstraint
+from ._positional import AltitudeConstraint
 
 
 def airmass_to_altitude(
