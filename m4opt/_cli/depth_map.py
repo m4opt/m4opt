@@ -48,6 +48,10 @@ def depth_map(
     # we can't use Numpy array broadcasting. Instead, we repeat the entries
     # from the observer_location and time columns an appropriate number of
     # times.
+    #
+    # FIXME: This is a more complicated than it should be because neither
+    # `astropy.coordinates.EarthLocation` nor `astropy.time.Time` support
+    # `np.full` or `np.concatenate`.
     with observing(
         observer_location=EarthLocation.from_geocentric(
             *(
