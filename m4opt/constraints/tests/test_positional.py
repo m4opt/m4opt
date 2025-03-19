@@ -1,5 +1,5 @@
 from astropy import units as u
-from astropy.coordinates import AltAz, HADec
+from astropy.coordinates import AltAz, Angle, HADec
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -42,9 +42,10 @@ def test_positional(observer_location, target_coord, obstime, lon_bounds, lat_bo
     lon_lo, lon_hi = lon_bounds
     lat_lo, lat_hi = lat_bounds
     args = observer_location, target_coord, obstime
+    lon_lo = Angle(lon_lo).wrap_at(lon_hi)
 
     frame = target_coord.icrs
-    lon = frame.ra
+    lon = frame.ra.wrap_at(lon_hi)
     lat = frame.dec
     assert (lon_lo <= lon) & (lon <= lon_hi) == RightAscensionConstraint(*lon_bounds)(
         *args
@@ -56,7 +57,7 @@ def test_positional(observer_location, target_coord, obstime, lon_bounds, lat_bo
     frame = target_coord.transform_to(
         AltAz(obstime=obstime, location=observer_location)
     )
-    lon = frame.az
+    lon = frame.az.wrap_at(lon_hi)
     lat = frame.alt
     assert (lon_lo <= lon) & (lon <= lon_hi) == AzimuthConstraint(*lon_bounds)(*args)
     assert (lat_lo <= lat) & (lat <= lat_hi) == AltitudeConstraint(*lat_bounds)(*args)
@@ -64,5 +65,5 @@ def test_positional(observer_location, target_coord, obstime, lon_bounds, lat_bo
     frame = target_coord.transform_to(
         HADec(obstime=obstime, location=observer_location)
     )
-    lon = frame.ha
+    lon = frame.ha.wrap_at(lon_hi)
     assert (lon_lo <= lon) & (lon <= lon_hi) == HourAngleConstraint(*lon_bounds)(*args)
