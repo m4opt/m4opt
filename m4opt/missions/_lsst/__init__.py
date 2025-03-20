@@ -57,13 +57,12 @@ lsst.__doc__ = r"""LSST, the Legacy Survey of Space and Time.
 located in Chile as part of the Vera C. Rubin Observatory. It is designed 
 to conduct a 10-year survey of the southern sky with a large field of view 
 to detect transient events, including potential gravitational wave counterparts 
-(:arxiv:`0805.2366`).
+(:footcite `2019ApJ...873..111I`).
 
 The LSST camera's focal plane consists of 189 detectors arranged in 21 rafts, 
 each containing a :math:`3 \times 3` CCD, placed in a :math:`5 \times 5` grid, 
-as shown in `Figure 12 <https://iopscience.iop.org/article/10.3847/1538-4357/ab042c>`_.
-We have two types of detectors: `ITL`, with a pixel resolution of [4071, 3999], 
-and `E2V`, with [4095, 4003] pixels. 
+as shown in `Figure 12  from :footcite:`2019ApJ...873..111I`. 
+We have two types of detectors: `ITL`, `E2V`.
 
-LSST features a plate scale of 0.2 arcsec/pixel with a pixel size of 0.01 mm.
+LSST features a plate scale of 0.2 arcsec/pixel.
 """
