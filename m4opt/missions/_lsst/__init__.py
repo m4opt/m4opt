@@ -21,8 +21,8 @@ lsst = Mission(
     name="lsst",
     fov=lsst_fov.make_fov(),
     constraints=[
-        AirmassConstraint(max=2.5),
-        AltitudeConstraint(min=20 * u.deg, max=85 * u.deg),
+        AirmassConstraint(2.5),
+        AltitudeConstraint(20 * u.deg, 85 * u.deg),
         AtNightConstraint.twilight_astronomical(),
         MoonSeparationConstraint(30 * u.deg),
     ],
