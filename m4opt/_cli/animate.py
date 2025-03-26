@@ -26,7 +26,8 @@ from matplotlib.typing import ColorType
 
 from .. import missions
 from ..fov import footprint, footprint_healpix
-from ..synphot import DustExtinction, observing
+from ..synphot import observing
+from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
 from .core import app
 

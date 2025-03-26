@@ -38,3 +38,4 @@ See also the Examples section for
 
 .. automodapi:: m4opt.synphot
 .. automodapi:: m4opt.synphot.background
+.. automodapi:: m4opt.synphot.extinction

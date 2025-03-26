@@ -7,10 +7,10 @@ from astropy.time import Time
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from ...missions import ultrasat
-from ...tests.hypothesis import earth_locations, obstimes, skycoords
-from .._extinction import DustExtinction, dust_map, reddening_law
-from .._extrinsic import observing
+from ....missions import ultrasat
+from ....tests.hypothesis import earth_locations, obstimes, skycoords
+from ..._extrinsic import observing
+from .._dust import DustExtinction, dust_map, reddening_law
 
 
 @settings(deadline=None)
@@ -20,7 +20,7 @@ from .._extrinsic import observing
     obstimes,
     st.floats(0.0912, 32.0).map(lambda _: _ * u.micron),
 )
-def test_extinction(observer_location, target_coord, obstime, wavelength):
+def test_dust_extinction(observer_location, target_coord, obstime, wavelength):
     Ebv = dust_map().query(target_coord)
     expected = reddening_law.extinguish(wavelength, Ebv=Ebv)
 

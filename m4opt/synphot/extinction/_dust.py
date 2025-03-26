@@ -14,7 +14,7 @@ with warnings.catch_warnings():
     from dustmaps.planck import PlanckGNILCQuery
 from synphot.spectrum import BaseSpectrum, SpectralElement
 
-from ._extrinsic import state
+from .._extrinsic import state
 
 reddening_law = G23()
 
@@ -47,7 +47,7 @@ def DustExtinction(Ebv: float | None = None):
     You can create an extinction model with an explicitly set value of E(B-V):
 
     >>> from astropy import units as u
-    >>> from m4opt.synphot import DustExtinction
+    >>> from m4opt.synphot.extinction import DustExtinction
     >>> extinction = DustExtinction(Ebv=1.0)
     >>> extinction(10 * u.micron)
     <Quantity 0.7903132>
