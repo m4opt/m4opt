@@ -232,6 +232,7 @@ intersphinx_mapping.update(  # noqa: F405
         "ligo.skymap": ("https://lscsoft.docs.ligo.org/ligo.skymap/", None),
         "pip": ("https://pip.pypa.io/en/stable/", None),
         "regions": ("https://astropy-regions.readthedocs.io/en/stable/", None),
+        "specreduce": ("https://specreduce.readthedocs.io/en/stable/", None),
         "synphot": ("https://synphot.readthedocs.io/en/stable/", None),
         "userguide": ("https://emfollow.docs.ligo.org/userguide/", None),
     }
