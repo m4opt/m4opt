@@ -8,8 +8,8 @@ from astropy.modeling import CompoundModel, Model
 from scipy.interpolate import interp1d
 from synphot import SourceSpectrum, SpectralElement
 
-from ._extinction import DustExtinction, DustExtinctionForSkyCoord, dust_map
 from ._extrinsic import ScaleFactor, state
+from .extinction._dust import DustExtinction, DustExtinctionForSkyCoord, dust_map
 
 
 class ModelSymbol(sympy.Dummy):
@@ -28,7 +28,7 @@ def countrate(
     >>> from astropy.coordinates import EarthLocation, SkyCoord
     >>> from astropy.time import Time
     >>> from m4opt.synphot.background import ZodiacalBackground
-    >>> from m4opt.synphot import DustExtinction
+    >>> from m4opt.synphot.extinction import DustExtinction
     >>> from m4opt.synphot import observing
     >>> from m4opt.synphot._math import countrate
     >>> import numpy as np
