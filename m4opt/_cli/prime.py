@@ -13,7 +13,7 @@ def prime():
     """
     from astropy.coordinates import EarthLocation
 
-    from ..synphot._extinction import dust_map
+    from ..synphot.extinction._dust import dust_map
 
     EarthLocation.get_site_names()
     dust_map()
