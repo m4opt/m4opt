@@ -25,14 +25,14 @@ jobs:
             toxenv: py311-test-devdeps
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
     - name: Cache Astropy data
-      uses: actions/cache@v4
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
       with:
         key: ${{ matrix.toxenv }}
         path: ~/.astropy/cache
     - name: Set up python ${{ matrix.python }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55  # v5.5.0
       with:
         cache: pip
         python-version: ${{ matrix.python }}
