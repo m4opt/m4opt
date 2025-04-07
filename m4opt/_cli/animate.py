@@ -6,7 +6,7 @@ import numpy as np
 import synphot
 import typer
 from astropy import units as u
-from astropy.coordinates import ICRS, Distance, get_body
+from astropy.coordinates import ICRS, Distance, SkyCoord, get_body
 from astropy.table import QTable
 from astropy.time import Time
 from astropy.visualization.units import quantity_support
@@ -66,6 +66,16 @@ def animate(
             show_default=False,
         ),
     ] = None,
+    inset_center: Annotated[
+        SkyCoord | None,
+        typer.Option(help="Center of optional zoomed inset", parser=SkyCoord),
+    ] = None,
+    inset_radius: Annotated[
+        u.Quantity,
+        typer.Option(
+            help="Radius of optional zoomed inset",
+        ),
+    ] = "10 deg",
 ):
     """Generate an animation for a GW sky map."""
     with status("loading schedule"):
@@ -110,15 +120,34 @@ def animate(
 
             ax_map = fig.add_subplot(gs[0], projection="astro hours mollweide")
             assert isinstance(ax_map, AutoScaledWCSAxes)
-            transform = ax_map.get_transform("world")
-            earth_artist, sun_artist, moon_artist = [
-                ax_map.plot(
-                    0,
-                    0,
-                    zorder=10000,
-                    transform=transform,
-                    **kwargs,
-                )[0]
+            ax_maps = [ax_map]
+            if inset_center is not None:
+                ax_map_zoom = fig.add_axes(
+                    (0.75, 0.45, 0.25, 0.25),
+                    projection="astro hours zoom",
+                    center=inset_center,
+                    radius=inset_radius,
+                )
+                assert isinstance(ax_map_zoom, AutoScaledWCSAxes)
+                for key in ["ra", "dec"]:
+                    ax_map_zoom.coords[key].set_ticklabel_visible(False)
+                    ax_map_zoom.coords[key].set_ticks_visible(False)
+                ax_map.mark_inset_axes(ax_map_zoom, zorder=10000)
+                for loc in ["upper left", "lower left"]:
+                    ax_map.connect_inset_axes(ax_map_zoom, loc, zorder=10000)
+                ax_maps.append(ax_map_zoom)
+            transforms = [ax.get_transform("world") for ax in ax_maps]
+            earth_artists, sun_artists, moon_artists = [
+                [
+                    ax.plot(
+                        0,
+                        0,
+                        zorder=10000,
+                        transform=transform,
+                        **kwargs,
+                    )[0]
+                    for ax, transform in zip(ax_maps, transforms)
+                ]
                 for kwargs in [
                     dict(marker=earth, mec="black"),
                     dict(marker=sun, mec="black"),
@@ -165,7 +194,8 @@ def animate(
             )
 
             cls = find_greedy_credible_levels(probs)
-            ax_map.contour_hpx(cls, levels=[0.9], colors=[skymap_color], nested=True)
+            for ax in ax_maps:
+                ax.contour_hpx(cls, levels=[0.9], colors=[skymap_color], nested=True)
             ax_map.grid()
 
             observer_locations = mission.observer_location(time_steps)
@@ -186,15 +216,19 @@ def animate(
                         * DustExtinction(),
                         bandpass,
                     ).to_value(u.s)
-                plt.colorbar(
-                    ax_map.imshow_hpx(
+                ims = [
+                    ax.imshow_hpx(
                         exptime,
                         vmin=table["duration"].min(initial=exptime_min).to_value(u.s),
                         vmax=table["duration"].max(initial=exptime_min).to_value(u.s),
                         cmap="binary",
                         nested=True,
                         alpha=0.5,
-                    ),
+                    )
+                    for ax in ax_maps
+                ]
+                plt.colorbar(
+                    ims[0],
                     label="Required exposure time (s)",
                     orientation="horizontal",
                 ).ax.xaxis.set_label_position("top")
@@ -219,20 +253,24 @@ def animate(
             averaged_field_of_regard = np.logical_or.reduce(
                 instantaneous_field_of_regard, axis=0
             )
-            ax_map.contourf_hpx(
-                averaged_field_of_regard,
-                nested=True,
-                levels=[-1, 0.5],
-                colors=[averaged_field_of_regard_color],
-                zorder=1.1,
-            )
+            for ax in ax_maps:
+                ax.contourf_hpx(
+                    averaged_field_of_regard,
+                    nested=True,
+                    levels=[-1, 0.5],
+                    colors=[averaged_field_of_regard_color],
+                    zorder=1.1,
+                )
 
         with status("adding observation footprints"):
+            footprint_regions = footprint(
+                mission.fov, table["target_coord"], table["roll"]
+            )
             footprint_patches = [
                 [
                     plt.Polygon(
                         np.rad2deg(vertices),
-                        transform=transform,
+                        transform=transforms[0],
                         visible=False,
                         facecolor=footprint_color,
                         alpha=footprint_alpha,
@@ -243,12 +281,25 @@ def animate(
                         )
                     )
                 ]
-                for region in footprint(
-                    mission.fov, table["target_coord"], table["roll"]
-                )
+                for region in footprint_regions
             ]
             for patch in chain.from_iterable(footprint_patches):
                 ax_map.add_patch(patch)
+            if inset_center is not None:
+                footprint_patches_zoom = [
+                    plt.Polygon(
+                        np.column_stack(
+                            (region.vertices.ra.deg, region.vertices.dec.deg)
+                        ),
+                        transform=transforms[1],
+                        visible=False,
+                        facecolor=footprint_color,
+                        alpha=footprint_alpha,
+                    )
+                    for region in footprint_regions
+                ]
+                for patch in footprint_patches_zoom:
+                    ax_map_zoom.add_patch(patch)
 
             ivisit = np.arange(visits)
             table["area"] = np.empty((len(table), visits)) * hpx.pixel_area.to(u.deg**2)
@@ -335,25 +386,40 @@ def animate(
 
         with status("rendering frames"):
             field_of_regard_artist = None
+            field_of_regard_artist_zoom = None
 
             def draw_frame(args):
                 time, field_of_regard, earth_coord, sun_coord, moon_coord = args
-                blit = [now_line, now_label, earth_artist, sun_artist, moon_artist]
+                blit = [
+                    now_line,
+                    now_label,
+                    *earth_artists,
+                    *sun_artists,
+                    *moon_artists,
+                ]
 
                 time_from_start = (time - event_time).to(u.hour)
                 now_line.set_xdata([time_from_start])
                 now_label.set_x(time_from_start)
 
-                for artist, coord in zip(
-                    [earth_artist, sun_artist, moon_artist],
+                for artists, coord in zip(
+                    [earth_artists, sun_artists, moon_artists],
                     [earth_coord, sun_coord, moon_coord],
                 ):
-                    artist.set_data([[coord.ra.deg], [coord.dec.deg]])
+                    for artist in artists:
+                        artist.set_data([[coord.ra.deg], [coord.dec.deg]])
 
                 for patches, visible in zip(
                     footprint_patches, table["start_time"] <= time
                 ):
                     for patch in patches:
+                        if visible != patch.get_visible():
+                            patch.set_visible(visible)
+                            blit.append(patch)
+                if inset_center is not None:
+                    for patch, visible in zip(
+                        footprint_patches_zoom, table["start_time"] <= time
+                    ):
                         if visible != patch.get_visible():
                             patch.set_visible(visible)
                             blit.append(patch)
@@ -369,6 +435,19 @@ def animate(
                     levels=[-1, 0.5],
                 )
                 blit.append(field_of_regard_artist)
+
+                if inset_center is not None:
+                    nonlocal field_of_regard_artist_zoom
+                    if field_of_regard_artist_zoom is not None:
+                        blit.append(field_of_regard_artist_zoom)
+                        field_of_regard_artist_zoom.remove()
+                    field_of_regard_artist_zoom = ax_map_zoom.contourf_hpx(
+                        field_of_regard,
+                        nested=True,
+                        colors=[field_of_regard_color],
+                        levels=[-1, 0.5],
+                    )
+                    blit.append(field_of_regard_artist_zoom)
 
                 return blit
 
