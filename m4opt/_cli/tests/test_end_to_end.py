@@ -65,7 +65,15 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, request):
         ).all()
         assert (observations["duration"] <= table.meta["args"]["exptime_max"]).all()
 
-        result = run_cli(app, "animate", ecsv_path, gif_path, "--time-step=8hour")
+        result = run_cli(
+            app,
+            "animate",
+            ecsv_path,
+            gif_path,
+            "--time-step=8hour",
+            "--inset-center=35d -31d",
+            "--inset-radius=11deg",
+        )
         assert result.exit_code == 0
         assert gif_path.read_bytes().startswith(b"GIF89a")
         return table
