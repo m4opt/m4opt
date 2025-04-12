@@ -2,7 +2,7 @@
 name = "m4opt"
 dynamic = ["version"]
 authors = [{name = "M4OPT Developers", email = "leo.singer@ligo.org"}]
-license = {text = "BSD-3-Clause"}
+license = "BSD-3-Clause"
 description = "Multi-Mission Multi-Messenger Observation Planning Toolkit"
 readme = "README.rst"
 requires-python = ">=3.11"
@@ -32,7 +32,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: MacOS",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.11",
