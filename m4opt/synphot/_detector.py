@@ -37,10 +37,10 @@ class Detector:
     """Effective collecting area."""
 
     bandpasses: dict[Hashable, Model]
-    """Filter bandpasses: dictionary of 1D models mapping wavelength to dimensionless transmission."""
+    """Dictionary of 1D models mapping wavelength to dimensionless transmission."""
 
     background: SourceSpectrum
-    """Background: 1D model mapping wavelength to surface brightness."""
+    """Background 1D model mapping wavelength to surface brightness."""
 
     dark_noise: u.Quantity[u.physical.frequency] = 0 * u.Hz
     """Dark noise count rate."""
