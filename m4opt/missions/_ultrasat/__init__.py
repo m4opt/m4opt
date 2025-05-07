@@ -4,6 +4,7 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from regions import RectangleSkyRegion
 from synphot import Gaussian1D, SpectralElement
 
 from ...constraints import (
@@ -17,22 +18,20 @@ from ...synphot import Detector
 from ...synphot.background import GalacticBackground, ZodiacalBackground
 from .._core import Mission
 from . import data
-from .camera import UltrasatCameraFOV
-
-ultrasat_camera = UltrasatCameraFOV()
 
 
 def _read_skygrid():
     table = Table.read(
         resources.files(data) / "LCS_nonoverlapping_grid.csv", format="ascii.csv"
     )
-    # grid_V45 =  table[table["V45"] == 1]
     return SkyCoord(table["RA"], table["Dec"], unit=u.deg)
 
 
 ultrasat = Mission(
     name="ultrasat",
-    fov=ultrasat_camera.make_fov(),
+    fov=RectangleSkyRegion(
+        center=SkyCoord(0 * u.deg, 0 * u.deg), width=14.28 * u.deg, height=14.28 * u.deg
+    ),
     constraints=[
         EarthLimbConstraint(48 * u.deg),
         SunSeparationConstraint(70 * u.deg),
@@ -77,7 +76,7 @@ ultrasat.__doc__ = r"""ULTRASAT, the Ultraviolet Transient Astronomy Satellite.
 
 `ULTRASAT <http://www.weizmann.ac.il/ultrasat>`_ is an Israeli ultraviolet 
 space telescope currently under development. It is designed to monitor the 
-transient sky with a wide-field imager (:footcite:`2024ApJ...964...74S`).
+transient sky with a wide-field imager :footcite:`2024ApJ...964...74S`.
 Expected to launch in 2027, ULTRASAT aims to provide continuous monitoring of
 large areas of the sky to detect and study transient astronomical events in the
 ultraviolet spectrum.
