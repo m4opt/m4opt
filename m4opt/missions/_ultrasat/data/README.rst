@@ -6,4 +6,4 @@ for the low-cadence extragalactic survey. Each field is annotated with continuou
 for at least one 180-day or 45-day period per year, and average UV extinction.
 
 The grid is based on the baseline survey strategy discussed within the ULTRASAT Working Groups
-(`https://www.weizmann.ac.il/ultrasat/for-scientists/working-groups/working-groups <https://www.weizmann.ac.il/ultrasat/for-scientists/working-groups/working-groups>`_).
+(https://www.weizmann.ac.il/ultrasat/for-scientists/working-groups/working-groups).
