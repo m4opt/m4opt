@@ -64,5 +64,4 @@ each containing a :math:`3 \times 3` CCD, placed in a :math:`5 \times 5` grid,
 as shown in `Figure 12  from :footcite:`2019ApJ...873..111I`. 
 We have two types of detectors: `ITL`, `E2V`.
 
-LSST features a plate scale of 0.2 arcsec/pixel.
 """
