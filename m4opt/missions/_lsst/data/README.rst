@@ -8,5 +8,5 @@ The contents of this directory are reproduced from the following source:
    We focus only on **science detectors**, excluding wavefront and guide sensors during parsing.
    The resulting 189 detectors are loaded into an `astropy.table.Table` which contains the LSST camera geometry.
 
-2. This table is directly consumed by the `../camera.py` module to construct the LSST Field of View (FOV),
+2. This table is directly consumed by the `../_camera.py` module to construct the LSST Field of View (FOV),
    based on the detector positions and sizes defined in the YAML file.

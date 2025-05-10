@@ -13,13 +13,11 @@ from ...observer import EarthFixedObserverLocation
 from ...synphot import Detector, bandpass_from_svo
 from ...synphot.background import GalacticBackground, ZodiacalBackground
 from .._core import Mission
-from .camera import LSSTCameraFOV
-
-lsst_fov = LSSTCameraFOV()
+from ._camera import make_fov
 
 lsst = Mission(
     name="lsst",
-    fov=lsst_fov.make_fov(),
+    fov=make_fov(),
     constraints=[
         AirmassConstraint(2.5),
         AltitudeConstraint(20 * u.deg, 85 * u.deg),
