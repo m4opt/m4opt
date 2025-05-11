@@ -5,4 +5,4 @@ from ._lsst import lsst
 from ._ultrasat import ultrasat
 from ._uvex import uvex
 
-__all__ = ("Mission", "lsst", "uvex", "ultrasat")
+__all__ = ("Mission", "lsst", "ultrasat", "uvex")
