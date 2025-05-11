@@ -80,7 +80,6 @@ def make_fov():
         x_deg = (det["x_offset"] * MM_TO_ARCSEC).to(u.deg)
         y_deg = (det["y_offset"] * MM_TO_ARCSEC).to(u.deg)
 
-        # Size of detector in degrees
         width_deg = (bbox_size[0] * PLATE_SCALE).to(u.deg)
         height_deg = (bbox_size[1] * PLATE_SCALE).to(u.deg)
 
