@@ -18,7 +18,15 @@ class Mission:
     """Name of the mission."""
 
     fov: Region | Regions
-    """Instrument field of view."""
+    """Instrument field of view.
+
+    The region is expected to represent the field of view of the instrument at
+    a standard orientation of R.A.=0, Dec.=0, P.A.=0.
+
+    See Also
+    --------
+    m4opt.fov.footprint, m4opt.fov.footprint_healpix
+    """
 
     constraints: Collection[Constraint]
     """Field of regard constraints."""

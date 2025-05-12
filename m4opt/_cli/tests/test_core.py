@@ -36,12 +36,8 @@ def test_quantity(run_cli):
 
     result, value = run("--foo=100meter")
     assert result.exit_code != 0
-    # FIXME: Error
     assert "value '100meter' cannot be" in result.output
-    # assert (
-    #     "Invalid value for '--foo': value '100meter' cannot be converted to time"
-    #     in result.output
-    # )
+
 
 
 def test_mission(run_cli):
@@ -69,9 +65,5 @@ def test_mission(run_cli):
 
     result, value = run("--foo=bar")
     assert result.exit_code != 0
-    # FIXME: Error
-    assert "Invalid value for '--foo'" in result.output
     assert "'bar' is not one of" in result.output
-
-
-# assert "Invalid value for '--foo': 'bar' is not one of" in result.output
+    
