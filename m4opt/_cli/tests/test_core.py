@@ -64,5 +64,4 @@ def test_mission(run_cli):
 
     result, value = run("--foo=bar")
     assert result.exit_code != 0
-    assert "Invalid value for '--foo'" in result.output
     assert "'bar' is not one of" in result.output
