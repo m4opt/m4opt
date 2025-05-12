@@ -39,7 +39,6 @@ def test_quantity(run_cli):
     assert "value '100meter' cannot be" in result.output
 
 
-
 def test_mission(run_cli):
     """Test CLI with mission arguments."""
 
@@ -66,4 +65,3 @@ def test_mission(run_cli):
     result, value = run("--foo=bar")
     assert result.exit_code != 0
     assert "'bar' is not one of" in result.output
-    
