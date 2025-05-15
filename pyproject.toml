@@ -12,7 +12,6 @@ dependencies = [
     "astropy >= 7.0.0",
     "astropy-healpix",
     "astroquery",
-    "click < 8.2.0",  # FIXME: remove when https://github.com/fastapi/typer/discussions/1215 is fixed
     "cplex",
     "docplex",
     "dust-extinction",
@@ -26,7 +25,7 @@ dependencies = [
     "spiceypy",
     "sympy",
     "synphot",
-    "typer",
+    "typer >= 0.15.4",
     "typing_extensions; python_version < \"3.12\"",
     "xdg-base-dirs",
 ]
