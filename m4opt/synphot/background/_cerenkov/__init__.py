@@ -120,15 +120,12 @@ class CerenkovEmission:
             Lnorm = Lnorm.to(1 / (u.MeV * u.s * u.cm**2 * u.um))
             int_val = np.sum(intg_i * np.diff(ee)) / cs_val
             L1mu = int_val * Lnorm
-            IC1mu[i] = L1mu / (2 * np.pi * n[i] ** 2)
-
-        IC1mu = u.Quantity(
-            [q.value if hasattr(q, "value") else q for q in IC1mu], unit=L1mu.unit
-        )
+            IC1mu[i] = L1mu.value / (2 * np.pi * n[i] ** 2)
 
         # Convert intensity to arcseconds squared
         # FIXME: does u.count = u.photon ?
-        intensity_micron = IC1mu.value * (u.photon / u.cm**2 / u.s / u.sr / u.micron)
+        intensity_unit = u.photon / u.cm**2 / u.s / u.sr / u.micron
+        intensity_micron = IC1mu * intensity_unit
         intensity_angstrom = intensity_micron.to(
             u.photon / u.cm**2 / u.s / u.sr / u.Angstrom
         )
