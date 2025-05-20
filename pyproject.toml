@@ -9,7 +9,7 @@ requires-python = ">=3.11"
 dependencies = [
     "aep8",
     "antiprism-python",
-    "astropy >= 7.0.0",
+    "astropy >= 7.1.0",
     "astropy-healpix",
     "astroquery",
     "cplex",
