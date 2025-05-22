@@ -16,7 +16,7 @@ dependencies = [
     "docplex",
     "dust-extinction",
     "dustmaps",
-    "ligo.skymap >= 2.2.0",
+    "ligo.skymap >= 2.4.0",
     "numpy >= 2.1.0",
     "regions",
     "satellitetle",
