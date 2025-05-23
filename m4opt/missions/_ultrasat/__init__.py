@@ -23,7 +23,10 @@ from . import data
 def _read_allsky_skygrid() -> SkyCoord:
     # Load the All-Sky Survey (AllSS) grid.
     table = Table.read(
-        resources.files(data) / "AllSS_grid_361.txt", format="ascii.csv", data_start=0, names=["ra", "dec"]
+        resources.files(data) / "AllSS_grid_361.txt",
+        format="ascii.csv",
+        data_start=0,
+        names=["ra", "dec"],
     )
     return SkyCoord(table["ra"], table["dec"], unit=u.deg)
 
