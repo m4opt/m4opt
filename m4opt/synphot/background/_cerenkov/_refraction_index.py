@@ -47,7 +47,7 @@ def ref_index_suprasil_2a():
 
 
 _MATERIALS = {
-    "silica": ref_index_fused_silica,
+    "sio2": ref_index_fused_silica,
     "sio2_suprasil_2a": ref_index_suprasil_2a,
 }
 
@@ -60,7 +60,7 @@ def get_refraction_index(material="sio2_suprasil_2a"):
     ----------
     material : str, optional
         Supported options:
-        - 'sio2', 'silica': fused silica (Sellmeier equation)
+        - 'sio2' (silica): fused silica (Sellmeier equation)
         - 'sio2_suprasil_2a': Suprasil 2A (tabulated data)
         Default: 'sio2_suprasil_2a'.
 
