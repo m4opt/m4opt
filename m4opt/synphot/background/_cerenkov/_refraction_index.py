@@ -52,7 +52,7 @@ _MATERIALS = {
 }
 
 
-def get_refraction_index(material="SiO2_suprasil_2a"):
+def get_refraction_index(material="sio2_suprasil_2a"):
     """
     Compute refractive index and transmission for a given material.
 
@@ -60,9 +60,9 @@ def get_refraction_index(material="SiO2_suprasil_2a"):
     ----------
     material : str, optional
         Supported options:
-        - 'SiO2' (silica): fused silica (Sellmeier equation)
-        - 'SiO2_suprasil_2a': Suprasil 2A (tabulated data)
-        Default: 'SiO2_suprasil_2a'.
+        - 'sio2' (silica): fused silica (Sellmeier equation)
+        - 'sio2_suprasil_2a': Suprasil 2A (tabulated data)
+        Default: 'sio2_suprasil_2a'.
 
     Returns
     -------
