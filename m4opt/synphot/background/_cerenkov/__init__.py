@@ -40,7 +40,7 @@ class RadiationBelt:
 
 @dataclass
 class CerenkovEmission:
-    material: str = "si02_suprasil_2a"
+    material: str = "SiO2_suprasil_2a"
     particle: Literal["e", "p"] = "e"
     solar: Literal["max", "min"] = "max"
     energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV)
@@ -53,7 +53,7 @@ class CerenkovEmission:
         material_properties = {
             "silica": (1.5, 2.2 * u.g / u.cm**3),
             "sio2": (1.5, 2.2 * u.g / u.cm**3),
-            "si02_suprasil_2a": (1.5, 2.2 * u.g / u.cm**3),
+            "SiO2_suprasil_2a": (1.5, 2.2 * u.g / u.cm**3),
             "sapphire": (1.75, 4.0 * u.g / u.cm**3),  # at 1 mu, n(0.25 mu)=1.85
         }
         if self.material not in material_properties:
@@ -160,7 +160,7 @@ class CerenkovBackground:
     solar : {'max', 'min'}, optional
         Solar activity condition, by default 'max'.
     material : str, optional
-        Material type for optics, by default 'si02_suprasil_2a'.
+        Material type for optics, by default 'SiO2_suprasil_2a'.
 
     References
     ----------
@@ -178,13 +178,72 @@ class CerenkovBackground:
 
     Examples
     --------
+
+    The energy loss per unit mass thickness (dE/dX) of electrons
+    in selected materials as a function of kinetic energy.
+
+    .. plot::
+        :caption: Electron energy loss per unit mass thickness (dE/dX) as a function of kinetic energy, for several materials of astrophysical and detector interest.
+
+        import matplotlib.pyplot as plt
+        from m4opt.synphot.background._cerenkov import get_electron_energy_loss
+
+        lw = 1
+        label_fs = 12
+        tick_fs = 10
+
+        # Compute energy loss for each material
+        Ek, dEdX_O = get_electron_energy_loss(material="oxygen")
+        _, dEdX_Si = get_electron_energy_loss(material="silicon")
+        _, dEdX_Al = get_electron_energy_loss(material="aluminum")
+        _, dEdX_SiO2 = get_electron_energy_loss(material="sio2")
+        _, dEdX_Al2O3 = get_electron_energy_loss(material="sapphire")
+
+        plt.figure(figsize=(7, 5))
+        plt.loglog(Ek.value, dEdX_O.value, label=r"Oxygen (O)", linewidth=lw)
+        plt.loglog(Ek.value, dEdX_Si.value, label=r"Silicon (Si)", linewidth=lw)
+        plt.loglog(Ek.value, dEdX_Al.value, label=r"Aluminum (Al)", linewidth=lw)
+        plt.loglog(Ek.value, dEdX_SiO2.value, label=r"Silica (SiO$_2$)", linewidth=lw)
+        plt.loglog(Ek.value, dEdX_Al2O3.value, label=r"Sapphire (Al$_2$O$_3$)", linewidth=lw)
+
+        plt.xlabel("Electron kinetic energy [MeV]", fontsize=label_fs)
+        plt.ylabel(r"Energy loss dE/dX [MeV/(g cm$^{-2}$)]", fontsize=label_fs)
+        plt.title("Electron Energy Loss per Unit Mass Thickness", fontsize=label_fs)
+        plt.legend(fontsize=label_fs)
+        plt.grid(True, which='both', ls='--')
+        plt.tick_params(labelsize=tick_fs)
+        plt.tight_layout()
+        plt.show()
+
+    .. plot::
+        :caption:  Inverse energy loss for silica (optional)
+
+        import matplotlib.pyplot as plt
+        from m4opt.synphot.background._cerenkov import get_electron_energy_loss
+
+        Ek, dEdX_SiO2 = get_electron_energy_loss(material="sio2")
+
+        plt.figure(figsize=(7, 5))
+        plt.loglog(Ek.value, 1 / dEdX_SiO2.value, linewidth=2, color='tab:green')
+        plt.xlabel("Electron kinetic energy [MeV]")
+        plt.ylabel(r"Inverse energy loss $(dE/dX)^{-1}$ [(g cm$^{-2}$)/MeV]")
+        plt.title("Inverse Energy Loss for Silica (SiO$_2$)")
+        plt.grid(True, which='both', ls='--')
+        plt.axis([1e-2, 1e2, 1e-2, 1])
+        plt.tick_params(labelsize=tick_fs)
+        plt.tight_layout()
+        plt.show()
+
+
+    Cenrenkov background spectrum for a given observer location and time.
+
     >>> from astropy.coordinates import EarthLocation
     >>> from astropy.time import Time
     >>> from astropy import units as u
     >>> from m4opt.synphot.background._cerenkov import CerenkovBackground
     >>> observer_location = EarthLocation.from_geodetic(lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km)
     >>> obstime = Time("2025-05-18T02:48:00Z")
-    >>> cerenkov_model = CerenkovBackground(particle='e', solar='max', material='si02_suprasil_2a')
+    >>> cerenkov_model = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a')
     >>> spectrum = cerenkov_model.cerenkov_emission(observer_location, obstime)
     >>> wavelength = spectrum.waveset
     >>> spectrum(wavelength[0])
@@ -212,7 +271,7 @@ class CerenkovBackground:
         coord = hpx.healpix_to_skycoord(np.arange(hpx.npix))
 
         with observing(observer_location=observer_location, target_coord=coord, obstime=obstime):
-            cerenkov_model = CerenkovBackground(particle='e', solar='max', material='si02_suprasil_2a')
+            cerenkov_model = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a')
             spectrum = cerenkov_model.cerenkov_emission(observer_location, obstime)
             wavelength = spectrum.waveset
             intensity = spectrum(wavelength)
@@ -223,11 +282,12 @@ class CerenkovBackground:
         plt.title(r"Cerenkov Background Spectrum at GEO")
         plt.tight_layout()
         plt.grid()
+        plt.show()
     """
 
     particle: Literal["e", "p"] = "e"
     solar: Literal["max", "min"] = "max"
-    material: str = "si02_suprasil_2a"
+    material: str = "SiO2_suprasil_2a"
 
     def radiation_belt(self, observer_location, obstime) -> Table:
         """
