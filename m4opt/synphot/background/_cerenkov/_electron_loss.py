@@ -14,10 +14,16 @@ from astropy.constants import c, e, hbar, m_e, m_p
 # For each tuple: (Atomic number Z, Mass number A, Atom count in molecular unit)
 _MATERIALS = {
     "sio2": {"elements": [(14, 28, 1), (8, 16, 2)]},  # silica (SiO2): Si + 2 O
-    "sio2_suprasil_2a": [(14, 28, 1), (8, 16, 2)],  # Specific high-purity silica
+    "sio2_suprasil_2a": {
+        "elements": [(14, 28, 1), (8, 16, 2)]
+    },  # Specific high-purity silica
     "sapphire": {
         "elements": [(13, 27, 2), (8, 16, 3)]
-    },  #  Aluminum oxide (Al2O3): 2 Al + 3 O
+    },  # Aluminum oxide (Al2O3): 2 Al + 3 O
+
+    "aluminum": {"elements": [(13, 27, 1)]},    # Al
+    "oxygen": {"elements": [(8, 16, 1)]},       # O
+    "silicon": {"elements": [(14, 28, 1)]},     # Si
 }
 
 
@@ -66,7 +72,7 @@ def _calc_dEdX(Z, A, Ek, g, b):
     return dEdXI + dEdXB
 
 
-def get_electron_energy_loss(material="si02_suprasil_2a"):
+def get_electron_energy_loss(material="sio2_suprasil_2a"):
     """
     Calculate the energy loss per unit mass thickness (dE/dX) of electrons
     as a function of kinetic energy in a given material.
