@@ -48,13 +48,13 @@ def animate(
         typer.Option(
             help="Time step for evaluating field of regard",
         ),
-    ] = "1 hour",
+    ] = 1 * u.hour,
     duration: Annotated[
         u.Quantity,
         typer.Option(
             help="Duration of animation",
         ),
-    ] = "5 second",
+    ] = 5 * u.s,
     still: Annotated[
         typer.FileBinaryWrite | None,
         typer.Option(help="Optional output file for still frame", metavar="STILL.pdf"),
@@ -75,7 +75,7 @@ def animate(
         typer.Option(
             help="Radius of optional zoomed inset",
         ),
-    ] = "10 deg",
+    ] = 10 * u.deg,
 ):
     """Generate an animation for a GW sky map."""
     with status("loading schedule"):

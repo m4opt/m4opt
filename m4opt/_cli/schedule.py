@@ -134,31 +134,31 @@ def schedule(
         typer.Option(
             help="Delay from time of event until the start of observations",
         ),
-    ] = "0 day",
+    ] = 0 * u.day,
     deadline: Annotated[
         u.Quantity,
         typer.Option(
             help="Maximum time from event until the end of observations",
         ),
-    ] = "1 day",
+    ] = 1 * u.day,
     time_step: Annotated[
         u.Quantity,
         typer.Option(
             help="Time step for evaluating field of regard",
         ),
-    ] = "1 min",
+    ] = 1 * u.min,
     exptime_min: Annotated[
         u.Quantity,
         typer.Option(
             help="Minimum exposure time for each observation",
         ),
-    ] = "900 s",
+    ] = 900 * u.s,
     exptime_max: Annotated[
         u.Quantity,
         typer.Option(
             help="Maximum exposure time for each observation",
         ),
-    ] = "inf s",
+    ] = np.inf * u.s,
     absmag_mean: Annotated[
         float | None,
         typer.Option(
@@ -181,7 +181,7 @@ def schedule(
     cadence: Annotated[
         u.Quantity,
         typer.Option(help="Minimum time separation between visits"),
-    ] = "30 min",
+    ] = 30 * u.min,
     nside: Annotated[int, typer.Option(help="HEALPix resolution")] = 512,
     timelimit: Annotated[
         u.Quantity,
@@ -189,14 +189,14 @@ def schedule(
             help="Time limit for MILP solver",
             rich_help_panel="Solver Options",
         ),
-    ] = "1e75 s",
+    ] = 1e75 * u.s,
     memory: Annotated[
         u.Quantity,
         typer.Option(
             help="Maximum solver memory usage before terminating",
             rich_help_panel="Solver Options",
         ),
-    ] = "inf GiB",
+    ] = np.inf * u.GiB,
     jobs: Annotated[
         int,
         typer.Option(
