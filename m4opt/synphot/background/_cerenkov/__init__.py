@@ -14,28 +14,31 @@ from ._electron_loss import get_electron_energy_loss
 from ._refraction_index import get_refraction_index
 
 
-@dataclass
-class RadiationBelt:
-    energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV)
-    nbins: int = 20
-    particle: Literal["e", "p"] = "e"
-    solar: Literal["max", "min"] = "max"
-
-    def flux_table(self, observer_location, obstime) -> Table:
-        emin, emax = self.energy
-        energy_bins = np.geomspace(emin, emax, num=self.nbins)
-        flux_integral = [
-            flux(
-                observer_location,
-                obstime,
-                e,
-                kind="integral",
-                solar=self.solar,
-                particle=self.particle,
-            )
-            for e in energy_bins
-        ]
-        return Table([energy_bins, u.Quantity(flux_integral)], names=["energy", "flux"])
+def radiation_belt_flux_table(
+    observer_location,
+    obstime,
+    energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV),
+    nbins: int = 20,
+    particle: Literal["e", "p"] = "e",
+    solar: Literal["max", "min"] = "max",
+) -> Table:
+    """
+    Returns a table of integral flux values from Earth's radiation belts.
+    """
+    emin, emax = energy
+    energy_bins = np.geomspace(emin, emax, num=nbins)
+    flux_integral = [
+        flux(
+            observer_location,
+            obstime,
+            e,
+            kind="integral",
+            solar=solar,
+            particle=particle,
+        )
+        for e in energy_bins
+    ]
+    return Table([energy_bins, u.Quantity(flux_integral)], names=["energy", "flux"])
 
 
 @dataclass
@@ -44,14 +47,25 @@ class CerenkovEmission:
     particle: Literal["e", "p"] = "e"
     solar: Literal["max", "min"] = "max"
     energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV)
+    nbins: int = 20
 
     def emission(self, observer_location, obstime) -> tuple[u.Quantity, u.Quantity]:
         """
         Calculate the Cerenkov radiation intensity for the given conditions.
         """
+
+        # --- Retrieve Radiation belt electron flux data (AE8 model)
+        flux_data = radiation_belt_flux_table(
+            observer_location,
+            obstime,
+            energy=self.energy,
+            nbins=self.nbins,
+            particle=self.particle,
+            solar=self.solar,
+        )
+
         # --- Material optical parameters: index of refraction and density
         material_properties = {
-            "silica": (1.5, 2.2 * u.g / u.cm**3),
             "sio2": (1.5, 2.2 * u.g / u.cm**3),
             "SiO2_suprasil_2a": (1.5, 2.2 * u.g / u.cm**3),
             "sapphire": (1.75, 4.0 * u.g / u.cm**3),  # at 1 mu, n(0.25 mu)=1.85
@@ -60,10 +74,6 @@ class CerenkovEmission:
             raise ValueError(f"Unknown material option: '{self.material}'")
 
         n_val, rho = material_properties[self.material]
-
-        # Retrieve electron flux data (AE8 model)
-        rb = RadiationBelt(energy=self.energy, particle=self.particle, solar=self.solar)
-        flux_data = rb.flux_table(observer_location, obstime)
 
         # Energy grid for interpolation (MeV)
         # The read off figure  6 of Kruk  et al. (2016), https://iopscience.iop.org/article/10.1088/1538-3873/128/961/035005.
@@ -159,7 +169,7 @@ class CerenkovBackground:
         Particle type ('e' for electrons, 'p' for protons), by default 'e'.
     solar : {'max', 'min'}, optional
         Solar activity condition, by default 'max'.
-    material : str, optional
+    material : str, optional : { "sio2", "SiO2_suprasil_2a"}
         Material type for optics, by default 'SiO2_suprasil_2a'.
 
     References
@@ -179,11 +189,36 @@ class CerenkovBackground:
     Examples
     --------
 
+
+    The integral flux of electrons in the Earth's radiation belts
+    at a given observer location and time, using the AE8 model.
+
+    .. plot::
+        :caption: AE8 radiation belt electron integral flux .
+
+        from astropy.coordinates import EarthLocation
+        from astropy.time import Time
+        from astropy import units as u
+        import matplotlib.pyplot as plt
+        from m4opt.synphot.background._cerenkov import radiation_belt_flux_table
+
+        observer_location = EarthLocation.from_geodetic(lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km)
+        obstime = Time("2025-05-18T02:48:00Z")
+        tbl = radiation_belt_flux_table(observer_location, obstime)
+        plt.figure(figsize=(7,5))
+        plt.plot(tbl["energy"], tbl["flux"])
+        plt.xlabel("Energy [MeV]")
+        plt.ylabel("Integral flux [cm$^{-2}$ s$^{-1}$]")
+        plt.title("AE8 Radiation Belt Electron Flux")
+        plt.tight_layout()
+        plt.show()
+
     The energy loss per unit mass thickness (dE/dX) of electrons
     in selected materials as a function of kinetic energy.
 
     .. plot::
-        :caption: Electron energy loss per unit mass thickness (dE/dX) as a function of kinetic energy, for several materials of astrophysical and detector interest.
+        :caption: Electron energy loss per unit mass thickness (dE/dX) versus kinetic energy for several astrophysical
+        and detector materials (log-log scale).
 
         import matplotlib.pyplot as plt
         from m4opt.synphot.background._cerenkov import get_electron_energy_loss
@@ -215,8 +250,9 @@ class CerenkovBackground:
         plt.tight_layout()
         plt.show()
 
+
     .. plot::
-        :caption:  Inverse energy loss for silica (optional)
+        :caption:  Inverse energy loss for silica (log-log scale)
 
         import matplotlib.pyplot as plt
         from m4opt.synphot.background._cerenkov import get_electron_energy_loss
@@ -243,14 +279,14 @@ class CerenkovBackground:
     >>> from m4opt.synphot.background._cerenkov import CerenkovBackground
     >>> observer_location = EarthLocation.from_geodetic(lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km)
     >>> obstime = Time("2025-05-18T02:48:00Z")
-    >>> cerenkov_model = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a')
-    >>> spectrum = cerenkov_model.cerenkov_emission(observer_location, obstime)
+    >>> background = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a')
+    >>> spectrum = background.cerenkov_emission(observer_location, obstime)
     >>> wavelength = spectrum.waveset
     >>> spectrum(wavelength[0])
     <Quantity 5.62717185e-07 PHOTLAM>
 
     .. plot::
-        :caption: Cerenkov background spectrum for GEO at 2025-05-18T02:48:00Z
+        :caption: Cerenkov background spectrum for GEO at 2025-05-18T02:48:00Z (log-log scale)
 
         from astropy.coordinates import EarthLocation, ICRS
         from astropy_healpix import HEALPix
@@ -276,7 +312,7 @@ class CerenkovBackground:
             wavelength = spectrum.waveset
             intensity = spectrum(wavelength)
 
-        plt.plot(wavelength, intensity)
+        plt.loglog(wavelength, intensity)
         plt.xlabel(rf"Wavelength [{wavelength.unit}]")
         plt.ylabel(rf"Intensity [{intensity.unit} (erg / s cm$^{2}$ Hz)]")
         plt.title(r"Cerenkov Background Spectrum at GEO")
@@ -289,20 +325,15 @@ class CerenkovBackground:
     solar: Literal["max", "min"] = "max"
     material: str = "SiO2_suprasil_2a"
 
-    def radiation_belt(self, observer_location, obstime) -> Table:
-        """
-        Returns a table of integral flux values from Earth's radiation belts.
-        """
-        rb = RadiationBelt(particle=self.particle, solar=self.solar)
-        return rb.flux_table(observer_location, obstime)
-
-    def cerenkov_emission(
-        self, observer_location, obstime
-    ) -> tuple[u.Quantity, u.Quantity]:
+    def cerenkov_emission(self, observer_location, obstime):
         """
         Computes the wavelength-dependent Cerenkov emission intensity.
         """
         emission_model = CerenkovEmission(
-            material=self.material, particle=self.particle, solar=self.solar
+            material=self.material,
+            particle=self.particle,
+            solar=self.solar,
+            energy=self.energy,
+            nbins=self.nbins,
         )
         return emission_model.emission(observer_location, obstime)
