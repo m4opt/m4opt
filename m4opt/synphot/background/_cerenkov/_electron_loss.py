@@ -20,10 +20,9 @@ _MATERIALS = {
     "sapphire": {
         "elements": [(13, 27, 2), (8, 16, 3)]
     },  # Aluminum oxide (Al2O3): 2 Al + 3 O
-
-    "aluminum": {"elements": [(13, 27, 1)]},    # Al
-    "oxygen": {"elements": [(8, 16, 1)]},       # O
-    "silicon": {"elements": [(14, 28, 1)]},     # Si
+    "aluminum": {"elements": [(13, 27, 1)]},  # Al
+    "oxygen": {"elements": [(8, 16, 1)]},  # O
+    "silicon": {"elements": [(14, 28, 1)]},  # Si
 }
 
 
