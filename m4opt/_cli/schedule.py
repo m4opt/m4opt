@@ -631,8 +631,7 @@ def schedule(
         with status("writing results"):
             if write_progress is not None:
                 QTable(
-                    # FIXME: workaround for https://github.com/astropy/astropy/issues/17688
-                    rows=recorder.recorded if recorder.number_of_records > 0 else None,
+                    rows=recorder.recorded,
                     names=ProgressData._fields,
                     dtype=[int, bool, float, float, float, int, int, int, float, float],
                 ).write(write_progress, format="ascii.ecsv", overwrite=True)
