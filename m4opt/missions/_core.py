@@ -1,4 +1,4 @@
-from collections.abc import Collection
+from collections.abc import Collection, Hashable
 from dataclasses import dataclass
 
 from astropy.coordinates import SkyCoord
@@ -40,5 +40,8 @@ class Mission:
     slew: Slew
     """Slew time model."""
 
-    skygrid: SkyCoord
-    """Grid of reference pointings."""
+    skygrid: SkyCoord | dict[Hashable, SkyCoord]
+    """Grid of reference pointings.
+    May be either a single SkyCoord instance or a dictionary of named SkyCoord grids
+    (e.g., for different survey strategies such as "allsky" or "non-overlap").
+    """

@@ -14,6 +14,7 @@ from astropy.coordinates import ICRS, Distance, SkyCoord
 from astropy.table import QTable, vstack
 from astropy.time import Time
 from astropy_healpix import HEALPix
+from click import UsageError
 from docplex.mp.progress import ProgressData, ProgressDataRecorder
 from ligo.skymap import distance
 from ligo.skymap.bayestar import rasterize
@@ -129,6 +130,12 @@ def schedule(
     mission: Annotated[
         missions.Mission, typer.Option(show_default="uvex")
     ] = missions.uvex,
+    skygrid: Annotated[
+        str | None,
+        typer.Option(
+            help="Name of sky grid to use, if the mission supports multiple sky grids.",
+        ),
+    ] = None,
     delay: Annotated[
         u.Quantity,
         typer.Option(
@@ -275,7 +282,15 @@ def schedule(
         observer_locations = mission.observer_location(obstimes)
 
     with status("evaluating field of regard"):
-        target_coords = mission.skygrid
+        if not isinstance(mission.skygrid, dict):
+            target_coords = mission.skygrid
+        elif skygrid in mission.skygrid:
+            target_coords = mission.skygrid[skygrid]
+        else:
+            raise UsageError(
+                f"skygrid '{skygrid}' not found. Options: {', '.join(map(str, mission.skygrid.keys()))}"
+            )
+
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
         exptime_min_s = exptime_min.to_value(u.s)
@@ -670,6 +685,7 @@ def schedule(
                         "deadline": deadline,
                         "delay": delay,
                         "mission": mission.name,
+                        "skygrid": skygrid,
                         "nside": nside,
                         "time_step": time_step,
                         "skymap": skymap.name,
