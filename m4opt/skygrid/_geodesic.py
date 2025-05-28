@@ -135,7 +135,6 @@ def geodesic(
     b //= divisor
     c //= divisor
 
-    grid = {}
     grid = make_grid(t, b, c)
 
     points = verts
