@@ -57,7 +57,7 @@ docs = [
 ]
 
 [project.urls]
-homepage = "https://m4opt.readthedocs.io/"
+Homepage = "https://m4opt.readthedocs.io/"
 "Bug Tracker" = "https://github.com/m4opt/m4opt/issues"
 "Change Log" = "https://m4opt.readthedocs.io/en/latest/changes.html"
 "Documentation" = "https://m4opt.readthedocs.io/"
