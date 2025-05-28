@@ -140,8 +140,8 @@ def geodesic(
 
     points = verts
     for face in faces:
-        points[len(points) : len(points)] = grid_to_points(
-            grid, t, False, [verts[face[i]] for i in range(3)], face
+        points.extend(
+            grid_to_points(grid, t, False, [verts[face[i]] for i in range(3)], face)
         )
 
     assert len(points) == n
