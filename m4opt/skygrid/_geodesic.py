@@ -39,7 +39,40 @@ def solve_number_of_vertices(n, base, class_):
     else:
         raise ValueError("Unknown breakdown class")
 
-    return base_count * t + 2, t, b, c
+    return base_count * t + 2, b, c
+
+
+def for_subdivision(
+    b: int,
+    c: int,
+    base: Literal["icosahedron", "octahedron", "tetrahedron"] | str,
+):
+    # Adapted from
+    # https://github.com/antiprism/antiprism_python/blob/master/anti_lib_progs/geodesic.py
+    verts: list[Vec] = []
+    edges: dict[Tuple[int, int], int] = {}
+    faces: list[Tuple[int, int]] = []
+    get_poly(base[0], verts, edges, faces)
+
+    reps = gcd(b, c)
+    b //= reps
+    c //= reps
+    t = reps * triangulation_number(b, c)
+
+    grid = make_grid(t, b, c)
+
+    points = verts
+    for face in faces:
+        points.extend(
+            grid_to_points(grid, t, False, [verts[face[i]] for i in range(3)], face)
+        )
+
+    coords = SkyCoord(
+        *zip(*(point.v for point in points)),
+        representation_type=CartesianRepresentation,
+    )
+    coords.representation_type = UnitSphericalRepresentation
+    return coords
 
 
 def geodesic(
@@ -121,32 +154,7 @@ def geodesic(
 
     """
     n = int(np.ceil(1 / area.to_value(u.spat)))
-
-    # Adapted from
-    # https://github.com/antiprism/antiprism_python/blob/master/anti_lib_progs/geodesic.py
-    verts: list[Vec] = []
-    edges: dict[Tuple[int, int], int] = {}
-    faces: list[Tuple[int, int]] = []
-    get_poly(base[0], verts, edges, faces)
-
-    n, t, b, c = solve_number_of_vertices(n, base, class_)
-    divisor = gcd(b, c)
-    t //= divisor
-    b //= divisor
-    c //= divisor
-
-    grid = make_grid(t, b, c)
-
-    points = verts
-    for face in faces:
-        points.extend(
-            grid_to_points(grid, t, False, [verts[face[i]] for i in range(3)], face)
-        )
-
+    n, b, c = solve_number_of_vertices(n, base, class_)
+    points = for_subdivision(b, c, base=base)
     assert len(points) == n
-    coords = SkyCoord(
-        *zip(*(point.v for point in points)),
-        representation_type=CartesianRepresentation,
-    )
-    coords.representation_type = UnitSphericalRepresentation
-    return coords
+    return points
