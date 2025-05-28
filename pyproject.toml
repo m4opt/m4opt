@@ -62,7 +62,6 @@ Homepage = "https://m4opt.readthedocs.io/"
 "Change Log" = "https://m4opt.readthedocs.io/en/latest/changes.html"
 "Documentation" = "https://m4opt.readthedocs.io/"
 "GitHub" = "https://github.com/m4opt/m4opt"
-"Source Code" = "https://github.com/m4opt/m4opt"
 
 [project.scripts]
 m4opt = "m4opt._cli:app"
