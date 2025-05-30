@@ -18,7 +18,7 @@ def radiation_belt_flux_table(
     observer_location,
     obstime,
     energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV),
-    nbins: int = 20,
+    nbins: int = 1000,
     particle: Literal["e", "p"] = "e",
     solar: Literal["max", "min"] = "max",
 ) -> Table:
@@ -41,133 +41,118 @@ def radiation_belt_flux_table(
     return Table([energy_bins, u.Quantity(flux_integral)], names=["energy", "flux"])
 
 
-@dataclass
-class CerenkovEmission:
-    material: str = "SiO2_suprasil_2a"
-    particle: Literal["e", "p"] = "e"
-    solar: Literal["max", "min"] = "max"
-    energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV)
-    nbins: int = 20
+def cerenkov_emission(
+    observer_location,
+    obstime,
+    material: str = "SiO2_suprasil_2a",
+    particle: Literal["e", "p"] = "e",
+    solar: Literal["max", "min"] = "max",
+    energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV),
+    nbins: int = 1000,
+) -> tuple[u.Quantity, u.Quantity]:
+    """
+    Calculate the Cerenkov radiation intensity for the given conditions.
+    """
 
-    def emission(self, observer_location, obstime) -> tuple[u.Quantity, u.Quantity]:
-        """
-        Calculate the Cerenkov radiation intensity for the given conditions.
-        """
+    # --- Retrieve electron flux data from the radiation belt (e.g., AE8 model)
+    flux_data = radiation_belt_flux_table(
+        observer_location, obstime, energy, nbins, particle, solar
+    )
+    ee = flux_data["energy"]
+    Fe = flux_data["flux"]
 
-        # --- Retrieve electron flux data from the radiation belt (e.g., AE8 model)
-        flux_data = radiation_belt_flux_table(
-            observer_location,
-            obstime,
-            energy=self.energy,
-            nbins=self.nbins,
-            particle=self.particle,
-            solar=self.solar,
-        )
+    # --- Material optical parameters: index of refraction and density
+    # Dict: material name -> (refractive index at ~1 micron, density)
+    material_properties = {
+        "sio2": (1.5, 2.2 * u.g / u.cm**3),
+        "SiO2_suprasil_2a": (1.5, 2.2 * u.g / u.cm**3),
+        "sapphire": (1.75, 4.0 * u.g / u.cm**3),  # at 1 mu, n(0.25 mu)=1.85
+    }
+    if material not in material_properties:
+        raise ValueError(f"Unknown material option: '{material}'")
 
-        # --- Material optical parameters: index of refraction and density
-        # Dict: material name -> (refractive index at ~1 micron, density)
-        material_properties = {
-            "sio2": (1.5, 2.2 * u.g / u.cm**3),
-            "SiO2_suprasil_2a": (1.5, 2.2 * u.g / u.cm**3),
-            "sapphire": (1.75, 4.0 * u.g / u.cm**3),  # at 1 mu, n(0.25 mu)=1.85
-        }
-        if self.material not in material_properties:
-            raise ValueError(f"Unknown material option: '{self.material}'")
+    n_val, rho = material_properties[material]
 
-        n_val, rho = material_properties[self.material]
+    # Compute midpoint energies between grid bins
+    em = 0.5 * (ee[:-1] + ee[1:])
 
-        # Grid based based on figure  6 of Kruk  et al. (2016), https://iopscience.iop.org/article/10.1088/1538-3873/128/961/035005.
-        ee = np.logspace(np.log10(0.04), np.log10(8.0), 1000) * u.MeV
+    # Get particle mass (rest energy) in MeV
+    mass = m_e if particle == "e" else m_p
+    mass_mev = (mass * c**2).to("MeV")
 
-        # --- Interpolate the electron flux onto the energy grid
-        cs_flux = CubicSpline(
-            flux_data["energy"].value,
-            flux_data["flux"].value,
-            bc_type="natural",
-            extrapolate=True,
-        )
-        Fe = u.Quantity(cs_flux(ee.value), flux_data["flux"].unit)
+    # Calculate Lorentz gamma [1 + E/(m*c^2)] and beta [v/c] at midpoints
+    gamma = 1 + em / mass_mev
+    beta = np.sqrt(1 - 1.0 / gamma**2)
 
-        # Compute midpoint energies between grid bins
-        em = 0.5 * (ee[:-1] + ee[1:])
+    # Interpolate flux at midpoints
+    cs_fm = CubicSpline(ee.value, Fe.value, bc_type="natural", extrapolate=True)
+    Fm = u.Quantity(cs_fm(em.value), Fe.unit)
 
-        # Get particle mass (rest energy) in MeV
-        mass = m_e if self.particle == "e" else m_p
-        mass_mev = (mass * c**2).to("MeV")
+    # --- Cerenkov emission condition: n * beta > 1
+    ## fC: emission factor, zero if below threshold
+    fC_energy = np.maximum(0, 1 - 1.0 / n_val**2 / beta**2)
 
-        # Calculate Lorentz gamma [1 + E/(m*c^2)] and beta [v/c] at midpoints
-        gamma = 1 + em / mass_mev
-        beta = np.sqrt(1 - 1.0 / gamma**2)
+    # --- Retrieve electron stopping power data for the material
+    # Ek: energies (MeV), dEdX: stopping power (MeV/(g cm^-2))
+    Ek, dEdX = get_electron_energy_loss(material)
 
-        # Interpolate flux at midpoints
-        cs_fm = CubicSpline(ee.value, Fe.value, bc_type="natural", extrapolate=True)
-        Fm = u.Quantity(cs_fm(em.value), Fe.unit)
+    # Inverse energy loss function (1 / dEdX)
+    cs_dEdX = CubicSpline(
+        Ek.value, 1.0 / dEdX.value, bc_type="natural", extrapolate=True
+    )
+    gEE = u.Quantity(cs_dEdX(em.value), 1 / dEdX.unit)
 
-        # --- Cerenkov emission condition: n * beta > 1
-        ## fC: emission factor, zero if below threshold
-        fC_energy = np.maximum(0, 1 - 1.0 / n_val**2 / beta**2)
+    # Cerenkov emission integrand at midpoints: flux × path length × emission factor
+    intg = gEE * Fm * fC_energy
+    cs_intg = CubicSpline(em.value, intg.value, bc_type="natural", extrapolate=True)
 
-        # --- Retrieve electron stopping power data for the material
-        # Ek: energies (MeV), dEdX: stopping power (MeV/(g cm^-2))
-        Ek, dEdX = get_electron_energy_loss(self.material)
+    # Wavelength-dependent refractive index and emission
+    # Lam: wavelength grid (Amstrong), n: refractive index at Lam
+    Lam, n, _ = get_refraction_index(material)
 
-        # Inverse energy loss function (1 / dEdX)
-        cs_dEdX = CubicSpline(
-            Ek.value, 1.0 / dEdX.value, bc_type="natural", extrapolate=True
-        )
-        gEE = u.Quantity(cs_dEdX(em.value), 1 / dEdX.unit)
+    # Calculate emission factor for all (wavelength, energy) pairs
+    fC_wavelength_energy = np.maximum(
+        0, 1 - 1.0 / n[:, np.newaxis] ** 2 / beta[np.newaxis, :] ** 2
+    )
+    intg = gEE * Fm * fC_wavelength_energy
 
-        # Cerenkov emission integrand at midpoints: flux × path length × emission factor
-        intg = gEE * Fm * fC_energy
-        cs_intg = CubicSpline(em.value, intg.value, bc_type="natural", extrapolate=True)
+    # Evaluate normalization using integrand spline at 1 MeV
+    cs_val = cs_intg(1.0) * intg.unit
 
-        # Wavelength-dependent refractive index and emission
-        # Lam: wavelength grid (Amstrong), n: refractive index at Lam
-        Lam, n, _ = get_refraction_index(self.material)
+    # Fine-structure constant :  alpha = e^2 / (4 * np.pi * epsilon_0 * hbar * c)
+    # 2 * pi * alpha  factor from fine structure constant (alpha), rho: density, Lam_cm: wavelength in cm
+    Lam_cm = Lam.to(u.cm)
+    Lnorm = 2 * np.pi * alpha / rho / Lam_cm**2 * cs_val * u.photon
+    Lnorm = Lnorm.to(u.photon / (u.MeV * u.s * u.cm**2 * u.micron))
 
-        # Calculate emission factor for all (wavelength, energy) pairs
-        fC_wavelength_energy = np.maximum(
-            0, 1 - 1.0 / n[:, np.newaxis] ** 2 / beta[np.newaxis, :] ** 2
-        )
-        intg = gEE * Fm * fC_wavelength_energy
+    # --- Integrate Cherenkov emission over energy for each wavelength
+    # np.diff(ee): width of each energy bin (MeV)
+    int_val = np.sum(intg * np.diff(ee)[np.newaxis, :], axis=1) / cs_val
 
-        # Evaluate normalization using integrand spline at 1 MeV
-        cs_val = cs_intg(1.0) * intg.unit
+    # Total Cherenkov emissionper micron per area per time (photon / (s micron cm^2)).
+    L1mu = int_val * Lnorm
 
-        # Fine-structure constant :  alpha = e^2 / (4 * np.pi * epsilon_0 * hbar * c)
-        # 2 * pi * alpha  factor from fine structure constant (alpha), rho: density, Lam_cm: wavelength in cm
-        Lam_cm = Lam.to(u.cm)
-        Lnorm = 2 * np.pi * alpha / rho / Lam_cm**2 * cs_val * u.photon
-        Lnorm = Lnorm.to(u.photon / (u.MeV * u.s * u.cm**2 * u.micron))
+    # Cherenkov intensity per wavelength (divide by 2*pi*n^2, normalization)
+    IC1mu = L1mu / (2 * np.pi * n**2) / u.sr
 
-        # --- Integrate Cherenkov emission over energy for each wavelength
-        # np.diff(ee): width of each energy bin (MeV)
-        int_val = np.sum(intg * np.diff(ee)[np.newaxis, :], axis=1) / cs_val
+    # Convert intensity to arcseconds squared
+    intensity_angstrom = IC1mu.to(u.photon / u.cm**2 / u.s / u.sr / u.Angstrom)
 
-        # Total Cherenkov emissionper micron per area per time (photon / (s micron cm^2)).
-        L1mu = int_val * Lnorm
+    # 'ph/A' : [ phothon / s / cm^2 / Angstrom / arcsec^2]
+    intensity_arcsec2 = intensity_angstrom.to(
+        u.photon / u.cm**2 / u.s / BACKGROUND_SOLID_ANGLE / u.Angstrom
+    )
+    intensity_photlam = intensity_arcsec2 * BACKGROUND_SOLID_ANGLE
 
-        # Cherenkov intensity per wavelength (divide by 2*pi*n^2, normalization)
-        IC1mu = L1mu / (2 * np.pi * n**2) / u.sr
+    wavelength = Lam
 
-        # Convert intensity to arcseconds squared
-        intensity_angstrom = IC1mu.to(u.photon / u.cm**2 / u.s / u.sr / u.Angstrom)
-
-        # 'ph/A' : [ phothon / s / cm^2 / Angstrom / arcsec^2]
-        intensity_arcsec2 = intensity_angstrom.to(
-            u.photon / u.cm**2 / u.s / BACKGROUND_SOLID_ANGLE / u.Angstrom
-        )
-        intensity_photlam = intensity_arcsec2 * BACKGROUND_SOLID_ANGLE
-
-        wavelength = Lam
-
-        # 'cgs/Hz': [erg/s/cm^2/Hz]
-        # FIXME :  in case we need to use another unit
-        # freq = (c / (wavelength)).to(u.Hz)
-        # intensity_erg = (intensity_photlam) / u.photon * h.to(u.erg * u.s) * freq
-        return SourceSpectrum(
-            Empirical1D, points=wavelength, lookup_table=intensity_photlam
-        )
+    # 'cgs/Hz': [erg/s/cm^2/Hz]
+    # FIXME :  in case we need to use another unit
+    # freq = (c / (wavelength)).to(u.Hz)
+    # intensity_erg = (intensity_photlam) / u.photon * h.to(u.erg * u.s) * freq
+    return SourceSpectrum(
+        Empirical1D, points=wavelength, lookup_table=intensity_photlam
+    )
 
 
 @dataclass
@@ -223,7 +208,7 @@ class CerenkovBackground:
         obstime = Time("2025-05-18T02:48:00Z")
         tbl = radiation_belt_flux_table(observer_location, obstime)
         plt.figure(figsize=(7,5))
-        plt.loglog(tbl["energy"], tbl["flux"])
+        plt.plot(tbl["energy"], tbl["flux"])
         plt.xlabel("Energy [MeV]")
         plt.ylabel("Integral flux [cm$^{-2}$ s$^{-1}$]")
         plt.title("AE8 Radiation Belt Electron Flux")
@@ -272,18 +257,18 @@ class CerenkovBackground:
         :caption:  Inverse energy loss for silica.
 
         import matplotlib.pyplot as plt
-        from m4opt.synphot.background._cerenkov import get_electron_energy_loss
+        from m4opt.synphot.background._cerenkov import get_electron_energy_loss (log-log scale).
 
         Ek, dEdX_SiO2 = get_electron_energy_loss(material="sio2")
 
         plt.figure(figsize=(7, 5))
-        plt.plot(Ek.value, 1 / dEdX_SiO2.value, linewidth=2, color='tab:green')
+        plt.loglog(Ek.value, 1 / dEdX_SiO2.value, linewidth=2, color='tab:green')
         plt.xlabel("Electron kinetic energy [MeV]")
         plt.ylabel(r"Inverse energy loss $(dE/dX)^{-1}$ [(g cm$^{-2}$)/MeV]")
         plt.title("Inverse Energy Loss for Silica (SiO$_2$)")
         plt.grid(True, which='both', ls='--')
         plt.axis([1e-2, 1e2, 1e-2, 1])
-        plt.tick_params(labelsize=tick_fs)
+        plt.tick_params(labelsize=10)
         plt.tight_layout()
         plt.show()
 
@@ -300,7 +285,7 @@ class CerenkovBackground:
     >>> spectrum = background.cerenkov_emission(observer_location, obstime)
     >>> wavelength = spectrum.waveset
     >>> spectrum(wavelength[0])
-    <Quantity 5.52938405e-07 PHOTLAM>
+    <Quantity 5.5374254e-07 PHOTLAM>
 
     .. plot::
         :caption: Cerenkov background spectrum for GEO at 2025-05-18T02:48:00Z
@@ -342,17 +327,30 @@ class CerenkovBackground:
     solar: Literal["max", "min"] = "max"
     material: str = "SiO2_suprasil_2a"
     energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV)
-    nbins: int = 20
+    nbins: int = 1000
 
     def cerenkov_emission(self, observer_location, obstime):
         """
-        Computes the wavelength-dependent Cerenkov emission intensity.
+        Compute the Cerenkov emission spectrum for the given observer and time.
+
+        Parameters
+        ----------
+        observer_location : EarthLocation
+            Observer location, e.g., in geodetic coordinates.
+        obstime : Time
+            Observation time.
+
+        Returns
+        -------
+        SourceSpectrum
+            The computed Cerenkov background spectrum as a synphot SourceSpectrum.
         """
-        emission_model = CerenkovEmission(
+        return cerenkov_emission(
+            observer_location=observer_location,
+            obstime=obstime,
             material=self.material,
             particle=self.particle,
             solar=self.solar,
             energy=self.energy,
             nbins=self.nbins,
         )
-        return emission_model.emission(observer_location, obstime)
