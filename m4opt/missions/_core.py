@@ -1,4 +1,4 @@
-from collections.abc import Collection, Hashable
+from collections.abc import Hashable
 from dataclasses import dataclass
 
 from astropy.coordinates import SkyCoord
@@ -28,8 +28,18 @@ class Mission:
     m4opt.fov.footprint, m4opt.fov.footprint_healpix
     """
 
-    constraints: Collection[Constraint]
-    """Field of regard constraints."""
+    constraints: Constraint
+    """Field of regard constraint.
+
+    To add multiple constraints, combine them using boolean operations
+    (``lhs & rhs``, ``lhs | rhs``, and ``~lhs``).
+
+    See Also
+    --------
+    m4opt.constraints.LogicalAndConstraint,
+    m4opt.constraints.LogicalOrConstraint,
+    m4opt.constraints.LogicalNotConstraint
+    """
 
     detector: Detector
     """Detector model."""
