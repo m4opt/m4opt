@@ -239,16 +239,10 @@ def animate(
                 for body in ["earth", "sun", "moon"]
             ]
 
-            instantaneous_field_of_regard = np.logical_and.reduce(
-                [
-                    constraint(
-                        observer_locations[:, np.newaxis],
-                        hpx.healpix_to_skycoord(np.arange(hpx.npix)),
-                        time_steps[:, np.newaxis],
-                    )
-                    for constraint in mission.constraints
-                ],
-                axis=0,
+            instantaneous_field_of_regard = mission.constraints(
+                observer_locations[:, np.newaxis],
+                hpx.healpix_to_skycoord(np.arange(hpx.npix)),
+                time_steps[:, np.newaxis],
             )
             averaged_field_of_regard = np.logical_or.reduce(
                 instantaneous_field_of_regard, axis=0

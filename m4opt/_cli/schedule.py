@@ -300,16 +300,10 @@ def schedule(
             [
                 obstimes_s[intervals]
                 for intervals in clump_nonzero_inclusive(
-                    np.logical_and.reduce(
-                        [
-                            constraint(
-                                observer_locations,
-                                target_coords[:, np.newaxis],
-                                obstimes,
-                            )
-                            for constraint in mission.constraints
-                        ],
-                        axis=0,
+                    mission.constraints(
+                        observer_locations,
+                        target_coords[:, np.newaxis],
+                        obstimes,
                     )
                 )
             ],

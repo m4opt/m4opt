@@ -44,11 +44,11 @@ ultrasat = Mission(
     fov=RectangleSkyRegion(
         center=SkyCoord(0 * u.deg, 0 * u.deg), width=14.28 * u.deg, height=14.28 * u.deg
     ),
-    constraints=[
-        EarthLimbConstraint(48 * u.deg),
-        SunSeparationConstraint(70 * u.deg),
-        MoonSeparationConstraint(35 * u.deg),
-    ],
+    constraints=(
+        EarthLimbConstraint(48 * u.deg)
+        & SunSeparationConstraint(70 * u.deg)
+        & MoonSeparationConstraint(35 * u.deg)
+    ),
     detector=Detector(
         npix=4 * np.pi,
         plate_scale=(5.4 * u.arcsec) ** 2,
