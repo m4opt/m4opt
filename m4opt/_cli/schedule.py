@@ -365,6 +365,8 @@ def schedule(
             pixels_to_fields_map = invert_footprints(footprints, n_pixels)
 
     if adaptive_exptime:
+        if mission.detector is None:
+            raise NotImplementedError("This mission does not define a detector model")
         with status("evaluating exposure time map"):
             if (
                 absmag_stdev is not None

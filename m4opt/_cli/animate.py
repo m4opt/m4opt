@@ -201,6 +201,10 @@ def animate(
             observer_locations = mission.observer_location(time_steps)
 
         if absmag_mean is not None:
+            if mission.detector is None:
+                raise NotImplementedError(
+                    "This mission does not define a detector model"
+                )
             with status("adding exposure time map"):
                 distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
                 with observing(
