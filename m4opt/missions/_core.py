@@ -41,9 +41,6 @@ class Mission:
     m4opt.constraints.LogicalNotConstraint
     """
 
-    detector: Detector | None
-    """Detector model."""
-
     observer_location: ObserverLocation
     """Orbit of spacecraft."""
 
@@ -55,3 +52,6 @@ class Mission:
     May be either a single SkyCoord instance or a dictionary of named SkyCoord grids
     (e.g., for different survey strategies such as "allsky" or "non-overlap").
     """
+
+    detector: Detector | None = None
+    """Detector model."""
