@@ -41,7 +41,7 @@ class Mission:
     m4opt.constraints.LogicalNotConstraint
     """
 
-    detector: Detector
+    detector: Detector | None
     """Detector model."""
 
     observer_location: ObserverLocation
