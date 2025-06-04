@@ -15,6 +15,8 @@ from ...constraints import (
 )
 from ...dynamics import EigenAxisSlew
 from ...observer import EarthFixedObserverLocation
+from ...synphot import Detector, bandpass_from_svo
+from ...synphot.background import SkyBackground, ZodiacalBackground
 from .._core import Mission
 from . import data
 
@@ -96,6 +98,16 @@ ztf = Mission(
         )
         & DeclinationConstraint(-90 * u.deg, 87.5 * u.deg)
     ),
+    detector=Detector(
+        # Table 1 of https://ui.adsabs.harvard.edu/abs/2020PASP..132c8001D
+        area=np.pi * np.square(0.5 * 1244.6 * u.mm),
+        # Table 3 of https://ui.adsabs.harvard.edu/abs/2020PASP..132c8001D
+        plate_scale=(1.01 * u.arcsec) ** 2,
+        read_noise=8,
+        gain=1 / 6.2,
+        bandpasses={band: bandpass_from_svo(f"Palomar/ZTF.{band}") for band in "gri"},
+        background=SkyBackground.medium() + ZodiacalBackground(),
+    ),
     observer_location=EarthFixedObserverLocation.of_site("Palomar"),
     skygrid=_read_skygrid(),
     # From Section 4.2:
@@ -117,7 +129,59 @@ The FOV region precisely models the layout of ZTF's :math:`4 \times 4` CCD
 mosaic including chip gaps as described in Table 1 of
 :footcite:`2019PASP..131a8002B`.
 
+Note that dark current is omitted from the detector model because "Dark current
+is negligible in maximum exposure times contemplated (300 s)"
+:footcite:`2019PASP..131a8002B`. All other camera properties come from
+:footcite:`2020PASP..132c8001D`.
+
 References
 ----------
 .. footbibliography::
+
+Examples
+--------
+
+.. plot::
+    :caption: ZTF limiting magnitude for a field at zenith
+
+    import numpy as np
+    import synphot
+    from astropy import units as u
+    from astropy.coordinates import AltAz, SkyCoord
+    from astropy.time import Time
+    from matplotlib import pyplot as plt
+    from matplotlib.ticker import MultipleLocator
+
+    from m4opt.missions import ztf
+    from m4opt.synphot import observing
+
+    obstime = Time("2025-03-19T07:00:00")
+    observer_location = ztf.observer_location(obstime)
+    frame = AltAz(location=observer_location, obstime=obstime)
+    target_coord = SkyCoord(alt=90 * u.deg, az=0 * u.deg, frame=frame)
+
+    exptime = np.arange(30, 330, 30)
+
+    bands = 'gri'
+    limmags = []
+
+    with observing(observer_location, target_coord, obstime):
+        for band in bands:
+            limmags.append(ztf.detector.get_limmag(
+                5,
+                exptime * u.s,
+                synphot.SourceSpectrum(synphot.ConstFlux1D, amplitude=0 * u.ABmag),
+                band,
+            ).value)
+
+    ax = plt.axes()
+    for band, limmag in zip(bands, limmags):
+        ax.plot(exptime, limmag, 'o-', label=band)
+    ax.legend()
+    ax.set_xlabel('Exposure time (s)')
+    ax.set_ylabel('Limiting magnitude (AB)')
+    ax.xaxis.set_major_locator(MultipleLocator(30))
+    ax.invert_yaxis()
+    ax.grid()
+    plt.show()
 """
