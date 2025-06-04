@@ -25,6 +25,7 @@ from .. import __version__, missions
 from ..dynamics import nominal_roll
 from ..fov import footprint_healpix
 from ..milp import Model
+from ..observer import EarthFixedObserverLocation
 from ..synphot import TabularScaleFactor, observing
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
@@ -325,11 +326,14 @@ def schedule(
         target_coords = target_coords[good]
 
     with status("calculating footprints"):
-        # Compute nominal roll angles for optimal solar power.
-        # The nominal roll angle varies as a function of sky position and time.
-        # We compute it for the start of the schedule because we assume that it
-        # does not change much over the duration.
-        rolls = nominal_roll(observer_locations[0], target_coords, event_time)
+        if isinstance(mission.observer_location, EarthFixedObserverLocation):
+            rolls = np.zeros(len(target_coords)) * u.deg
+        else:
+            # Compute nominal roll angles for optimal solar power.
+            # The nominal roll angle varies as a function of sky position and time.
+            # We compute it for the start of the schedule because we assume that it
+            # does not change much over the duration.
+            rolls = nominal_roll(observer_locations[0], target_coords, event_time)
         footprints = footprint_healpix(hpx, mission.fov, target_coords, rolls)
 
         # Select only the most probable 50 fields.
