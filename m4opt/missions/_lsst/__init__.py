@@ -18,12 +18,12 @@ from ._camera import make_fov
 lsst = Mission(
     name="lsst",
     fov=make_fov(),
-    constraints=[
-        AirmassConstraint(2.5),
-        AltitudeConstraint(20 * u.deg, 85 * u.deg),
-        AtNightConstraint.twilight_astronomical(),
-        MoonSeparationConstraint(30 * u.deg),
-    ],
+    constraints=(
+        AirmassConstraint(2.5)
+        & AltitudeConstraint(20 * u.deg, 85 * u.deg)
+        & AtNightConstraint.twilight_astronomical()
+        & MoonSeparationConstraint(30 * u.deg)
+    ),
     detector=Detector(
         npix=6,  # https://github.com/lsst/rubin_sim/blob/2bf176a6d98ff4c84c352912c5e0721e330fc217/rubin_sim/skybrightness/sky_model.py#L144C19-L144C26
         plate_scale=(0.2 * u.arcsec) ** 2,
