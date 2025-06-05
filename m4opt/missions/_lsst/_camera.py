@@ -72,7 +72,7 @@ def make_fov():
     fov_regions = []
 
     for det in detectors:
-        bbox_size = get_bbox_size(det["physical_type"])
+        bbox_size = LSST_DETECTOR_SIZES[det["physical_type"]]
         if bbox_size is None:
             continue
 
