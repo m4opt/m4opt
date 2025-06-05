@@ -40,7 +40,7 @@ def read_yaml():
         camera_data = yaml.safe_load(file)
 
     science_detectors = []
-    for det_name, det_info in camera_data.get("CCDs", {}).items():
+    for det_name, det_info in camera_data["CCDs"].items():
         if det_info.get("detectorType") != 0 or any(
             tag in det_name for tag in ["SG", "SW"]
         ):
