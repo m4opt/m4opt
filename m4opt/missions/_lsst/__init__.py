@@ -1,4 +1,3 @@
-import numpy as np
 from astropy import units as u
 
 from ... import skygrid
@@ -10,8 +9,6 @@ from ...constraints import (
 )
 from ...dynamics import EigenAxisSlew
 from ...observer import EarthFixedObserverLocation
-from ...synphot import Detector, bandpass_from_svo
-from ...synphot.background import GalacticBackground, ZodiacalBackground
 from .._core import Mission
 from ._camera import make_fov
 
@@ -23,17 +20,6 @@ lsst = Mission(
         & AltitudeConstraint(20 * u.deg, 85 * u.deg)
         & AtNightConstraint.twilight_astronomical()
         & MoonSeparationConstraint(30 * u.deg)
-    ),
-    detector=Detector(
-        npix=6,  # https://github.com/lsst/rubin_sim/blob/2bf176a6d98ff4c84c352912c5e0721e330fc217/rubin_sim/skybrightness/sky_model.py#L144C19-L144C26
-        plate_scale=(0.2 * u.arcsec) ** 2,
-        # Circular aperture with a diameter of 6.423 m
-        area=np.pi * np.square(0.5 * 6.423 * 100 * u.cm),
-        bandpasses={band: bandpass_from_svo(f"LSST/LSST.{band}") for band in "ugrizy"},
-        background=GalacticBackground() + ZodiacalBackground(),
-        read_noise=9,
-        dark_noise=0.2 * u.Hz,
-        gain=1,
     ),
     # The LSST (Vera C. Rubin Observatory) is a ground-based telescope in Chile.
     observer_location=EarthFixedObserverLocation.of_site("LSST"),
