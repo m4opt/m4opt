@@ -41,7 +41,7 @@ def read_yaml():
 
     science_detectors = []
     for det_name, det_info in camera_data["CCDs"].items():
-        if det_info.get("detectorType") != 0 or any(
+        if det_info["detectorType"] != 0 or any(
             tag in det_name for tag in ["SG", "SW"]
         ):
             continue  # skip wavefront and guide sensors
