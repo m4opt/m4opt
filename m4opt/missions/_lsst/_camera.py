@@ -44,7 +44,7 @@ def read_yaml():
         if det_info.get("detectorType") != 0 or any(
             tag in det_name for tag in ["SG", "SW"]
         ):
-            continue
+            continue  # skip wavefront and guide sensors
 
         science_detectors.append(
             {
