@@ -31,6 +31,8 @@ import sys
 import tomllib
 from importlib import import_module
 
+from m4opt.utils.pybtex.styles import short_alpha  # noqa: F401
+
 try:
     from sphinx_astropy.conf.v2 import *  # noqa
 except ImportError:
@@ -264,3 +266,4 @@ autodoc_typehints = "description"
 # -- Options for the sphinxcontrib.bibtex extension ---------------------------
 extensions += ["sphinxcontrib.bibtex"]
 bibtex_bibfiles = ["refs.bib"]
+bibtex_default_style = "short_alpha"
