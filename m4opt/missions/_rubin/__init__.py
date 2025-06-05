@@ -12,8 +12,8 @@ from ...observer import EarthFixedObserverLocation
 from .._core import Mission
 from ._camera import make_fov
 
-lsst = Mission(
-    name="lsst",
+rubin = Mission(
+    name="rubin",
     fov=make_fov(),
     constraints=(
         AirmassConstraint(2.5)
@@ -21,11 +21,9 @@ lsst = Mission(
         & AtNightConstraint.twilight_astronomical()
         & MoonSeparationConstraint(30 * u.deg)
     ),
-    # The LSST (Vera C. Rubin Observatory) is a ground-based telescope in Chile.
     observer_location=EarthFixedObserverLocation.of_site("LSST"),
     # Sky grid optimized for LSST’s large field of view.
     skygrid=skygrid.geodesic(3.5 * u.deg**2, class_="III", base="icosahedron"),
-    # Slew model tailored for LSST (Vera C. Rubin Observatory), a ground-based telescope in Chile.
     # FIXME: The Telescope Mount Assembly is faster than the dome for long slews.
     # Therefore, we use the dome setup instead of the slew model
     # https://github.com/lsst/rubin_scheduler/blob/main/rubin_scheduler/scheduler/model_observatory/kinem_model.py#L232-L233
@@ -35,15 +33,15 @@ lsst = Mission(
         settling_time=1 * u.s,
     ),
 )
-lsst.__doc__ = r"""LSST, the Legacy Survey of Space and Time.
+rubin.__doc__ = r"""Vera C. Rubin Observatory.
 
-`LSST <https://rubinobservatory.org/>`_ is a ground-based optical survey telescope 
-located in Chile as part of the Vera C. Rubin Observatory. It is designed 
-to conduct a 10-year survey of the southern sky with a large field of view 
-to detect transient events, including potential gravitational wave counterparts 
-(:footcite `2019ApJ...873..111I`).
+The Legacy Survey of Space and Time (LSST) is a 10-year synoptic time-domain
+survey of the Southern sky, conducted with the Simonyi Survey Telescope at the
+`Vera C. Rubin Observatory <https://rubinobservatory.org>`_. The LSST camera's
+focal plane consists of 189 detectors arranged in 21 rafts, as shown in Figure
+12 from :footcite:`2019ApJ...873..111I`.
 
-The LSST camera's focal plane consists of 189 detectors arranged in 21 rafts, 
-each containing a :math:`3 \times 3` CCD, placed in a :math:`5 \times 5` grid, 
-as shown in `Figure 12  from :footcite:`2019ApJ...873..111I`. 
+References
+----------
+.. footbibliography::
 """
