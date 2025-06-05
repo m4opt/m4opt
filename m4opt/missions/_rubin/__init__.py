@@ -33,7 +33,7 @@ rubin = Mission(
         settling_time=1 * u.s,
     ),
 )
-rubin.__doc__ = r"""Vera C. Rubin Observatory.
+rubin.__doc__ = r"""Vera C Rubin Observatory.
 
 The Legacy Survey of Space and Time (LSST) is a 10-year synoptic time-domain
 survey of the Southern sky, conducted with the Simonyi Survey Telescope at the
