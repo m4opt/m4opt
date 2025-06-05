@@ -49,9 +49,9 @@ def read_yaml():
         science_detectors.append(
             {
                 "detector_name": det_name,
-                "x_offset": det_info.get("offset", [0, 0])[0],
-                "y_offset": det_info.get("offset", [0, 0])[1],
-                "physical_type": det_info.get("physicalType", "Unknown"),
+                "x_offset": det_info["offset"][0],
+                "y_offset": det_info["offset"][1],
+                "physical_type": det_info["physicalType"],
             }
         )
 
