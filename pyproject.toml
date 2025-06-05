@@ -7,24 +7,28 @@ description = "Multi-Mission Multi-Messenger Observation Planning Toolkit"
 readme = "README.rst"
 requires-python = ">=3.11"
 dependencies = [
+    "aep8",
     "antiprism-python",
-    "astropy >= 7.0.0",
+    "astropy >= 7.1.0",
     "astropy-healpix",
     "astroquery",
+    "click >= 8.2.0",  # https://github.com/pallets/click/pull/2829
     "cplex",
     "docplex",
     "dust-extinction",
     "dustmaps",
-    "ligo.skymap >= 2.2.0",
+    "ligo.skymap >= 2.4.0",
+    "networkx",
     "numpy >= 2.1.0",
     "regions",
+    "pymetis",
     "satellitetle",
     "scipy",
     "sgp4",
     "spiceypy",
     "sympy",
     "synphot",
-    "typer",
+    "typer >= 0.16.0",
     "typing_extensions; python_version < \"3.12\"",
     "xdg-base-dirs",
 ]
@@ -55,12 +59,11 @@ docs = [
 ]
 
 [project.urls]
-homepage = "https://m4opt.readthedocs.io/"
+Homepage = "https://m4opt.readthedocs.io/"
 "Bug Tracker" = "https://github.com/m4opt/m4opt/issues"
 "Change Log" = "https://m4opt.readthedocs.io/en/latest/changes.html"
 "Documentation" = "https://m4opt.readthedocs.io/"
 "GitHub" = "https://github.com/m4opt/m4opt"
-"Source Code" = "https://github.com/m4opt/m4opt"
 
 [project.scripts]
 m4opt = "m4opt._cli:app"

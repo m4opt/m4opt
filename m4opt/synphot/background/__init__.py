@@ -11,6 +11,6 @@ from ._zodiacal import ZodiacalBackground
 
 __all__ = (
     "GalacticBackground",
-    "ZodiacalBackground",
     "SkyBackground",
+    "ZodiacalBackground",
 )

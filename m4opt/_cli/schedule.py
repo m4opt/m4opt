@@ -14,6 +14,7 @@ from astropy.coordinates import ICRS, Distance, SkyCoord
 from astropy.table import QTable, vstack
 from astropy.time import Time
 from astropy_healpix import HEALPix
+from click import UsageError
 from docplex.mp.progress import ProgressData, ProgressDataRecorder
 from ligo.skymap import distance
 from ligo.skymap.bayestar import rasterize
@@ -24,6 +25,7 @@ from .. import __version__, missions
 from ..dynamics import nominal_roll
 from ..fov import footprint_healpix
 from ..milp import Model
+from ..observer import EarthFixedObserverLocation
 from ..synphot import TabularScaleFactor, observing
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
@@ -129,36 +131,42 @@ def schedule(
     mission: Annotated[
         missions.Mission, typer.Option(show_default="uvex")
     ] = missions.uvex,
+    skygrid: Annotated[
+        str | None,
+        typer.Option(
+            help="Name of sky grid to use, if the mission supports multiple sky grids.",
+        ),
+    ] = None,
     delay: Annotated[
         u.Quantity,
         typer.Option(
             help="Delay from time of event until the start of observations",
         ),
-    ] = "0 day",
+    ] = 0 * u.day,
     deadline: Annotated[
         u.Quantity,
         typer.Option(
             help="Maximum time from event until the end of observations",
         ),
-    ] = "1 day",
+    ] = 1 * u.day,
     time_step: Annotated[
         u.Quantity,
         typer.Option(
             help="Time step for evaluating field of regard",
         ),
-    ] = "1 min",
+    ] = 1 * u.min,
     exptime_min: Annotated[
         u.Quantity,
         typer.Option(
             help="Minimum exposure time for each observation",
         ),
-    ] = "900 s",
+    ] = 900 * u.s,
     exptime_max: Annotated[
         u.Quantity,
         typer.Option(
             help="Maximum exposure time for each observation",
         ),
-    ] = "inf s",
+    ] = np.inf * u.s,
     absmag_mean: Annotated[
         float | None,
         typer.Option(
@@ -181,7 +189,7 @@ def schedule(
     cadence: Annotated[
         u.Quantity,
         typer.Option(help="Minimum time separation between visits"),
-    ] = "30 min",
+    ] = 30 * u.min,
     nside: Annotated[int, typer.Option(help="HEALPix resolution")] = 512,
     timelimit: Annotated[
         u.Quantity,
@@ -189,14 +197,14 @@ def schedule(
             help="Time limit for MILP solver",
             rich_help_panel="Solver Options",
         ),
-    ] = "1e75 s",
+    ] = 1e75 * u.s,
     memory: Annotated[
         u.Quantity,
         typer.Option(
             help="Maximum solver memory usage before terminating",
             rich_help_panel="Solver Options",
         ),
-    ] = "inf GiB",
+    ] = np.inf * u.GiB,
     jobs: Annotated[
         int,
         typer.Option(
@@ -275,7 +283,15 @@ def schedule(
         observer_locations = mission.observer_location(obstimes)
 
     with status("evaluating field of regard"):
-        target_coords = mission.skygrid
+        if not isinstance(mission.skygrid, dict):
+            target_coords = mission.skygrid
+        elif skygrid in mission.skygrid:
+            target_coords = mission.skygrid[skygrid]
+        else:
+            raise UsageError(
+                f"skygrid '{skygrid}' not found. Options: {', '.join(map(str, mission.skygrid.keys()))}"
+            )
+
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
         exptime_min_s = exptime_min.to_value(u.s)
@@ -285,16 +301,10 @@ def schedule(
             [
                 obstimes_s[intervals]
                 for intervals in clump_nonzero_inclusive(
-                    np.logical_and.reduce(
-                        [
-                            constraint(
-                                observer_locations,
-                                target_coords[:, np.newaxis],
-                                obstimes,
-                            )
-                            for constraint in mission.constraints
-                        ],
-                        axis=0,
+                    mission.constraints(
+                        observer_locations,
+                        target_coords[:, np.newaxis],
+                        obstimes,
                     )
                 )
             ],
@@ -316,11 +326,14 @@ def schedule(
         target_coords = target_coords[good]
 
     with status("calculating footprints"):
-        # Compute nominal roll angles for optimal solar power.
-        # The nominal roll angle varies as a function of sky position and time.
-        # We compute it for the start of the schedule because we assume that it
-        # does not change much over the duration.
-        rolls = nominal_roll(observer_locations[0], target_coords, event_time)
+        if isinstance(mission.observer_location, EarthFixedObserverLocation):
+            rolls = np.zeros(len(target_coords)) * u.deg
+        else:
+            # Compute nominal roll angles for optimal solar power.
+            # The nominal roll angle varies as a function of sky position and time.
+            # We compute it for the start of the schedule because we assume that it
+            # does not change much over the duration.
+            rolls = nominal_roll(observer_locations[0], target_coords, event_time)
         footprints = footprint_healpix(hpx, mission.fov, target_coords, rolls)
 
         # Select only the most probable 50 fields.
@@ -356,6 +369,8 @@ def schedule(
             pixels_to_fields_map = invert_footprints(footprints, n_pixels)
 
     if adaptive_exptime:
+        if mission.detector is None:
+            raise NotImplementedError("This mission does not define a detector model")
         with status("evaluating exposure time map"):
             if (
                 absmag_stdev is not None
@@ -616,8 +631,7 @@ def schedule(
         with status("writing results"):
             if write_progress is not None:
                 QTable(
-                    # FIXME: workaround for https://github.com/astropy/astropy/issues/17688
-                    rows=recorder.recorded if recorder.number_of_records > 0 else None,
+                    rows=recorder.recorded,
                     names=ProgressData._fields,
                     dtype=[int, bool, float, float, float, int, int, int, float, float],
                 ).write(write_progress, format="ascii.ecsv", overwrite=True)
@@ -671,6 +685,7 @@ def schedule(
                         "deadline": deadline,
                         "delay": delay,
                         "mission": mission.name,
+                        "skygrid": skygrid,
                         "nside": nside,
                         "time_step": time_step,
                         "skymap": skymap.name,

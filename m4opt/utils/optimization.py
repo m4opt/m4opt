@@ -1,10 +1,95 @@
 """Miscellaneous optimization utilities."""
 
+import networkx as nx
 import numpy as np
+import pymetis
+from scipy.sparse import csr_array
 
 from ..milp import Model
 
-__all__ = ("solve_tsp",)
+__all__ = ("partition_graph", "solve_tsp")
+
+
+def partition_graph(
+    graph: np.ndarray | csr_array | nx.Graph, n: int, seed: int | None = None
+) -> np.ndarray:
+    """Partition a graph into contiguous subgraphs.
+
+    Partition a graph into subgraphs using
+    `METIS <https://github.com/KarypisLab/METIS>`_.
+    :footcite:`metis1,metis2,metis3`
+
+    Parameters
+    ----------
+    graph
+        A graph in the form of a :class:`networkx.Graph` object, an adjacency
+        matrix, or an edge weight matrix.
+    n
+        The desired number of partitions. The returned number of partitions may
+        be smaller.
+    seed
+        Optional random seed.
+
+    Returns
+    -------
+    :
+        Partition assignments for all nodes.
+
+    References
+    ----------
+    .. footbibliography::
+
+    Notes
+    -----
+    If the graph has edge weights, then the weights must be integer-valued.
+
+    Example
+    -------
+    .. plot::
+
+        from matplotlib import pyplot as plt
+        from m4opt.utils.optimization import partition_graph
+        import networkx as nx
+
+        graph = nx.triangular_lattice_graph(10, 20)
+        part = partition_graph(graph, 5, seed=42)
+        ax = plt.axes(aspect=1)
+        nx.draw(
+            graph,
+            ax=ax,
+            pos=nx.get_node_attributes(graph, "pos"),
+            node_size=50,
+            node_color=part,
+            cmap="prism",
+        )
+    """
+    if isinstance(graph, nx.Graph):
+        sparse = nx.to_scipy_sparse_array(graph)
+    else:
+        sparse = csr_array(graph)
+
+    # Options:
+    # - contig=True: find contiguous clusters (doesn't seem to do anything; see
+    #   https://github.com/inducer/pymetis/issues/60)
+    # - no2hop=True: don't permit 2-hop connections in a partition
+    #   (doesn't seem to do anything)
+    options = pymetis.Options(contig=True, no2hop=True)
+    if seed is not None:
+        options.seed = seed
+
+    _, result = pymetis.part_graph(
+        nparts=n,
+        adjacency=None,
+        adjncy=sparse.indices,
+        xadj=sparse.indptr,
+        eweights=sparse.data.astype(np.intp),
+        options=options,
+        # Note: I get much nicer-looking output when I set recursive=True.
+        # Without this option, the partitions have very ragged edges and there
+        # are some non-contiguous partitions too.
+        recursive=True,
+    )
+    return np.asarray(result)
 
 
 def solve_tsp(distances: np.ndarray) -> tuple[np.ndarray, float]:

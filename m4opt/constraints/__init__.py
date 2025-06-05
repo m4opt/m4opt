@@ -12,6 +12,7 @@ from ._positional import (
     HourAngleConstraint,
     RightAscensionConstraint,
 )
+from ._radiation import RadiationBeltConstraint
 
 __all__ = (
     "AirmassConstraint",
@@ -27,6 +28,7 @@ __all__ = (
     "LogicalNotConstraint",
     "LogicalOrConstraint",
     "MoonSeparationConstraint",
+    "RadiationBeltConstraint",
     "RightAscensionConstraint",
     "SunSeparationConstraint",
 )

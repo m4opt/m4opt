@@ -1,4 +1,4 @@
-from collections.abc import Collection
+from collections.abc import Hashable
 from dataclasses import dataclass
 
 from astropy.coordinates import SkyCoord
@@ -28,11 +28,18 @@ class Mission:
     m4opt.fov.footprint, m4opt.fov.footprint_healpix
     """
 
-    constraints: Collection[Constraint]
-    """Field of regard constraints."""
+    constraints: Constraint
+    """Field of regard constraint.
 
-    detector: Detector
-    """Detector model."""
+    To add multiple constraints, combine them using boolean operations
+    (``lhs & rhs``, ``lhs | rhs``, and ``~lhs``).
+
+    See Also
+    --------
+    m4opt.constraints.LogicalAndConstraint,
+    m4opt.constraints.LogicalOrConstraint,
+    m4opt.constraints.LogicalNotConstraint
+    """
 
     observer_location: ObserverLocation
     """Orbit of spacecraft."""
@@ -40,5 +47,11 @@ class Mission:
     slew: Slew
     """Slew time model."""
 
-    skygrid: SkyCoord
-    """Grid of reference pointings."""
+    skygrid: SkyCoord | dict[Hashable, SkyCoord]
+    """Grid of reference pointings.
+    May be either a single SkyCoord instance or a dictionary of named SkyCoord grids
+    (e.g., for different survey strategies such as "allsky" or "non-overlap").
+    """
+
+    detector: Detector | None = None
+    """Detector model."""

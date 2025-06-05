@@ -48,13 +48,13 @@ def animate(
         typer.Option(
             help="Time step for evaluating field of regard",
         ),
-    ] = "1 hour",
+    ] = 1 * u.hour,
     duration: Annotated[
         u.Quantity,
         typer.Option(
             help="Duration of animation",
         ),
-    ] = "5 second",
+    ] = 5 * u.s,
     still: Annotated[
         typer.FileBinaryWrite | None,
         typer.Option(help="Optional output file for still frame", metavar="STILL.pdf"),
@@ -75,7 +75,7 @@ def animate(
         typer.Option(
             help="Radius of optional zoomed inset",
         ),
-    ] = "10 deg",
+    ] = 10 * u.deg,
 ):
     """Generate an animation for a GW sky map."""
     with status("loading schedule"):
@@ -201,6 +201,10 @@ def animate(
             observer_locations = mission.observer_location(time_steps)
 
         if absmag_mean is not None:
+            if mission.detector is None:
+                raise NotImplementedError(
+                    "This mission does not define a detector model"
+                )
             with status("adding exposure time map"):
                 distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
                 with observing(
@@ -239,16 +243,10 @@ def animate(
                 for body in ["earth", "sun", "moon"]
             ]
 
-            instantaneous_field_of_regard = np.logical_and.reduce(
-                [
-                    constraint(
-                        observer_locations[:, np.newaxis],
-                        hpx.healpix_to_skycoord(np.arange(hpx.npix)),
-                        time_steps[:, np.newaxis],
-                    )
-                    for constraint in mission.constraints
-                ],
-                axis=0,
+            instantaneous_field_of_regard = mission.constraints(
+                observer_locations[:, np.newaxis],
+                hpx.healpix_to_skycoord(np.arange(hpx.npix)),
+                time_steps[:, np.newaxis],
             )
             averaged_field_of_regard = np.logical_or.reduce(
                 instantaneous_field_of_regard, axis=0
