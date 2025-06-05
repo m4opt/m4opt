@@ -36,7 +36,7 @@ LSST_DETECTOR_SIZES = {
 def read_yaml():
     """Parse LSST detector data from YAML, returning only science detectors."""
     file_path = resources.files(data) / "lsstCamSim.yaml"
-    with open(file_path, "r") as file:
+    with file_path.open() as file:
         camera_data = yaml.safe_load(file)
 
     science_detectors = []
