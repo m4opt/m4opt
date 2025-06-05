@@ -61,11 +61,6 @@ def read_yaml():
     )
 
 
-def get_bbox_size(physical_type):
-    """Retrieve bounding box dimensions (in pixels) for detector physical type."""
-    return LSST_DETECTOR_SIZES.get(physical_type)
-
-
 def make_fov():
     """Generate LSST FOV as rectangular sky regions from detector positions."""
     detectors = read_yaml()
