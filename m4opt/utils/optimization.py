@@ -7,7 +7,55 @@ from scipy.sparse import csr_array
 
 from ..milp import Model
 
-__all__ = ("partition_graph", "solve_tsp")
+__all__ = ("pack_boxes", "partition_graph", "solve_tsp")
+
+
+def pack_boxes(wh: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Pack non-overlapping hypercubes into the smallest possible hypercube.
+
+    Parameters
+    ----------
+    wh
+        A Numpy array of shape `(n, m)` containing the dimensions of `n`
+        hypercubes in `m` dimensions.
+
+    Returns
+    -------
+    :
+        The anchor points of the rectangles, and the total dimensions.
+
+    Examples
+    --------
+    .. plot::
+
+        import numpy as np
+        from matplotlib import pyplot as plt
+
+        from m4opt.utils.optimization import pack_boxes
+
+        rng = np.random.RandomState(seed=42)
+        for n in range(1, 5):
+            wh = rng.uniform(size=(n, 2))
+            xy, (total_width, total_height) = pack_boxes(wh)
+            fig, ax = plt.subplots(subplot_kw=dict(aspect=1))
+            ax.set_xlim(0, total_width)
+            ax.set_ylim(0, total_height)
+            for xy_, wh_ in zip(xy, wh):
+                ax.add_patch(plt.Rectangle(xy_, *wh_, edgecolor="black"))
+    """
+    n = len(wh)
+    if n == 0:
+        return np.zeros_like(wh), np.zeros(wh.shape[1])
+    with Model() as m:
+        xy = m.continuous_vars(wh.shape, lb=0.5 * wh)
+        if n > 1:
+            i, j = ij = np.triu_indices(n, 1)
+            avoid = m.binary_vars(np.shape(ij)[::-1])
+            m.add_constraints_(m.abs(xy[i] - xy[j]) >= 0.5 * (wh[i] + wh[j]) * avoid)
+            m.add_constraints_(m.sum_vars_all_different(row) >= 1 for row in avoid)
+        m.minimize(m.sum([m.max(*row).item() for row in (xy + 0.5 * wh).T]))
+        xy_result = m.solve().get_values(xy)
+    return xy_result - 0.5 * wh, np.max(xy_result + 0.5 * wh, axis=0)
 
 
 def partition_graph(
