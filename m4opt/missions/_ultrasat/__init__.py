@@ -20,7 +20,19 @@ from .._core import Mission
 from . import data
 
 
-def _read_skygrid():
+def _read_allsky_skygrid() -> SkyCoord:
+    # Load the All-Sky Survey (AllSS) grid.
+    table = Table.read(
+        resources.files(data) / "AllSS_grid_361.txt",
+        format="ascii.csv",
+        data_start=0,
+        names=["ra", "dec"],
+    )
+    return SkyCoord(table["ra"], table["dec"], unit=u.deg)
+
+
+def _read_nonoverlapping_skygrid() -> SkyCoord:
+    # Load the non-overlapping Low-Cadence Survey (LCS) grid.
     table = Table.read(
         resources.files(data) / "LCS_nonoverlapping_grid.csv", format="ascii.csv"
     )
@@ -32,11 +44,11 @@ ultrasat = Mission(
     fov=RectangleSkyRegion(
         center=SkyCoord(0 * u.deg, 0 * u.deg), width=14.28 * u.deg, height=14.28 * u.deg
     ),
-    constraints=[
-        EarthLimbConstraint(48 * u.deg),
-        SunSeparationConstraint(70 * u.deg),
-        MoonSeparationConstraint(35 * u.deg),
-    ],
+    constraints=(
+        EarthLimbConstraint(48 * u.deg)
+        & SunSeparationConstraint(70 * u.deg)
+        & MoonSeparationConstraint(35 * u.deg)
+    ),
     detector=Detector(
         npix=4 * np.pi,
         plate_scale=(5.4 * u.arcsec) ** 2,
@@ -65,7 +77,10 @@ ultrasat = Mission(
         "2 43226   0.0007  47.5006 0003498 198.5164  84.4417  1.00271931 24622",
     ),
     # Sky grid optimized for ULTRASAT's wide field of view.
-    skygrid=_read_skygrid(),
+    skygrid={
+        "allsky": _read_allsky_skygrid(),
+        "non-overlap": _read_nonoverlapping_skygrid(),
+    },
     # Slew model tailored for ULTRASAT's operational requirements.
     slew=EigenAxisSlew(
         max_angular_velocity=1 * u.deg / u.s,

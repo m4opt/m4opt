@@ -31,6 +31,8 @@ import sys
 import tomllib
 from importlib import import_module
 
+from m4opt.utils.pybtex.styles import short_alpha  # noqa: F401
+
 try:
     from sphinx_astropy.conf.v2 import *  # noqa
 except ImportError:
@@ -231,6 +233,7 @@ intersphinx_mapping.update(  # noqa: F405
         "dust-extinction": ("https://dust-extinction.readthedocs.io/en/latest/", None),
         "irbem": ("https://prbem.github.io/IRBEM/", None),
         "ligo.skymap": ("https://lscsoft.docs.ligo.org/ligo.skymap/", None),
+        "networkx": ("https://networkx.org/documentation/stable/", None),
         "pip": ("https://pip.pypa.io/en/stable/", None),
         "regions": ("https://astropy-regions.readthedocs.io/en/stable/", None),
         "sympy": ("https://docs.sympy.org/latest/", None),
@@ -263,3 +266,4 @@ autodoc_typehints = "description"
 # -- Options for the sphinxcontrib.bibtex extension ---------------------------
 extensions += ["sphinxcontrib.bibtex"]
 bibtex_bibfiles = ["refs.bib"]
+bibtex_default_style = "short_alpha"

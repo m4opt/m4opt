@@ -4,7 +4,23 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from ..optimization import solve_tsp
+from ..optimization import partition_graph, solve_tsp
+
+
+def test_partition_graph():
+    n = 5
+    kwargs = dict(n=n, seed=42)
+    graph = nx.triangular_lattice_graph(10, 20)
+
+    # Test that all three graph encodings return the same partition.
+    part1 = partition_graph(graph, **kwargs)
+    part2 = partition_graph(nx.to_scipy_sparse_array(graph), **kwargs)
+    part3 = partition_graph(nx.to_numpy_array(graph), **kwargs)
+    np.testing.assert_array_equal(part1, part2)
+    np.testing.assert_array_equal(part2, part3)
+
+    # Test that if seed argument is missing, we still get a valid result.
+    assert len(np.unique(partition_graph(graph, n))) <= n
 
 
 def solve_tsp_approx(distances):

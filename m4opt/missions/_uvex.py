@@ -21,11 +21,11 @@ uvex = Mission(
     fov=RectangleSkyRegion(
         center=SkyCoord(0 * u.deg, 0 * u.deg), width=3.5 * u.deg, height=3.5 * u.deg
     ),
-    constraints=[
-        EarthLimbConstraint(25 * u.deg),
-        SunSeparationConstraint(46 * u.deg),
-        MoonSeparationConstraint(25 * u.deg),
-    ],
+    constraints=(
+        EarthLimbConstraint(25 * u.deg)
+        & SunSeparationConstraint(46 * u.deg)
+        & MoonSeparationConstraint(25 * u.deg)
+    ),
     detector=Detector(
         npix=4 * np.pi,
         # "This is Nyquist sampled by the 1 arcsec pixels."

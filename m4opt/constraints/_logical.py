@@ -29,8 +29,8 @@ class LogicalAndConstraint(LogicalReductionConstraint):
     >>> from astropy import units as u
     >>> from m4opt.constraints import (
     ...     AtNightConstraint, LogicalAndConstraint, SunSeparationConstraint)
-    >>> constraint = LogicalAndConstraint(
-    ...     AtNightConstraint.twilight_astronomical(),
+    >>> constraint = (
+    ...     AtNightConstraint.twilight_astronomical() &
     ...     SunSeparationConstraint(40 * u.deg))
     >>> time = Time("2017-08-17T00:41:04Z")
     >>> target = SkyCoord.from_name("NGC 4993")
@@ -56,8 +56,8 @@ class LogicalOrConstraint(LogicalReductionConstraint):
     >>> from astropy import units as u
     >>> from m4opt.constraints import (
     ...     AtNightConstraint, LogicalOrConstraint, SunSeparationConstraint)
-    >>> constraint = LogicalOrConstraint(
-    ...     AtNightConstraint.twilight_astronomical(),
+    >>> constraint = (
+    ...     AtNightConstraint.twilight_astronomical() |
     ...     SunSeparationConstraint(40 * u.deg))
     >>> time = Time("2017-08-17T00:41:04Z")
     >>> target = SkyCoord.from_name("NGC 4993")
@@ -82,8 +82,7 @@ class LogicalNotConstraint(Constraint):
     >>> from astropy.time import Time
     >>> from astropy import units as u
     >>> from m4opt.constraints import (AtNightConstraint, LogicalNotConstraint)
-    >>> constraint = LogicalNotConstraint(
-    ...     AtNightConstraint.twilight_astronomical())
+    >>> constraint = ~AtNightConstraint.twilight_astronomical()
     >>> time = Time("2017-08-17T00:41:04Z")
     >>> target = SkyCoord.from_name("NGC 4993")
     >>> location = EarthLocation.of_site("Rubin Observatory")
