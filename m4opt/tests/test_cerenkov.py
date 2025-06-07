@@ -5,7 +5,10 @@ import pytest
 @pytest.mark.parametrize("particle", ["e"])
 @pytest.mark.parametrize("solar", ["max", "min"])
 def test_cerenkov_emission_variants(material, particle, solar):
-    """Test for units and NAN"""
+    """
+    Test that output units match both the original MATLAB implementation (intensity_arcsec2)
+    and the expected format for synphot Spectrum (intensity_photlam).
+    """
     import numpy as np
     from astropy import units as u
     from astropy.coordinates import EarthLocation
@@ -21,13 +24,15 @@ def test_cerenkov_emission_variants(material, particle, solar):
     wavelength, intensity_arcsec2, intensity_photlam = _cerenkov.cerenkov_emission(
         observer_location, obstime, material=material, particle=particle, solar=solar
     )
-
+    # Check that the unit of intensity_arcsec2 matches the original output from the MATLAB:
+    # https://github.com/EranOfek/AstroPack/blob/main/matlab/astro/%2Bultrasat/Cerenkov.m#L217
     assert intensity_arcsec2.unit.is_equivalent(
         u.photon / u.cm**2 / u.s / u.arcsec**2 / u.Angstrom
     ), (
         f"Unit of intensity_arcsec2 is {intensity_arcsec2.unit}, expected photon/cm2/s/arcsec2/Angstrom"
     )
 
+    # Check that the photlam intensity is compatible with the one wait for  synphot Spectrum
     assert intensity_photlam.unit.is_equivalent(
         u.photon / u.cm**2 / u.s / u.Angstrom
     ), (
