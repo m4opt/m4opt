@@ -7,8 +7,8 @@ from astropy import units as u
 from astropy.constants import alpha, c, m_e, m_p
 from astropy.table import Table
 from scipy.interpolate import CubicSpline
-from synphot import Empirical1D, SourceSpectrum
 
+# from synphot import Empirical1D, SourceSpectrum
 from .._core import BACKGROUND_SOLID_ANGLE
 from ._electron_loss import get_electron_energy_loss
 from ._refraction_index import get_refraction_index
@@ -150,9 +150,13 @@ def cerenkov_emission(
     # FIXME :  in case we need to use another unit
     # freq = (c / (wavelength)).to(u.Hz)
     # intensity_erg = (intensity_photlam) / u.photon * h.to(u.erg * u.s) * freq
-    return SourceSpectrum(
-        Empirical1D, points=wavelength, lookup_table=intensity_photlam
-    )
+
+    # FIXME: to be uncomment after the test unit test pass
+    # return SourceSpectrum(
+    #     Empirical1D, points=wavelength, lookup_table=intensity_photlam
+    # )
+
+    return wavelength, intensity_arcsec2, intensity_photlam
 
 
 @dataclass
