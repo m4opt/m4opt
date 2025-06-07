@@ -2,9 +2,8 @@ import pytest
 
 
 @pytest.mark.parametrize("material", ["sio2", "SiO2_suprasil_2a"])
-@pytest.mark.parametrize("particle", ["e"])
 @pytest.mark.parametrize("solar", ["max", "min"])
-def test_cerenkov_emission_variants(material, particle, solar):
+def test_cerenkov_emission_variants(material, solar):
     """
     Test that output units match both the original MATLAB implementation (intensity_arcsec2)
     and the expected format for synphot Spectrum (intensity_photlam).
@@ -22,7 +21,7 @@ def test_cerenkov_emission_variants(material, particle, solar):
     obstime = Time("2025-06-07T13:03:00Z")
 
     wavelength, intensity_arcsec2, intensity_photlam = _cerenkov.cerenkov_emission(
-        observer_location, obstime, material=material, particle=particle, solar=solar
+        observer_location, obstime, material=material, particle="e", solar=solar
     )
     # Check that the unit of intensity_arcsec2 matches the original output from the MATLAB:
     # https://github.com/EranOfek/AstroPack/blob/main/matlab/astro/%2Bultrasat/Cerenkov.m#L217
