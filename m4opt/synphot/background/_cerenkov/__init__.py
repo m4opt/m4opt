@@ -49,7 +49,7 @@ def cerenkov_emission(
     solar: Literal["max", "min"] = "max",
     energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV),
     nbins: int = 1000,
-) -> tuple[u.Quantity, u.Quantity]:
+) -> tuple[u.Quantity, u.Quantity, u.Quantity]:
     """
     Calculate the Cerenkov radiation intensity for the given conditions.
     """
