@@ -58,6 +58,7 @@ Examples
 
 from contextlib import contextmanager
 
+from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 from rich.text import Text
 
@@ -66,6 +67,14 @@ __all__ = ("progress", "status")
 _progress = None
 _depth = 0
 _max_depth = 2
+
+
+def _make_console():
+    """Suppress all progress output when running in Jupyter Lab."""
+    console = Console()
+    if console.is_jupyter:
+        console.quiet = True
+    return console
 
 
 @contextmanager
@@ -77,9 +86,14 @@ def progress():
     """
     global _progress
     if _progress is None:
-        with Progress(
-            IndentedSpinnerColumn(finished_text="[bar.finished]✓"), TimeElapsedColumn()
-        ) as new_progress:
+        with (
+            _make_console() as console,
+            Progress(
+                IndentedSpinnerColumn(finished_text="[bar.finished]✓"),
+                TimeElapsedColumn(),
+                console=console,
+            ) as new_progress,
+        ):
             _progress = new_progress
             try:
                 yield _progress
