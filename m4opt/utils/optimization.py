@@ -10,7 +10,7 @@ from ..milp import Model
 __all__ = ("pack_boxes", "partition_graph", "solve_tsp")
 
 
-def pack_boxes(wh: np.ndarray, verbose=True) -> tuple[np.ndarray, np.ndarray]:
+def pack_boxes(wh: np.ndarray, **kwargs) -> tuple[np.ndarray, np.ndarray]:
     """Pack non-overlapping hypercubes into the smallest possible hypercube.
 
     Parameters
@@ -18,8 +18,8 @@ def pack_boxes(wh: np.ndarray, verbose=True) -> tuple[np.ndarray, np.ndarray]:
     wh
         A Numpy array of shape `(n, m)` containing the dimensions of `n`
         hypercubes in `m` dimensions.
-    verbose
-        Display live solver progress.
+    kwargs
+        Additional arguments passed to :class:`m4opt.milp.Model`.
 
     Returns
     -------
@@ -48,7 +48,7 @@ def pack_boxes(wh: np.ndarray, verbose=True) -> tuple[np.ndarray, np.ndarray]:
     n = len(wh)
     if n == 0:
         return np.zeros_like(wh), np.zeros(wh.shape[1])
-    with Model(verbose=verbose) as m:
+    with Model(**kwargs) as m:
         xy = m.continuous_vars(wh.shape, lb=0.5 * wh)
         if n > 1:
             i, j = ij = np.triu_indices(n, 1)
@@ -142,7 +142,7 @@ def partition_graph(
     return np.asarray(result)
 
 
-def solve_tsp(distances: np.ndarray, verbose=True) -> tuple[np.ndarray, float]:
+def solve_tsp(distances: np.ndarray, **kwargs) -> tuple[np.ndarray, float]:
     """Solve the Traveling Salesman problem.
 
     Parameters
@@ -150,8 +150,8 @@ def solve_tsp(distances: np.ndarray, verbose=True) -> tuple[np.ndarray, float]:
     distances
         A square matrix of size (2, 2) or greater representing the distances
         between each pair of nodes.
-    verbose
-        Display live solver progress.
+    kwargs
+        Additional arguments passed to :class:`m4opt.milp.Model`.
 
     Returns
     -------
@@ -192,7 +192,7 @@ def solve_tsp(distances: np.ndarray, verbose=True) -> tuple[np.ndarray, float]:
     """
     n = len(distances)
     assert n >= 2
-    with Model(verbose=verbose) as m:
+    with Model(**kwargs) as m:
         x = m.binary_vars((n, n))
         y = m.integer_vars(n - 1, lb=1, ub=n - 1)
         m.add_constraints_(
