@@ -39,6 +39,7 @@ class Model(_Model):
         jobs: int = 0,
         memory: u.Quantity[u.physical.data_quantity] = np.inf * u.byte,
         lowercutoff: float | None = None,
+        verbose=True,
     ):
         """Initialize a model with default `CPLEX parameters`_ for M4OPT.
 
@@ -56,6 +57,8 @@ class Model(_Model):
         lowercutoff
             Optional lower cutoff. Terminate the solver if the best bound drops
             below this value.
+        verbose
+            Display live solver progress.
 
         Notes
         -----
@@ -79,7 +82,7 @@ class Model(_Model):
 
         self.abs: Callable[[npt.ArrayLike], npt.ArrayLike] = np.vectorize(self.abs)
 
-        self.context.solver.log_output = True
+        self.context.solver.log_output = verbose
         self.context.cplex_parameters.threads = jobs
 
         # Disable deterministic parallelism. We're OK with results being
