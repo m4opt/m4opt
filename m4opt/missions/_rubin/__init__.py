@@ -1,4 +1,10 @@
+from importlib import resources
+
+import yaml
 from astropy import units as u
+from astropy.coordinates import SkyCoord
+from astropy.table import Table
+from regions import RectangleSkyRegion, Regions
 
 from ... import skygrid
 from ...constraints import (
@@ -10,11 +16,32 @@ from ...constraints import (
 from ...dynamics import EigenAxisSlew
 from ...observer import EarthFixedObserverLocation
 from .._core import Mission
-from ._camera import make_fov
+from . import data
+
+
+def _make_fov():
+    """Generate LSST FOV as rectangular sky regions from detector positions."""
+    file_path = resources.files(data) / "lsstCamSim.yaml"
+    with file_path.open() as file:
+        yaml_data = yaml.safe_load(file)
+    cams = Table(list(yaml_data["CCDs"].values()))
+
+    PLATE_SCALE = 0.2 * u.arcsec
+    return Regions(
+        [
+            RectangleSkyRegion(
+                SkyCoord(*(row["offset"][:2] * PLATE_SCALE / row["pixelSize"])),
+                *(row["bbox"][1] * PLATE_SCALE),
+            )
+            for row in cams
+            if row["detectorType"] == 0  # Science only detectors
+        ]
+    )
+
 
 rubin = Mission(
     name="rubin",
-    fov=make_fov(),
+    fov=_make_fov(),
     constraints=(
         AirmassConstraint(2.5)
         & AltitudeConstraint(20 * u.deg, 85 * u.deg)
