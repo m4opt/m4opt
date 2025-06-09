@@ -2,6 +2,27 @@
 Changes
 *******
 
+2.0.0 (2025-06-09)
+==================
+
+- Allow each mission to have one or several different sky grids.
+
+- Add support for combining constraints using boolean operators
+  (``lhs | rhs``, ``lhs & rhs``, ``~op``).
+
+- The ``Mission.constraints`` property no longer accepts a list of constraints.
+  To combine multiple constraints, use boolean operators.
+
+- The ``Mission.detector`` property is now optional. Only adaptive exposure
+  time observing strategies require it to be defined.
+
+- Add Earth radiation belt constraint.
+
+- Add two new missions: Vera C. Rubin Observatory and Zwicky Transient
+  Facility.
+
+- Add a mixed integer programming Traveling Salesman solver.
+
 1.0.0 (2025-04-07)
 ==================
 
