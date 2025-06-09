@@ -80,8 +80,7 @@ def progress():
     global _progress
     if not _is_jupyter or _progress is None:
         with Progress(
-            IndentedSpinnerColumn(finished_text="[bar.finished]✓"),
-            TimeElapsedColumn(),
+            IndentedSpinnerColumn(finished_text="[bar.finished]✓"), TimeElapsedColumn()
         ) as new_progress:
             _progress = new_progress
             try:
