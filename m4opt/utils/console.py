@@ -78,7 +78,7 @@ def progress():
     instead of creating a new one.
     """
     global _progress
-    if not _is_jupyter or _progress is None:
+    if not _is_jupyter and _progress is None:
         with Progress(
             IndentedSpinnerColumn(finished_text="[bar.finished]✓"), TimeElapsedColumn()
         ) as new_progress:
