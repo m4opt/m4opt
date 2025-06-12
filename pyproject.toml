@@ -55,6 +55,8 @@ docs = [
     "sphinx-astropy[confv2]",
     "sphinxcontrib-bibtex",
     "sphinxcontrib-typer",
+    # FIXME: remove once https://github.com/astropy/sphinx-automodapi/pull/208 is fixed
+    "sphinx-automodapi @ git+https://github.com/astropy/sphinx-automodapi",
 ]
 
 [project.urls]
