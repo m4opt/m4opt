@@ -61,7 +61,10 @@ def pack_boxes(wh: np.ndarray, **kwargs) -> tuple[np.ndarray, np.ndarray]:
 
 
 def partition_graph(
-    graph: np.ndarray | csr_array | nx.Graph, n: int, seed: int | None = None
+    graph: np.ndarray | csr_array | nx.Graph,
+    n: int,
+    recursive: bool | None = None,
+    **kwargs,
 ) -> np.ndarray:
     """Partition a graph into contiguous subgraphs.
 
@@ -77,8 +80,10 @@ def partition_graph(
     n
         The desired number of partitions. The returned number of partitions may
         be smaller.
-    seed
-        Optional random seed.
+    recursive
+        Whether to use recursive or K-way partitioning.
+    kwargs
+        Additional arguments passed to :class:`pymetis.Options`.
 
     Returns
     -------
@@ -118,26 +123,14 @@ def partition_graph(
     else:
         sparse = csr_array(graph)
 
-    # Options:
-    # - contig=True: find contiguous clusters (doesn't seem to do anything; see
-    #   https://github.com/inducer/pymetis/issues/60)
-    # - no2hop=True: don't permit 2-hop connections in a partition
-    #   (doesn't seem to do anything)
-    options = pymetis.Options(contig=True, no2hop=True)
-    if seed is not None:
-        options.seed = seed
-
     _, result = pymetis.part_graph(
         nparts=n,
         adjacency=None,
         adjncy=sparse.indices,
         xadj=sparse.indptr,
         eweights=sparse.data.astype(np.intp),
-        options=options,
-        # Note: I get much nicer-looking output when I set recursive=True.
-        # Without this option, the partitions have very ragged edges and there
-        # are some non-contiguous partitions too.
-        recursive=True,
+        options=pymetis.Options(**kwargs),
+        recursive=recursive,
     )
     return np.asarray(result)
 
