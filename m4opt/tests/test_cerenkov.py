@@ -1,4 +1,10 @@
+import numpy as np
 import pytest
+from astropy import units as u
+from astropy.coordinates import EarthLocation
+from astropy.time import Time
+
+from m4opt.synphot.background import _cerenkov
 
 
 @pytest.mark.parametrize("material", ["sio2", "SiO2_suprasil_2a"])
@@ -8,12 +14,6 @@ def test_cerenkov_emission_variants(material, solar):
     Test that output units match both the original MATLAB implementation (intensity_arcsec2)
     and the expected format for synphot Spectrum (intensity_photlam).
     """
-    import numpy as np
-    from astropy import units as u
-    from astropy.coordinates import EarthLocation
-    from astropy.time import Time
-
-    from m4opt.synphot.background import _cerenkov
 
     observer_location = EarthLocation.from_geodetic(
         lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km
