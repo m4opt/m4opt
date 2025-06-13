@@ -1,5 +1,7 @@
 """Miscellaneous optimization utilities."""
 
+from operator import itemgetter
+
 import networkx as nx
 import numpy as np
 import pymetis
@@ -7,7 +9,7 @@ from scipy.sparse import csr_array
 
 from ..milp import Model
 
-__all__ = ("pack_boxes", "partition_graph", "solve_tsp")
+__all__ = ("pack_boxes", "partition_graph", "partition_graph_color", "solve_tsp")
 
 
 def pack_boxes(wh: np.ndarray, **kwargs) -> tuple[np.ndarray, np.ndarray]:
@@ -133,6 +135,80 @@ def partition_graph(
         recursive=recursive,
     )
     return np.asarray(result)
+
+
+def partition_graph_color(
+    graph: np.ndarray | nx.Graph, partition: np.ndarray, **kwargs
+) -> np.ndarray:
+    """Find a coloring for a partition of a graph.
+
+    Parameters
+    ----------
+    graph
+        A graph in the form of a :class:`networkx.Graph` object or an adjacency
+        matrix.
+    partition
+        Partition assignments of the nodes in the graphs as returned by
+        :meth:`partition_graph`.
+    **kwargs
+        Any additional arguments to pass to
+        :obj:`networkx.algorithms.coloring.greedy_color`.
+
+    Returns
+    -------
+    :
+        An integer-valued array of color assignments for each partition.
+        The color for node `i` in the original graph is `color[partition[i]]`.
+
+    Example
+    -------
+    .. plot::
+
+        from matplotlib import pyplot as plt
+        from m4opt.utils.optimization import partition_graph, partition_graph_color
+        import networkx as nx
+
+        graph = nx.triangular_lattice_graph(20, 40)
+        part = partition_graph(graph, 20, seed=42)
+        color = partition_graph_color(
+            graph, part, strategy="connected_sequential", interchange=True)
+        ax = plt.axes(aspect=1)
+        nx.draw(
+            graph,
+            ax=ax,
+            pos=nx.get_node_attributes(graph, "pos"),
+            node_size=50,
+            node_color=color[part],
+            cmap="cool",
+        )
+    """
+    if isinstance(graph, nx.Graph):
+        adjacency = nx.to_numpy_array(graph)
+    else:
+        adjacency = graph
+
+    n_partitions = partition.max() + 1
+    partition_adjacency = np.zeros((n_partitions, n_partitions), dtype=bool)
+    for i in range(n_partitions):
+        for j in range(n_partitions):
+            if i != j:
+                partition_adjacency[i, j] = np.logical_or.reduce(
+                    adjacency[np.ix_(partition == i, partition == j)].ravel()
+                )
+    partition_graph = nx.from_numpy_array(partition_adjacency)
+
+    return np.asarray(
+        list(
+            map(
+                itemgetter(1),
+                sorted(
+                    nx.algorithms.coloring.greedy_color(
+                        partition_graph, **kwargs
+                    ).items()
+                ),
+            )
+        )
+    )
 
 
 def solve_tsp(distances: np.ndarray, **kwargs) -> tuple[np.ndarray, float]:
