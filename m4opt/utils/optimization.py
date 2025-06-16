@@ -196,8 +196,8 @@ def partition_graph_color(
     for i in range(n_partitions):
         for j in range(n_partitions):
             if i != j:
-                partition_adjacency[i, j] = np.logical_or.reduce(
-                    adjacency[np.ix_(partition == i, partition == j)].ravel()
+                partition_adjacency[i, j] = np.any(
+                    adjacency[np.ix_(partition == i, partition == j)]
                 )
     partition_graph = nx.from_numpy_array(partition_adjacency)
 
