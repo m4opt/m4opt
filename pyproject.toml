@@ -47,7 +47,7 @@ classifiers = [
 test = [
     "astroplan",
     "networkx",
-    "pybtex",
+    "sphinxcontrib-bibtex",
     "pytest-astropy",
 ]
 docs = [
