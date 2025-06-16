@@ -47,18 +47,22 @@ def pack_boxes(wh: np.ndarray, **kwargs) -> tuple[np.ndarray, np.ndarray]:
             for xy_, wh_ in zip(xy, wh):
                 ax.add_patch(plt.Rectangle(xy_, *wh_, edgecolor="black"))
     """
-    n = len(wh)
-    if n == 0:
+    n, m = wh.shape
+    if n == 0 or m == 0:
         return np.zeros_like(wh), np.zeros(wh.shape[1])
-    with Model(**kwargs) as m:
-        xy = m.continuous_vars(wh.shape, lb=0.5 * wh)
+    with Model(**kwargs) as model:
+        xy = model.continuous_vars(wh.shape, lb=0.5 * wh)
         if n > 1:
-            i, j = ij = np.triu_indices(n, 1)
-            avoid = m.binary_vars(np.shape(ij)[::-1])
-            m.add_constraints_(m.abs(xy[i] - xy[j]) >= 0.5 * (wh[i] + wh[j]) * avoid)
-            m.add_constraints_(m.sum_vars_all_different(row) >= 1 for row in avoid)
-        m.minimize(m.sum([m.max(*row).item() for row in (xy + 0.5 * wh).T]))
-        xy_result = m.solve().get_values(xy)
+            i, j = np.triu_indices(n, 1)
+            avoid = model.binary_vars((len(i), m))
+            model.add_constraints_(
+                model.abs(xy[i] - xy[j]) >= 0.5 * (wh[i] + wh[j]) * avoid
+            )
+            model.add_constraints_(
+                model.sum_vars_all_different(col) >= 1 for col in avoid
+            )
+        model.minimize(model.sum([model.max(*row).item() for row in (xy + 0.5 * wh).T]))
+        xy_result = model.solve().get_values(xy)
     return xy_result - 0.5 * wh, np.max(xy_result + 0.5 * wh, axis=0)
 
 

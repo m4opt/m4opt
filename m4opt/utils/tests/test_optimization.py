@@ -4,7 +4,36 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from ..optimization import partition_graph, solve_tsp
+from ..optimization import pack_boxes, partition_graph, solve_tsp
+
+
+@settings(deadline=None)
+@given(n=st.integers(0, 4), m=st.integers(0, 3))
+def test_pack_boxes_random(n, m):
+    """Test packing random boxes in multiple dimensions."""
+    wh = np.random.uniform(size=(n, m))
+    eps = np.finfo(wh.dtype).eps
+    lower, _ = pack_boxes(wh)
+    upper = lower + wh
+    i, j = np.triu_indices(n, 1)
+    assert m == 0 or np.all(
+        np.any((upper[j] <= lower[i] + eps) | (upper[i] <= lower[j] + eps), axis=1)
+    )
+
+
+@settings(deadline=None)
+@given(n=st.integers(0, 2))
+def test_pack_boxes_perfect_square(n):
+    """Test packing a perfect square number of unit boxes in 2 dimensions."""
+    wh = np.ones((n**2, 2))
+    eps = np.finfo(wh.dtype).eps
+    lower, total_wh = pack_boxes(wh)
+    upper = lower + wh
+    i, j = np.triu_indices(n, 1)
+    assert np.all(
+        np.any((upper[j] <= lower[i] + eps) | (upper[i] <= lower[j] + eps), axis=1)
+    )
+    np.testing.assert_array_equal(total_wh, [n, n])
 
 
 def test_partition_graph():
