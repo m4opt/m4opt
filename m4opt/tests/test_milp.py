@@ -122,3 +122,14 @@ def test_cplex_broadcast_indicator(tp, rhs_shape):
     assert isinstance(constraint, VariableArray)
     m.add_indicator_constraints(constraint)
     m.add_indicator_constraints_(constraint)
+
+
+@pytest.mark.parametrize(
+    "suffix", [".lp", ".mps", ".sav", ".lp.gz", ".mps.gz", ".sav.gz"]
+)
+def test_to_stream(suffix, tmp_path):
+    m = Model()
+    x = m.binary_var()
+    m.maximize(x)
+    with (tmp_path / "model").with_suffix(suffix).open("wb") as f:
+        m.to_stream(f)

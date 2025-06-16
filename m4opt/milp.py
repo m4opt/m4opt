@@ -2,6 +2,11 @@
 
 import operator
 from collections.abc import Callable
+from gzip import GzipFile
+from io import BufferedWriter
+from pathlib import Path
+from shutil import copyfileobj
+from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
 import cplex
@@ -188,6 +193,43 @@ class Model(_Model):
 
     def max(self, *args):
         return np.asarray(super().max(*args)).view(VariableArray)
+
+    def to_stream(self, out_file: BufferedWriter):
+        """Write the model to a stream.
+
+        The filename should end in `.lp`, `.mps`, `.sav`, `.lp.gz`, `.mps.gz`,
+        or `.sav.gz`.
+        """
+        valid_formats = {"lp", "mps", "sav"}
+        out_filename = out_file.name
+        out_path = Path(out_filename)
+        suffixes = Path(out_path).suffixes
+
+        if (
+            len(suffixes) == 0
+            or (format := suffixes[0].lstrip(".").lower()) not in valid_formats
+        ):
+            valid_extensions = [f".{fmt}" for fmt in valid_formats]
+            valid_extensions = [
+                *valid_extensions,
+                *(f"{ext}.gz" for ext in valid_extensions),
+            ]
+            raise ValueError(
+                f'Invalid model filename "{out_filename}". The extension must be one of the following: {" ".join(valid_extensions)}'
+            )
+        export_method = getattr(self, f"export_as_{format}")
+
+        should_gzip = suffixes[-1].lower() == ".gz"
+
+        if should_gzip:
+            with NamedTemporaryFile(suffix=f".{format}") as temp_file:
+                export_method(temp_file.name)
+                with GzipFile(
+                    f"{out_path.name}{suffixes[0]}", "wb", fileobj=out_file
+                ) as zip_file:
+                    copyfileobj(temp_file, zip_file)
+        else:
+            export_method(out_filename)
 
 
 class SolveSolution(_SolveSolution):
