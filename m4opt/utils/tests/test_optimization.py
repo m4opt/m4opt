@@ -4,7 +4,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from ..optimization import pack_boxes, partition_graph, solve_tsp
+from ..optimization import pack_boxes, partition_graph, partition_graph_color, solve_tsp
 
 
 @settings(deadline=None)
@@ -40,16 +40,38 @@ def test_partition_graph():
     n = 5
     kwargs = dict(n=n, seed=42)
     graph = nx.triangular_lattice_graph(10, 20)
+    sparse_adjacency = nx.to_scipy_sparse_array(graph)
+    dense_adjacency = nx.to_numpy_array(graph)
 
     # Test that all three graph encodings return the same partition.
     part1 = partition_graph(graph, **kwargs)
-    part2 = partition_graph(nx.to_scipy_sparse_array(graph), **kwargs)
-    part3 = partition_graph(nx.to_numpy_array(graph), **kwargs)
+    part2 = partition_graph(sparse_adjacency, **kwargs)
+    part3 = partition_graph(dense_adjacency, **kwargs)
     np.testing.assert_array_equal(part1, part2)
     np.testing.assert_array_equal(part2, part3)
 
     # Test that if seed argument is missing, we still get a valid result.
     assert len(np.unique(partition_graph(graph, n))) <= n
+
+
+def test_partition_graph_color():
+    n = 5
+    kwargs = dict(n=n, seed=42)
+    graph = nx.convert_node_labels_to_integers(nx.triangular_lattice_graph(10, 20))
+    adjacency = nx.to_numpy_array(graph)
+
+    part = partition_graph(graph, **kwargs)
+
+    # Test that all three graph encodings return the same coloring.
+    colors1 = partition_graph_color(graph, part)
+    colors2 = partition_graph_color(adjacency, part)
+    np.testing.assert_array_equal(colors1, colors2)
+
+    for node1, node2 in graph.edges:
+        part1 = part[node1]
+        part2 = part[node2]
+        if part1 != part2:
+            assert colors1[part1] != colors2[part2]
 
 
 def solve_tsp_approx(distances):
