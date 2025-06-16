@@ -248,9 +248,7 @@ def animate(
                 hpx.healpix_to_skycoord(np.arange(hpx.npix)),
                 time_steps[:, np.newaxis],
             )
-            averaged_field_of_regard = np.logical_or.reduce(
-                instantaneous_field_of_regard, axis=0
-            )
+            averaged_field_of_regard = np.any(instantaneous_field_of_regard, axis=0)
             for ax in ax_maps:
                 ax.contourf_hpx(
                     averaged_field_of_regard,
