@@ -15,6 +15,8 @@ from pytest_astropy_header.display import PYTEST_HEADER_MODULES, TESTED_VERSIONS
 
 from .tests.plugins.problem_size_limits import pytest_runtest_call  # noqa: F401
 
+pytest_plugins = ["sphinx.testing.fixtures"]
+
 
 def pytest_configure(config):
     """Configure Pytest with Astropy.
