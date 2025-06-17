@@ -4,8 +4,6 @@ import pytest
 
 from . import sphinx_roots
 
-pytest_plugins = ["sphinx.testing.fixtures"]
-
 
 @pytest.fixture(scope="session")
 def rootdir():
