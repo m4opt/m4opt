@@ -183,5 +183,4 @@ Examples
     ax.xaxis.set_major_locator(MultipleLocator(30))
     ax.invert_yaxis()
     ax.grid()
-    plt.show()
 """
