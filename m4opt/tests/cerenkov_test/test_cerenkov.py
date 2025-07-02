@@ -2,7 +2,9 @@ import xml.etree.ElementTree as ET
 from importlib import resources
 from typing import Literal
 
+import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 from astropy import units as u
 from astropy.constants import alpha, c, m_e, m_p
 from astropy.table import Table
@@ -311,7 +313,7 @@ def cerenkov_emission_py(
     return wavelength, intensity_arcsec2, intensity_photlam
 
 
-def test_cerenkov_emission_accuracy():
+def test_cerenkov_numerical():
     r"""
     Validate consistency between Python and MATLAB Cerenkov emission calculations.
 
@@ -333,33 +335,6 @@ def test_cerenkov_emission_accuracy():
     The test requires the MATLAB Cerenkov output to be exported as an XML file
     (e.g. "../Cerenkov_output.xml") containing at least the fields 'Lam' and 'IntAA'.
 
-    .. plot:: Comparison of Cerenkov emission computed with Python and MATLAB.
-
-        import matplotlib.pyplot as plt
-        from m4opt.tests.test_cerenkov import cerenkov_emission_mat, cerenkov_emission_py
-
-        table = cerenkov_emission_mat("../Cerenkov_output.xml", fields=["Lam", "IntAA"])
-        Lam = table["Lam"]
-        IntAA = table["IntAA"]
-
-        wavelength, intensity_arcsec2, _ = cerenkov_emission_py(
-            material="SiO2_suprasil_2a", particle="e", nbins=len(Lam)
-        )
-
-        plt.plot(Lam, IntAA, label="MATLAB")
-        plt.plot(wavelength.value, intensity_arcsec2.value, '--', label="Python")
-        plt.xlabel(r"Wavelength [$\AA$]")
-        plt.ylabel(r"Intensity [arcsec$^{-2}$]")
-        plt.legend()
-        plt.show()
-
-        rel_diff = np.abs(IntAA - intensity_arcsec2.value) / (np.abs(IntAA) + 1e-30)
-        plt.semilogy(Lam, rel_diff)
-        plt.title("Relative difference (Python vs MATLAB)")
-        plt.ylabel("Relative difference")
-        plt.xlabel(r"Wavelength [\AA]")
-        plt.show()
-
     """
 
     # Matlab output
@@ -370,7 +345,7 @@ def test_cerenkov_emission_accuracy():
 
     # Python results
     wavelength, intensity_arcsec2, intensity_photlam = cerenkov_emission_py(
-        material="SiO2_suprasil_2a", particle="e", nbins=len(Lam)
+        material="SiO2_suprasil_2a", particle="e", nbins=1000
     )
 
     # Enforce the check for python output
@@ -399,6 +374,27 @@ def test_cerenkov_emission_accuracy():
     )
 
 
-if __name__ == "__main__":
-    test_cerenkov_emission_accuracy()
-    print("All checks passed!")
+@pytest.mark.mpl_image_compare(tolerance=1)
+def test_cerenkov_image():
+    """Validate consistency between Python and MATLAB Cerenkov emission plot."""
+
+    # Matlab output
+    xml_path = resources.files(data) / "Cerenkov_output.xml"
+    table = cerenkov_emission_mat(xml_path, fields=["Lam", "IntAA"])
+    Lam = table["Lam"]
+    IntAA = table["IntAA"]
+
+    # Python results
+    wavelength, intensity_arcsec2, _ = cerenkov_emission_py(
+        material="SiO2_suprasil_2a", particle="e", nbins=1000
+    )
+
+    fig, ax = plt.subplots()
+    ax.plot(Lam, IntAA, label="MATLAB", color="blue")
+    ax.plot(
+        wavelength.value, intensity_arcsec2.value, "--", label="Python", color="red"
+    )
+    ax.set_xlabel(r"Wavelength [$\AA$]")
+    ax.set_ylabel(r"Intensity [arcsec$^{-2}$]")
+    ax.legend()
+    return fig
