@@ -7,6 +7,7 @@ from astropy import units as u
 from astropy.constants import alpha, c, m_e, m_p
 from astropy.table import Table
 from scipy.interpolate import CubicSpline
+from synphot import Empirical1D, SourceSpectrum
 
 # from synphot import Empirical1D, SourceSpectrum
 from .._core import BACKGROUND_SOLID_ANGLE
@@ -151,12 +152,9 @@ def cerenkov_emission(
     # freq = (c / (wavelength)).to(u.Hz)
     # intensity_erg = (intensity_photlam) / u.photon * h.to(u.erg * u.s) * freq
 
-    # FIXME: to be uncomment after the test unit test pass
-    # return SourceSpectrum(
-    #     Empirical1D, points=wavelength, lookup_table=intensity_photlam
-    # )
-
-    return wavelength, intensity_arcsec2, intensity_photlam
+    return SourceSpectrum(
+        Empirical1D, points=wavelength, lookup_table=intensity_photlam
+    )
 
 
 @dataclass
@@ -259,10 +257,10 @@ class CerenkovBackground:
 
 
     .. plot::
-        :caption:  Inverse energy loss for silica.
+        :caption:  Inverse energy loss for silica (log-log scale).
 
         import matplotlib.pyplot as plt
-        from m4opt.synphot.background._cerenkov import get_electron_energy_loss (log-log scale).
+        from m4opt.synphot.background._cerenkov import get_electron_energy_loss
 
         Ek, dEdX_SiO2 = get_electron_energy_loss(material="sio2")
 
@@ -279,52 +277,51 @@ class CerenkovBackground:
 
 
     # Cenrenkov background spectrum for a given observer location and time.
-    # FIXME : To be uncomment
-    # >>> from astropy.coordinates import EarthLocation
-    # >>> from astropy.time import Time
-    # >>> from astropy import units as u
-    # >>> from m4opt.synphot.background._cerenkov import CerenkovBackground
-    # >>> observer_location = EarthLocation.from_geodetic(lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km)
-    # >>> obstime = Time("2025-05-18T02:48:00Z")
-    # >>> background = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a')
-    # >>> spectrum = background.cerenkov_emission(observer_location, obstime)
-    # >>> wavelength = spectrum.waveset
-    # >>> spectrum(wavelength[0])
-    # <Quantity 5.5374254e-07 PHOTLAM>
+    >>> from astropy.coordinates import EarthLocation
+    >>> from astropy.time import Time
+    >>> from astropy import units as u
+    >>> from m4opt.synphot.background._cerenkov import CerenkovBackground
+    >>> observer_location = EarthLocation.from_geodetic(lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km)
+    >>> obstime = Time("2025-05-18T02:48:00Z")
+    >>> background = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a')
+    >>> spectrum = background.cerenkov_emission(observer_location, obstime)
+    >>> wavelength = spectrum.waveset
+    >>> spectrum(wavelength[0])
+    <Quantity 5.5374254e-07 PHOTLAM>
 
-    # .. plot::
-    #     :caption: Cerenkov background spectrum for GEO at 2025-05-18T02:48:00Z
-    #     from astropy.coordinates import EarthLocation, ICRS
-    #     from astropy_healpix import HEALPix
-    #     from astropy.time import Time
-    #     from astropy import units as u
-    #     import numpy as np
-    #     import matplotlib.pyplot as plt
-    #     plt.rcParams["font.family"] = "Times New Roman"
+    .. plot::
+        :caption: Cerenkov background spectrum for GEO at 2025-05-18T02:48:00Z
+        from astropy.coordinates import EarthLocation, ICRS
+        from astropy_healpix import HEALPix
+        from astropy.time import Time
+        from astropy import units as u
+        import numpy as np
+        import matplotlib.pyplot as plt
+        plt.rcParams["font.family"] = "Times New Roman"
 
-    #     from m4opt.synphot.background._cerenkov import CerenkovBackground
-    #     from m4opt.synphot import observing
+        from m4opt.synphot.background._cerenkov import CerenkovBackground
+        from m4opt.synphot import observing
 
-    #     observer_location = EarthLocation.from_geodetic(
-    #         lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km
-    #     )
-    #     obstime = Time("2025-05-18T02:48:00Z")
-    #     hpx = HEALPix(nside=512, frame=ICRS())
-    #     coord = hpx.healpix_to_skycoord(np.arange(hpx.npix))
+        observer_location = EarthLocation.from_geodetic(
+            lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km
+        )
+        obstime = Time("2025-05-18T02:48:00Z")
+        hpx = HEALPix(nside=512, frame=ICRS())
+        coord = hpx.healpix_to_skycoord(np.arange(hpx.npix))
 
-    #     with observing(observer_location=observer_location, target_coord=coord, obstime=obstime):
-    #         cerenkov_model = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a')
-    #         spectrum = cerenkov_model.cerenkov_emission(observer_location, obstime)
-    #         wavelength = spectrum.waveset
-    #         intensity = spectrum(wavelength)
+        with observing(observer_location=observer_location, target_coord=coord, obstime=obstime):
+            cerenkov_model = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a')
+            spectrum = cerenkov_model.cerenkov_emission(observer_location, obstime)
+            wavelength = spectrum.waveset
+            intensity = spectrum(wavelength)
 
-    #     plt.plot(wavelength, intensity)
-    #     plt.xlabel(rf"Wavelength [{wavelength.unit}]")
-    #     plt.ylabel(rf"Intensity [{intensity.unit} (erg / s cm$^{2}$ Hz)]")
-    #     plt.title(r"Cerenkov Background Spectrum at GEO")
-    #     plt.tight_layout()
-    #     plt.grid()
-    #     plt.show()
+        plt.plot(wavelength, intensity)
+        plt.xlabel(rf"Wavelength [{wavelength.unit}]")
+        plt.ylabel(rf"Intensity [{intensity.unit} (erg / s cm$^{2}$ Hz)]")
+        plt.title(r"Cerenkov Background Spectrum at GEO")
+        plt.tight_layout()
+        plt.grid()
+        plt.show()
 
     """
 
