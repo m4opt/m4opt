@@ -17,12 +17,3 @@ ensuring consistency to within 4% relative difference across all wavelengths.
    ensuring full precision and consistency with standard values. In contrast, the MATLAB implementation
    from MAATv2 sometimes uses hardcoded or rounded values for certain physical constants (e.g.,
    the electron mass, the fine-structure constant, etc.).
-
-
-.. figure:: ../comparison_cerenkov_matlab_python.png
-   :align: center
-   :width: 80%
-   :alt: Comparison of Cerenkov emission
-
-   Comparison of Cerenkov emission computed with the MAATv2 MATLAB function (solid line) and the Python implementation (dashed line).
-   Maximum relative difference: ~3%
