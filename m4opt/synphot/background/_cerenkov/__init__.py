@@ -234,15 +234,15 @@ class CerenkovBackground:
             wavelength = spectrum.waveset
             intensity = spectrum(wavelength)
 
-        plt.figure(figsize=(7, 5))
-        plt.plot(wavelength, intensity)
-        plt.xlabel(rf"Wavelength [{wavelength.unit}]")
-        plt.ylabel(rf"Intensity [{intensity.unit} (erg / s cm$^{{2}}$ Hz)]")
-        plt.title(r"Cerenkov Background Spectrum at GEO")
-        plt.tight_layout()
-        plt.grid()
         plt.show()
-
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.plot(wavelength, intensity)
+        ax.set_xlabel(rf"Wavelength [{wavelength.unit}]")
+        ax.set_ylabel(rf"Intensity [{intensity.unit} (erg / s cm$^{{2}}$ Hz)]")
+        ax.set_title(r"Cerenkov Background Spectrum at GEO")
+        ax.grid()
+        fig.tight_layout()
+        plt.show()
 
     The integral flux of electrons in the Earth's radiation belts
     at a given observer location and time, using the AE8 model.
@@ -260,12 +260,13 @@ class CerenkovBackground:
         observer_location = EarthLocation.from_geodetic(lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km)
         obstime = Time("2025-05-18T02:48:00Z")
         tbl = radiation_belt_flux_table(observer_location, obstime)
-        plt.figure(figsize=(7,5))
-        plt.plot(tbl["energy"], tbl["flux"])
-        plt.xlabel("Energy [MeV]")
-        plt.ylabel("Integral flux [cm$^{-2}$ s$^{-1}$]")
-        plt.title("AE8 Radiation Belt Electron Flux")
-        plt.tight_layout()
+
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.plot(tbl["energy"], tbl["flux"])
+        ax.set_xlabel("Energy [MeV]")
+        ax.set_ylabel(r"Integral flux [cm$^{-2}$ s$^{-1}$]")
+        ax.set_title("AE8 Radiation Belt Electron Flux")
+        fig.tight_layout()
         plt.show()
 
     The energy loss per unit mass thickness (dE/dX) of electrons
@@ -288,20 +289,20 @@ class CerenkovBackground:
         _, dEdX_SiO2 = get_electron_energy_loss(material="sio2")
         _, dEdX_Al2O3 = get_electron_energy_loss(material="sapphire")
 
-        plt.figure(figsize=(7, 5))
-        plt.loglog(Ek.value, dEdX_O.value, label="Oxygen (O)", linewidth=lw)
-        plt.loglog(Ek.value, dEdX_Si.value, label="Silicon (Si)", linewidth=lw)
-        plt.loglog(Ek.value, dEdX_Al.value, label="Aluminum (Al)", linewidth=lw)
-        plt.loglog(Ek.value, dEdX_SiO2.value, label="Silica (SiO$_2$)", linewidth=lw)
-        plt.loglog(Ek.value, dEdX_Al2O3.value, label="Sapphire (Al$_2$O$_3$)", linewidth=lw)
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.loglog(Ek.value, dEdX_O.value, label="Oxygen (O)", linewidth=lw)
+        ax.loglog(Ek.value, dEdX_Si.value, label="Silicon (Si)", linewidth=lw)
+        ax.loglog(Ek.value, dEdX_Al.value, label="Aluminum (Al)", linewidth=lw)
+        ax.loglog(Ek.value, dEdX_SiO2.value, label="Silica (SiO$_2$)", linewidth=lw)
+        ax.loglog(Ek.value, dEdX_Al2O3.value, label="Sapphire (Al$_2$O$_3$)", linewidth=lw)
 
-        plt.xlabel("Electron kinetic energy [MeV]", fontsize=label_fs)
-        plt.ylabel(r"Energy loss dE/dX [MeV/(g cm$^{-2}$)]", fontsize=label_fs)
-        plt.title(r"Electron Energy Loss per Unit Mass Thickness", fontsize=label_fs)
-        plt.legend(fontsize=label_fs)
-        plt.grid(True, which='both', ls='--')
-        plt.tick_params(labelsize=tick_fs)
-        plt.tight_layout()
+        ax.set_xlabel("Electron kinetic energy [MeV]", fontsize=label_fs)
+        ax.set_ylabel(r"Energy loss dE/dX [MeV/(g cm$^{-2}$)]", fontsize=label_fs)
+        ax.set_title(r"Electron Energy Loss per Unit Mass Thickness", fontsize=label_fs)
+        ax.legend(fontsize=label_fs)
+        ax.grid(True, which='both', ls='--')
+        ax.tick_params(labelsize=tick_fs)
+        fig.tight_layout()
         plt.show()
 
 
@@ -314,16 +315,17 @@ class CerenkovBackground:
 
         Ek, dEdX_SiO2 = get_electron_energy_loss(material="sio2")
 
-        plt.figure(figsize=(7, 5))
-        plt.loglog(Ek.value, 1 / dEdX_SiO2.value, linewidth=2, color='tab:green')
-        plt.xlabel(r"Electron kinetic energy [MeV]")
-        plt.ylabel(r"Inverse energy loss $(dE/dX)^{-1}$ [(g cm$^{-2}$)/MeV]")
-        plt.title(r"Inverse Energy Loss for Silica (SiO$_2$)")
-        plt.grid(True, which='both', ls='--')
-        plt.axis([1e-2, 1e2, 1e-2, 1])
-        plt.tick_params(labelsize=10)
-        plt.tight_layout()
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.loglog(Ek.value, 1 / dEdX_SiO2.value, linewidth=2, color='tab:green')
+        ax.set_xlabel(r"Electron kinetic energy [MeV]")
+        ax.set_ylabel(r"Inverse energy loss $(dE/dX)^{-1}$ [(g cm$^{-2}$)/MeV]")
+        ax.set_title(r"Inverse Energy Loss for Silica (SiO$_2$)")
+        ax.grid(True, which='both', ls='--')
+        ax.axis([1e-2, 1e2, 1e-2, 1])
+        ax.tick_params(labelsize=10)
+        fig.tight_layout()
         plt.show()
+
 
     """
 
