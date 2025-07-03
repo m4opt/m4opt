@@ -240,6 +240,7 @@ class CerenkovBackground:
         ax.set_ylabel(rf"Intensity [{intensity.unit} (erg / s cm$^{{2}}$ Hz)]")
         ax.set_title(r"Cerenkov Background Spectrum at GEO")
         ax.grid()
+        fig.tight_layout()
 
     The integral flux of electrons in the Earth's radiation belts
     at a given observer location and time, using the AE8 model.
