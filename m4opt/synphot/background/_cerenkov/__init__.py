@@ -234,15 +234,12 @@ class CerenkovBackground:
             wavelength = spectrum.waveset
             intensity = spectrum(wavelength)
 
-        plt.show()
         fig, ax = plt.subplots(figsize=(7, 5))
         ax.plot(wavelength, intensity)
         ax.set_xlabel(rf"Wavelength [{wavelength.unit}]")
         ax.set_ylabel(rf"Intensity [{intensity.unit} (erg / s cm$^{{2}}$ Hz)]")
         ax.set_title(r"Cerenkov Background Spectrum at GEO")
         ax.grid()
-        fig.tight_layout()
-        plt.show()
 
     The integral flux of electrons in the Earth's radiation belts
     at a given observer location and time, using the AE8 model.
@@ -267,7 +264,7 @@ class CerenkovBackground:
         ax.set_ylabel(r"Integral flux [cm$^{-2}$ s$^{-1}$]")
         ax.set_title("AE8 Radiation Belt Electron Flux")
         fig.tight_layout()
-        plt.show()
+
 
     The energy loss per unit mass thickness (dE/dX) of electrons
     in selected materials as a function of kinetic energy.
@@ -303,7 +300,6 @@ class CerenkovBackground:
         ax.grid(True, which='both', ls='--')
         ax.tick_params(labelsize=tick_fs)
         fig.tight_layout()
-        plt.show()
 
 
     .. plot::
@@ -324,7 +320,6 @@ class CerenkovBackground:
         ax.axis([1e-2, 1e2, 1e-2, 1])
         ax.tick_params(labelsize=10)
         fig.tight_layout()
-        plt.show()
 
 
     """
