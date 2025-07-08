@@ -10,10 +10,9 @@ from astropy.constants import alpha, c, m_e, m_p
 from astropy.table import Table
 from scipy.interpolate import CubicSpline
 
-from m4opt.synphot.background._cerenkov._electron_loss import get_electron_energy_loss
-from m4opt.synphot.background._cerenkov._refraction_index import get_refraction_index
-from m4opt.synphot.background._core import BACKGROUND_SOLID_ANGLE
-
+from ..._core import BACKGROUND_SOLID_ANGLE
+from .._electron_loss import get_electron_energy_loss
+from .._refraction_index import get_refraction_index
 from . import data
 
 
@@ -126,33 +125,39 @@ def cerenkov_emission_mat(xml_path, fields=None):
     The XML file contains the Cerenkov emission calculated using the daily flux (DailyMax)
     at the 95th percentile, for the material: 'si02_suprasil_2a'.
 
-    Args:
-        xml_path (str): Path to the XML file.
-        fields (list or None): List of fields/tags to extract. If None, detects all automatically.
+    Parameters
+    ----------
+    xml_path : str
+        Path to the XML file.
+    fields : list of str or None, optional
+        List of fields/tags to extract. If None, detects all fields automatically.
 
-    Returns:
-        astropy.table.Table : Table containing the results as columns.
+    Returns
+    -------
+    astropy.table.Table
+        Table containing the extracted results as columns:
 
-        - 'Lam' : np.ndarray
-            Wavelength array [Å] (Angström, equivalent to Ang or \(\AA\)).
-        - 'Int' : np.ndarray
-            Cerenkov intensity [count/cm^2/s/sr/μm].
-        - 'Int_Units' : str
-            Units of intensity, 'count/cm^2/s/sr/μm'.
-        - 'IntAA' : np.ndarray
-            Intensity per arcsecond squared [count/cm^2/s/arcsec^2/Ang].
-        - 'IntAA_Units' : str
-            Units for 'IntAA', 'count/cm^2/s/arcsec^2/Ang'.
-        - 'IntFA' : np.ndarray
-            Energy flux in erg/cm^2/s/arcsec^2/Ang.
-        - 'IntFA_Units' : str
-            Units for 'IntFA', 'erg/cm^2/s/arcsec^2/Ang'.
-        - 'n' : np.ndarray
-            Refractive index values for each wavelength.
-        - 'Lum' : np.ndarray
-            Luminosity per wavelength [count/cm^2/s/μm].
-        - 'Int_arcsec_Units' : str
-            Optional label for display: 'counts cm$^{-2}$ s$^{-1}$ arcsec$^{-2}$ \AA$^{-1}$'.
+        - `Lam` : numpy.ndarray
+          Wavelength array :math:`[\text{\AA}]` (Angström).
+        - `Int` : numpy.ndarray
+          Cerenkov intensity :math:`[\mathrm{count}/\mathrm{cm}^2/\mathrm{s}/\mathrm{sr}/\mu\mathrm{m}]`.
+        - `Int_Units` : str
+          Units of intensity: :math:`\mathrm{count}/\mathrm{cm}^2/\mathrm{s}/\mathrm{sr}/\mu\mathrm{m}`.
+        - `IntAA` : numpy.ndarray
+          Intensity per arcsecond squared :math:`[\mathrm{count}/\mathrm{cm}^2/\mathrm{s}/\mathrm{arcsec}^2/\text{\AA}]`.
+        - `IntAA_Units` : str
+          Units for `IntAA`: :math:`\mathrm{count}/\mathrm{cm}^2/\mathrm{s}/\mathrm{arcsec}^2/\text{\AA}`.
+        - `IntFA` : numpy.ndarray
+          Energy flux :math:`[\mathrm{erg}/\mathrm{cm}^2/\mathrm{s}/\mathrm{arcsec}^2/\text{\AA}]`.
+        - `IntFA_Units` : str
+          Units for `IntFA`: :math:`\mathrm{erg}/\mathrm{cm}^2/\mathrm{s}/\mathrm{arcsec}^2/\text{\AA}`.
+        - `n` : numpy.ndarray
+          Refractive index values as a function of wavelength.
+        - `Lum` : numpy.ndarray
+          Luminosity per wavelength :math:`[\mathrm{count}/\mathrm{cm}^2/\mathrm{s}/\mu\mathrm{m}]`.
+        - `Int_arcsec_Units` : str
+          Units for arcsecond-based intensity values.
+
     """
 
     tree = ET.parse(xml_path)
@@ -218,10 +223,10 @@ def cerenkov_emission_py(
         "SiO2_suprasil_2a": (1.5, 2.2 * u.g / u.cm**3),
         "sapphire": (1.75, 4.0 * u.g / u.cm**3),
     }
-    if material not in material_properties:
+    try:
+        n_val, rho = material_properties[material]
+    except KeyError:
         raise ValueError(f"Unknown material option: '{material}'")
-
-    n_val, rho = material_properties[material]
 
     # Grid based based on figure  6 of Kruk  et al. (2016), https://iopscience.iop.org/article/10.1088
     ee = np.logspace(np.log10(0.04), np.log10(8.0), nbins) * u.MeV
@@ -240,7 +245,7 @@ def cerenkov_emission_py(
 
     # Get particle mass (rest energy) in MeV
     mass = m_e if particle == "e" else m_p
-    mass_mev = (mass * c**2).to("MeV")
+    mass_mev = (mass * c**2).to(u.MeV)
 
     # Calculate Lorentz gamma [1 + E/(m*c^2)] and beta [v/c] at midpoints
     gamma = 1 + em / mass_mev
@@ -378,13 +383,13 @@ def test_cerenkov_numerical():
 def test_cerenkov_image():
     """Validate consistency between Python and MATLAB Cerenkov emission plot."""
 
-    # Matlab output
+    # The Matlab output
     xml_path = resources.files(data) / "Cerenkov_output.xml"
     table = cerenkov_emission_mat(xml_path, fields=["Lam", "IntAA"])
     Lam = table["Lam"]
     IntAA = table["IntAA"]
 
-    # Python results
+    # The Python results
     wavelength, intensity_arcsec2, _ = cerenkov_emission_py(
         material="SiO2_suprasil_2a", particle="e", nbins=1000
     )
