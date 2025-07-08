@@ -67,19 +67,19 @@ def cerenkov_emission(
     material_properties = {
         "sio2": (1.5, 2.2 * u.g / u.cm**3),
         "SiO2_suprasil_2a": (1.5, 2.2 * u.g / u.cm**3),
-        "sapphire": (1.75, 4.0 * u.g / u.cm**3),  # at 1 mu, n(0.25 mu)=1.85
+        "sapphire": (1.75, 4.0 * u.g / u.cm**3),
     }
-    if material not in material_properties:
+    try:
+        n_val, rho = material_properties[material]
+    except KeyError:
         raise ValueError(f"Unknown material option: '{material}'")
-
-    n_val, rho = material_properties[material]
 
     # Compute midpoint energies between grid bins
     em = 0.5 * (ee[:-1] + ee[1:])
 
     # Get particle mass (rest energy) in MeV
     mass = m_e if particle == "e" else m_p
-    mass_mev = (mass * c**2).to("MeV")
+    mass_mev = (mass * c**2).to(u.MeV)
 
     # Calculate Lorentz gamma [1 + E/(m*c^2)] and beta [v/c] at midpoints
     gamma = 1 + em / mass_mev
