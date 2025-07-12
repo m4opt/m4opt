@@ -6,13 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from astropy import units as u
-from astropy.constants import alpha, c, m_e, m_p
 from astropy.table import Table
 from scipy.interpolate import CubicSpline
+from synphot import Empirical1D, SourceSpectrum
 
 from ..._core import BACKGROUND_SOLID_ANGLE
-from .._electron_loss import get_electron_energy_loss
-from .._refraction_index import get_refraction_index
+from .. import cerenkov_emission_core
 from . import data
 
 
@@ -180,7 +179,18 @@ def cerenkov_emission_mat(xml_path, fields=None):
     data = {k: v[:min_len] for k, v in data.items()}
 
     # Create and return Astropy Table
-    return Table(data)
+    table = Table(data)
+
+    Lam = table["Lam"]
+    intensity_arcsec2 = table["IntAA"] * (
+        u.photon / u.cm**2 / u.s / BACKGROUND_SOLID_ANGLE / u.Angstrom
+    )
+    intensity_photlam = intensity_arcsec2 * BACKGROUND_SOLID_ANGLE
+
+    wavelength = Lam
+    return SourceSpectrum(
+        Empirical1D, points=wavelength, lookup_table=intensity_photlam
+    )
 
 
 def cerenkov_emission_py(
@@ -193,43 +203,16 @@ def cerenkov_emission_py(
 
     This function is the Python equivalent of the MATLAB 'Cerenkov.m' script,
     and always uses the electron spectrum from geostat_electrons_spec_flux()['DailyMax_95Flux'].
-
-    Parameters
-    ----------
-    material : str
-        Material name (e.g. "SiO2_suprasil_2a").
-
-    Returns
-    -------
-    wavelength : Quantity
-        Wavelength grid.
-    intensity_arcsec2 : Quantity
-        Intensity per arcsec².
-    intensity_photlam : Quantity
-        Intensity per solid angle.
-
     """
 
     # --- Get AE9 electron flux (DailyMax_95Flux) ---
     flux_data = geostat_electrons_spec_flux()
-    energy = flux_data["Energy"] * u.MeV  # Energy grid
-    flux = flux_data["DailyMax_95Flux"] * (
-        1 / (u.cm**2 * u.s)
-    )  # Flux: counts(>E)/cm^2/s
-
-    # --- Material optical parameters
-    material_properties = {
-        "sio2": (1.5, 2.2 * u.g / u.cm**3),
-        "SiO2_suprasil_2a": (1.5, 2.2 * u.g / u.cm**3),
-        "sapphire": (1.75, 4.0 * u.g / u.cm**3),
-    }
-    try:
-        n_val, rho = material_properties[material]
-    except KeyError:
-        raise ValueError(f"Unknown material option: '{material}'")
+    energy = flux_data["Energy"] * u.MeV
+    flux = flux_data["DailyMax_95Flux"] * (1 / (u.cm**2 * u.s))
 
     # Grid based based on figure  6 of Kruk  et al. (2016), https://iopscience.iop.org/article/10.1088
     ee = np.logspace(np.log10(0.04), np.log10(8.0), nbins) * u.MeV
+    energy_grid = ee
 
     # --- Interpolate the electron flux onto the energy grid
     cs_flux = CubicSpline(
@@ -238,84 +221,11 @@ def cerenkov_emission_py(
         bc_type="natural",
         extrapolate=True,
     )
-    Fe = u.Quantity(cs_flux(ee.value), flux.unit)
+    flux_grid = u.Quantity(cs_flux(ee.value), flux.unit)
 
-    # Compute midpoint energies between grid bins
-    em = 0.5 * (ee[:-1] + ee[1:])
-
-    # Get particle mass (rest energy) in MeV
-    mass = m_e if particle == "e" else m_p
-    mass_mev = (mass * c**2).to(u.MeV)
-
-    # Calculate Lorentz gamma [1 + E/(m*c^2)] and beta [v/c] at midpoints
-    gamma = 1 + em / mass_mev
-    beta = np.sqrt(1 - 1.0 / gamma**2)
-
-    # Interpolate flux at midpoints
-    cs_fm = CubicSpline(ee.value, Fe.value, bc_type="natural", extrapolate=True)
-    Fm = u.Quantity(cs_fm(em.value), Fe.unit)
-
-    # --- Cerenkov emission condition: n * beta > 1
-    ## fC: emission factor, zero if below threshold
-    fC_energy = np.maximum(0, 1 - 1.0 / n_val**2 / beta**2)
-
-    # --- Retrieve electron stopping power data for the material
-    # Ek: energies (MeV), dEdX: stopping power (MeV/(g cm^-2))
-    Ek, dEdX = get_electron_energy_loss(material)
-
-    # Inverse energy loss function (1 / dEdX)
-    cs_dEdX = CubicSpline(
-        Ek.value, 1.0 / dEdX.value, bc_type="natural", extrapolate=True
+    return cerenkov_emission_core(
+        energy_grid, flux_grid, material=material, particle=particle
     )
-    gEE = u.Quantity(cs_dEdX(em.value), 1 / dEdX.unit)
-
-    # Cerenkov emission integrand at midpoints: flux × path length × emission factor
-    intg = gEE * Fm * fC_energy
-    cs_intg = CubicSpline(em.value, intg.value, bc_type="natural", extrapolate=True)
-
-    # Wavelength-dependent refractive index and emission
-    # Lam: wavelength grid (Amstrong), n: refractive index at Lam
-    Lam, n, _ = get_refraction_index(material)
-
-    # Calculate emission factor for all (wavelength, energy) pairs
-    fC_wavelength_energy = np.maximum(
-        0, 1 - 1.0 / n[:, np.newaxis] ** 2 / beta[np.newaxis, :] ** 2
-    )
-    intg = gEE * Fm * fC_wavelength_energy
-
-    # Evaluate normalization using integrand spline at 1 MeV
-    cs_val = cs_intg(1.0) * intg.unit
-
-    # Fine-structure constant :  alpha = e^2 / (4 * np.pi * epsilon_0 * hbar * c)
-    # 2 * pi * alpha  factor from fine structure constant (alpha), rho: density, Lam_cm: wavelength in cm
-    Lam_cm = Lam.to(u.cm)
-    Lnorm = 2 * np.pi * alpha / rho / Lam_cm**2 * cs_val * u.photon
-    Lnorm = Lnorm.to(u.photon / (u.MeV * u.s * u.cm**2 * u.micron))
-
-    # --- Integrate Cherenkov emission over energy for each wavelength
-    # np.diff(ee): width of each energy bin (MeV)
-    int_val = np.sum(intg * np.diff(ee)[np.newaxis, :], axis=1) / cs_val
-
-    # Total Cherenkov emissionper micron per area per time (photon / (s micron cm^2)).
-    L1mu = int_val * Lnorm
-
-    # Cherenkov intensity per wavelength (divide by 2*pi*n^2, normalization)
-    # "photon/cm^2/s/sr/μm",
-    intensity_micron = L1mu / (2 * np.pi * n**2) / u.sr
-
-    # Convert intensity to arcseconds squared
-    intensity_angstrom = intensity_micron.to(
-        u.photon / u.cm**2 / u.s / u.sr / u.Angstrom
-    )
-
-    # 'ph/A' : [ phothon / s / cm^2 / Angstrom / arcsec^2]
-    intensity_arcsec2 = intensity_angstrom.to(
-        u.photon / u.cm**2 / u.s / BACKGROUND_SOLID_ANGLE / u.Angstrom
-    )
-    intensity_photlam = intensity_arcsec2 * BACKGROUND_SOLID_ANGLE
-
-    wavelength = Lam
-    return wavelength, intensity_arcsec2, intensity_photlam
 
 
 def test_cerenkov_numerical():
@@ -342,38 +252,32 @@ def test_cerenkov_numerical():
 
     """
 
-    # Matlab output
+    # Matlab output (loads AE9/MATLAB data)
+
     xml_path = resources.files(data) / "Cerenkov_output.xml"
-    table = cerenkov_emission_mat(xml_path, fields=["Lam", "IntAA"])
-    Lam = table["Lam"]
-    IntAA = table["IntAA"]
+    spectrum_mat = cerenkov_emission_mat(xml_path, fields=["Lam", "IntAA"])
+
+    wavelength_mat = spectrum_mat.waveset
+    intensity_mat = spectrum_mat(wavelength_mat)
 
     # Python results
-    wavelength, intensity_arcsec2, intensity_photlam = cerenkov_emission_py(
+    spectrum_py = cerenkov_emission_py(
         material="SiO2_suprasil_2a", particle="e", nbins=1000
     )
+    wavelength_py = spectrum_py.waveset
+    intensity_py = spectrum_py(wavelength_py)
 
     # Enforce the check for python output
     # Check that the photlam intensity is compatible with the one wait for  synphot Spectrum
     # https://github.com/EranOfek/AstroPack/blob/main/matlab/astro/%2Bultrasat/Cerenkov.m#L217
-    assert intensity_arcsec2.unit.is_equivalent(
-        u.photon / u.cm**2 / u.s / u.arcsec**2 / u.Angstrom
-    )
-
-    # check the length
-    assert len(wavelength) == len(intensity_arcsec2) == len(intensity_photlam)
-
-    # Check that every value  is >= 0
-    assert not (intensity_arcsec2.value < 0).any()
-    assert not (intensity_photlam.value < 0).any()
-
-    # check if there are NAN
-    assert not np.any(np.isnan(intensity_arcsec2.value))
-    assert not np.any(np.isnan(intensity_photlam.value))
 
     # Check value accuracy with MATLAB reference
-    assert np.allclose(wavelength.value, Lam, rtol=1e-10), "Wavelength mismatch"
-    rel_diff = np.abs(IntAA - intensity_arcsec2.value) / (np.abs(IntAA) + 1e-30)
+    assert np.allclose(wavelength_mat.value, wavelength_py.value, rtol=1e-10), (
+        "Wavelength mismatch"
+    )
+    rel_diff = np.abs(intensity_mat.value - intensity_py.value) / (
+        np.abs(intensity_mat.value) + 1e-30
+    )
     assert np.all(rel_diff < 4e-2), (
         f"Python vs MATLAB: maximum relative difference {np.max(rel_diff):.2e} exceeded"
     )
@@ -383,23 +287,24 @@ def test_cerenkov_numerical():
 def test_cerenkov_image():
     """Validate consistency between Python and MATLAB Cerenkov emission plot."""
 
-    # The Matlab output
     xml_path = resources.files(data) / "Cerenkov_output.xml"
-    table = cerenkov_emission_mat(xml_path, fields=["Lam", "IntAA"])
-    Lam = table["Lam"]
-    IntAA = table["IntAA"]
+    spectrum_mat = cerenkov_emission_mat(xml_path, fields=["Lam", "IntAA"])
+
+    # The Matlab results
+    wavelength_mat = spectrum_mat.waveset
+    intensity_mat = spectrum_mat(wavelength_mat)
 
     # The Python results
-    wavelength, intensity_arcsec2, _ = cerenkov_emission_py(
+    spectrum_py = cerenkov_emission_py(
         material="SiO2_suprasil_2a", particle="e", nbins=1000
     )
+    wavelength_py = spectrum_py.waveset
+    intensity_py = spectrum_py(wavelength_py)
 
     fig, ax = plt.subplots()
-    ax.plot(Lam, IntAA, label="MATLAB", color="blue")
-    ax.plot(
-        wavelength.value, intensity_arcsec2.value, "--", label="Python", color="red"
-    )
-    ax.set_xlabel(r"Wavelength [$\AA$]")
-    ax.set_ylabel(r"Intensity [arcsec$^{-2}$]")
+    ax.plot(wavelength_mat.value, intensity_mat.value, label=r"MATLAB", color="blue")
+    ax.plot(wavelength_py.value, intensity_py.value, "--", label=r"Python", color="red")
+    ax.set_xlabel(rf"Wavelength [{wavelength_py.unit}]")
+    ax.set_ylabel(rf"Intensity [{intensity_py.unit}]")
     ax.legend()
     return fig

@@ -165,7 +165,7 @@ def cerenkov_emission(
     energy_grid = flux_data["energy"]
     flux_grid = flux_data["flux"]
     return cerenkov_emission_core(
-        energy_grid, flux_grid, material=material, particle=particle, nbins=nbins
+        energy_grid, flux_grid, material=material, particle=particle
     )
 
 
