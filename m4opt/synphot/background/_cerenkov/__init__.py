@@ -42,25 +42,16 @@ def radiation_belt_flux_table(
     return Table([energy_bins, u.Quantity(flux_integral)], names=["energy", "flux"])
 
 
-def cerenkov_emission(
-    observer_location,
-    obstime,
+def cerenkov_emission_core(
+    energy_grid: u.Quantity,
+    flux_grid: u.Quantity,
     material: str = "SiO2_suprasil_2a",
     particle: Literal["e", "p"] = "e",
-    solar: Literal["max", "min"] = "max",
-    energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV),
-    nbins: int = 1000,
-) -> tuple[u.Quantity, u.Quantity, u.Quantity]:
-    """
-    Calculate the Cerenkov radiation intensity for the given conditions.
-    """
+) -> SourceSpectrum:
+    """Calculate the Cerenkov radiation intensity for the given conditions."""
 
-    # --- Retrieve electron flux data from the radiation belt (e.g., AE8 model)
-    flux_data = radiation_belt_flux_table(
-        observer_location, obstime, energy, nbins, particle, solar
-    )
-    ee = flux_data["energy"]
-    Fe = flux_data["flux"]
+    ee = energy_grid
+    Fe = flux_grid
 
     # --- Material optical parameters: index of refraction and density
     # Dict: material name -> (refractive index at ~1 micron, density)
@@ -154,6 +145,27 @@ def cerenkov_emission(
 
     return SourceSpectrum(
         Empirical1D, points=wavelength, lookup_table=intensity_photlam
+    )
+
+
+def cerenkov_emission(
+    observer_location,
+    obstime,
+    material: str = "SiO2_suprasil_2a",
+    particle: Literal["e", "p"] = "e",
+    solar: Literal["max", "min"] = "max",
+    energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV),
+    nbins: int = 1000,
+) -> SourceSpectrum:
+    """Calculate the Cerenkov radiation intensity from flux AE8/production."""
+
+    flux_data = radiation_belt_flux_table(
+        observer_location, obstime, energy, nbins, particle, solar
+    )
+    energy_grid = flux_data["energy"]
+    flux_grid = flux_data["flux"]
+    return cerenkov_emission_core(
+        energy_grid, flux_grid, material=material, particle=particle, nbins=nbins
     )
 
 
