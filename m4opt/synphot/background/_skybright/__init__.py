@@ -12,7 +12,7 @@ kpno_sky_tables = {
     "medium": "10FebZen.txt",
     "high": "10Phx.txt",
     "veryhigh": "10Tuc.txt",
-    "skycalc": "skycalcbrightness.txt"
+    "skycalc": "skycalcbrightness.txt",
 }
 
 
@@ -39,8 +39,8 @@ class SkyBackground:
     Sky Brightness background: sky glow due to scattered and diffuse light
 
     Currently, only data from ESO's SkyCalc (Noll et al. (2012) [2]_ and Jones
-    et al. (2013) [3]_) and the Kitt Peak sky brightness observations from 
-    Neugent and Massey (2010) [1]_ are supported. There are four methods, 
+    et al. (2013) [3]_) and the Kitt Peak sky brightness observations from
+    Neugent and Massey (2010) [1]_ are supported. There are four methods,
     sampling a selection of sky brightness conditions:
 
     - :meth:`low`: At zenith in June
