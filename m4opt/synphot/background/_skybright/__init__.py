@@ -12,6 +12,7 @@ kpno_sky_tables = {
     "medium": "10FebZen.txt",
     "high": "10Phx.txt",
     "veryhigh": "10Tuc.txt",
+    "skycalc": "skycalcbrightness.txt"
 }
 
 
@@ -37,14 +38,16 @@ class SkyBackground:
     """
     Sky Brightness background: sky glow due to scattered and diffuse light
 
-    Currently, only the Kitt Peak sky brightness observations from Neugent and
-    Massey (2010) [1]_ are supported. There are four methods, sampling a
-    selection of sky brightness conditions:
+    Currently, only data from ESO's SkyCalc (Noll et al. (2012) [2]_ and Jones
+    et al. (2013) [3]_) and the Kitt Peak sky brightness observations from 
+    Neugent and Massey (2010) [1]_ are supported. There are four methods, 
+    sampling a selection of sky brightness conditions:
 
     - :meth:`low`: At zenith in June
     - :meth:`medium` : At zenith in February
     - :meth:`high`: At a zenith angle of 60 degrees towards Phoenix
     - :meth:`veryhigh`: At a zenith angle of 60 degrees towards Tucson
+    - :meth:`skycalc`: ESO's SkyCalc model for Cerro Paranal
 
     Notes
     -----
@@ -56,6 +59,12 @@ class SkyBackground:
     .. [1] Neugent, K. and Massey, P., 2010, "The Spectrum of the Night Sky
            Over Kitt Peak: Changes Over Two Decades". PASP, 122, 1246-1253
            doi:10.1086/656425
+    .. [2] Noll, S., Kausch, W., Barden, M., Jones, A. C., Szyszka, C., Kimeswenger,
+           S., & Vinther, J., 2012, "An atmospheric radiation model for Cerro
+           Paranal". A&A, 543, A92. doi:10.1051/0004-6361/201219040
+    .. [3] Jones, A., Noll, S., Kausch, W., Szyszka, C., & Kimeswenger, S., 2013,
+           "An advanced scattered moonlight model for Cerro Paranal". A&A, 560,
+           A91. doi:10.1051/0004-6361/201322433
 
     Examples
     --------
@@ -84,7 +93,7 @@ class SkyBackground:
 
         wave = np.linspace(3750, 6868) * u.angstrom
         ax = plt.axes()
-        for key in ['veryhigh', 'high', 'medium', 'low']:
+        for key in ['skycalc', 'veryhigh', 'high', 'medium', 'low']:
             surf = getattr(SkyBackground, key)()(wave, flux_unit=u.ABmag)
             ax.plot(wave, surf, label=f'SkyBackground.{key}')
         ax.legend()
@@ -106,3 +115,7 @@ class SkyBackground:
     @staticmethod
     def veryhigh():
         return read_kpno_sky_data("veryhigh")
+
+    @staticmethod
+    def skycalc():
+        return read_kpno_sky_data("skycalc")
