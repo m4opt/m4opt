@@ -23,7 +23,7 @@ jobs:
           cache: pip
           python-version: "3.11"
       - name: Run mypy
-        uses: python/mypy@v1.16.1
+        uses: python/mypy@v1.17.0
   # Github Actions supports ubuntu, windows, and macos virtual environments:
   # https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners
   ci_tests:
