@@ -228,7 +228,6 @@ class CerenkovBackground:
         from astropy import units as u
         import numpy as np
         import matplotlib.pyplot as plt
-        plt.rcParams["font.family"] = "Times New Roman"
 
         from m4opt.synphot.background._cerenkov import CerenkovBackground
         from m4opt.synphot import observing
