@@ -342,7 +342,9 @@ class CerenkovBackground:
     energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV)
     nbins: int = 1000
 
-    def cerenkov_emission(self, observer_location: EarthLocation, obstime: Time) -> SourceSpectrum:
+    def cerenkov_emission(
+        self, observer_location: EarthLocation, obstime: Time
+    ) -> SourceSpectrum:
         """
         Compute the Cerenkov emission spectrum for the given observer and time.
 
