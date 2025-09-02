@@ -5,11 +5,12 @@ import numpy as np
 from aep8 import flux
 from astropy import units as u
 from astropy.constants import alpha, c, m_e, m_p
+from astropy.coordinates import EarthLocation
 from astropy.table import Table
+from astropy.time import Time
 from scipy.interpolate import CubicSpline
 from synphot import Empirical1D, SourceSpectrum
 
-# from synphot import Empirical1D, SourceSpectrum
 from .._core import BACKGROUND_SOLID_ANGLE
 from ._electron_loss import get_electron_energy_loss
 from ._refraction_index import get_refraction_index
@@ -196,7 +197,7 @@ class CerenkovBackground:
     It incorporates:
     - The AE8 trapped electron flux model from radiation belt :doc:`NASA AE8/AP8, IRBEM <irbem:api/radiation_models>`,
     constraining the flux of charged particles in Earth's radiation belts.
-    - Stopping power and refractive index models :footcite:`2018PASP..130g5002S, 2019PASP..131e4504O`.
+    - Stopping power and refractive index models.
     - The conservative noise modeling approach from ULTRASAT :footcite:`2024ApJ...964...74S`.
     - The energy grid used for interpolation was read from Figure 6 :footcite:`2016PASP..128c5005K`.
 
@@ -248,7 +249,7 @@ class CerenkovBackground:
         fig, ax = plt.subplots(figsize=(7, 5))
         ax.plot(wavelength, intensity)
         ax.set_xlabel(rf"Wavelength [{wavelength.unit}]")
-        ax.set_ylabel(rf"Intensity [{intensity.unit} (erg / s cm$^{{2}}$ Hz)]")
+        ax.set_ylabel(rf"Intensity [{intensity.unit}]")
         ax.set_title(r"Cerenkov Background Spectrum at GEO")
         ax.grid()
         fig.tight_layout()
