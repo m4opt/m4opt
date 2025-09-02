@@ -272,9 +272,7 @@ def test_cerenkov_numerical():
     # https://github.com/EranOfek/AstroPack/blob/main/matlab/astro/%2Bultrasat/Cerenkov.m#L217
 
     # Check value accuracy with MATLAB reference
-    assert np.allclose(wavelength_mat.value, wavelength_py.value, rtol=1e-10), (
-        "Wavelength mismatch"
-    )
+    np.testing.assert_allclose(wavelength_mat.value, wavelength_py.value, rtol=1e-10), err_msg="Wavelength mismatch")
     rel_diff = np.abs(intensity_mat.value - intensity_py.value) / (
         np.abs(intensity_mat.value) + 1e-30
     )
