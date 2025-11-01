@@ -11,7 +11,7 @@ from astropy.time import Time
 from scipy.interpolate import CubicSpline
 from synphot import Empirical1D, SourceSpectrum
 
-from .._core import BACKGROUND_SOLID_ANGLE
+from .._core import BACKGROUND_SOLID_ANGLE, ContextualBackground
 from ._electron_loss import get_electron_energy_loss
 from ._refraction_index import get_refraction_index
 
@@ -48,6 +48,7 @@ def cerenkov_emission_core(
     flux_grid: u.Quantity,
     material: str = "SiO2_suprasil_2a",
     particle: Literal["e", "p"] = "e",
+    factor: float = 21,
 ) -> SourceSpectrum:
     """Calculate the Cerenkov radiation intensity for the given conditions."""
 
@@ -145,7 +146,7 @@ def cerenkov_emission_core(
     # intensity_erg = (intensity_photlam) / u.photon * h.to(u.erg * u.s) * freq
 
     return SourceSpectrum(
-        Empirical1D, points=wavelength, lookup_table=intensity_photlam
+        Empirical1D, points=wavelength, lookup_table=intensity_photlam / factor
     )
 
 
@@ -154,6 +155,7 @@ def cerenkov_emission(
     obstime,
     material: str = "SiO2_suprasil_2a",
     particle: Literal["e", "p"] = "e",
+    factor: float = 21,
     solar: Literal["max", "min"] = "max",
     energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV),
     nbins: int = 1000,
@@ -166,12 +168,12 @@ def cerenkov_emission(
     energy_grid = flux_data["energy"]
     flux_grid = flux_data["flux"]
     return cerenkov_emission_core(
-        energy_grid, flux_grid, material=material, particle=particle
+        energy_grid, flux_grid, material=material, particle=particle, factor=factor
     )
 
 
 @dataclass
-class CerenkovBackground:
+class CerenkovBackground(ContextualBackground):
     """
     Model for Cerenkov particle-induced background using the AEP8 flux model.
 
@@ -188,6 +190,8 @@ class CerenkovBackground:
         Solar activity condition, by default 'max'.
     material : str, optional : { "sio2", "SiO2_suprasil_2a"}
         Material type for optics, by default 'SiO2_suprasil_2a'.
+    factor : float, optional
+         Geometric factor accounting for baffle suppression and shielding; default 21 for ULTRASAT.
 
     References
     ----------
@@ -213,7 +217,7 @@ class CerenkovBackground:
     >>> from m4opt.synphot.background._cerenkov import CerenkovBackground
     >>> observer_location = EarthLocation.from_geodetic(lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km)
     >>> obstime = Time("2025-05-18T02:48:00Z")
-    >>> background = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a')
+    >>> background = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a', factor=21)
     >>> spectrum = background.cerenkov_emission(observer_location, obstime)
     >>> wavelength = spectrum.waveset
     >>> spectrum(wavelength[0])
@@ -241,7 +245,7 @@ class CerenkovBackground:
         coord = hpx.healpix_to_skycoord(np.arange(hpx.npix))
 
         with observing(observer_location=observer_location, target_coord=coord, obstime=obstime):
-            cerenkov_model = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a')
+            cerenkov_model = CerenkovBackground(particle='e', solar='max', material='SiO2_suprasil_2a',  factor=21)
             spectrum = cerenkov_model.cerenkov_emission(observer_location, obstime)
             wavelength = spectrum.waveset
             intensity = spectrum(wavelength)
@@ -342,6 +346,7 @@ class CerenkovBackground:
     material: str = "SiO2_suprasil_2a"
     energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV)
     nbins: int = 1000
+    factor: float = 21
 
     def cerenkov_emission(
         self, observer_location: EarthLocation, obstime: Time
@@ -366,6 +371,7 @@ class CerenkovBackground:
             obstime=obstime,
             material=self.material,
             particle=self.particle,
+            factor=self.factor,
             solar=self.solar,
             energy=self.energy,
             nbins=self.nbins,
