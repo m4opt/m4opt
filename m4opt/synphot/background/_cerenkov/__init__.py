@@ -348,6 +348,14 @@ class CerenkovBackground(ContextualBackground):
     nbins: int = 1000
     factor: float = 21
 
+    def __call__(
+        self,
+        observer_location: EarthLocation,
+        obstime: Time,
+    ) -> SourceSpectrum:
+        """Compute background spectrum at specified observation context."""
+        return self.cerenkov_emission(observer_location, obstime)
+
     def cerenkov_emission(
         self, observer_location: EarthLocation, obstime: Time
     ) -> SourceSpectrum:

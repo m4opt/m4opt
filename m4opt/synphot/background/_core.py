@@ -5,8 +5,6 @@ from astropy.coordinates import EarthLocation
 from astropy.time import Time
 from synphot import SourceSpectrum
 
-from ... import missions
-
 BACKGROUND_SOLID_ANGLE = 1 * u.arcsec**2
 """Standard solid angle used for sky brightness models."""
 
@@ -25,7 +23,7 @@ class ContextualBackground(ABC):
 
 
 def update_missions(
-    mission: missions.Mission,
+    mission,
     observer_location: EarthLocation,
     obstime: Time,
 ) -> None:
