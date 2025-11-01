@@ -42,6 +42,9 @@ class Detector:
     background: SourceSpectrum
     """Background 1D model mapping wavelength to surface brightness."""
 
+    cerenkov_background: SourceSpectrum | None = None
+    """Cerenkov background, set separately since it depends on observer location and time."""
+
     dark_noise: u.Quantity[u.physical.frequency] = 0 * u.Hz
     """Dark noise count rate."""
 
@@ -85,6 +88,17 @@ class Detector:
             / BACKGROUND_SOLID_ANGLE
             * countrate(self.background, bp)
         )
+
+        # Add Cerenkov background if available
+        if self.cerenkov_background is not None:
+            cerenkov_count_rate = (
+                self.area
+                * self.plate_scale
+                / BACKGROUND_SOLID_ANGLE
+                * countrate(self.cerenkov_background, bp)
+            )
+            bkg_count_rate += cerenkov_count_rate
+
         return src_count_rate, bkg_count_rate
 
     def get_snr(

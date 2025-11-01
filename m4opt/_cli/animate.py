@@ -27,6 +27,7 @@ from matplotlib.typing import ColorType
 from .. import missions
 from ..fov import footprint, footprint_healpix
 from ..synphot import observing
+from ..synphot.background._core import update_missions
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
 from .core import app
@@ -212,6 +213,9 @@ def animate(
                     target_coord=hpx.healpix_to_skycoord(np.arange(hpx.npix)),
                     obstime=time_steps[0],
                 ):
+                    # Update mission parameters with contextual background information
+                    update_missions(mission, observer_locations[0], time_steps[0])
+
                     exptime = mission.detector.get_exptime(
                         snr,
                         synphot.SourceSpectrum(
