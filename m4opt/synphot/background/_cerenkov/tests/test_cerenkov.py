@@ -196,6 +196,7 @@ def cerenkov_emission_mat(xml_path, fields=None):
 def cerenkov_emission_py(
     material: str = "SiO2_suprasil_2a",
     particle: Literal["e", "p"] = "e",
+    factor: float = 1,
     nbins: int = 1000,
 ) -> tuple[u.Quantity, u.Quantity, u.Quantity]:
     r"""
@@ -224,7 +225,7 @@ def cerenkov_emission_py(
     flux_grid = u.Quantity(cs_flux(ee.value), flux.unit)
 
     return cerenkov_emission_core(
-        energy_grid, flux_grid, material=material, particle=particle
+        energy_grid, flux_grid, material=material, particle=particle, factor=factor
     )
 
 
