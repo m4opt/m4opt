@@ -6,6 +6,7 @@ angle of 1 square arcsecond.
 """
 
 from ._cerenkov import CerenkovBackground
+from ._core import update_missions
 from ._galactic import GalacticBackground
 from ._skybright import SkyBackground
 from ._zodiacal import ZodiacalBackground
@@ -14,5 +15,6 @@ __all__ = (
     "CerenkovBackground",
     "GalacticBackground",
     "SkyBackground",
+    "update_missions",
     "ZodiacalBackground",
 )

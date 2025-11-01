@@ -23,7 +23,7 @@ from ..fov import footprint_healpix
 from ..milp import Model
 from ..observer import EarthFixedObserverLocation
 from ..synphot import TabularScaleFactor, observing
-from ..synphot.background._core import update_missions
+from ..synphot.background import update_missions
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
 from ..utils.numpy import clump_nonzero_inclusive, full_indices

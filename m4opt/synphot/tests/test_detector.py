@@ -34,6 +34,7 @@ def test_snr_exptime_roundtrip(
         area=area * u.cm**2,
         bandpasses={"R": SpectralElement.from_filter("johnson_r")},
         background=ZodiacalBackground.high(),
+        cerenkov_background=None,
     )
     spec = SourceSpectrum(ConstFlux1D, amplitude=0 * u.ABmag)
     try:
@@ -80,6 +81,7 @@ def test_limmag_snr_roundtrip(
         area=area * u.cm**2,
         bandpasses={"R": SpectralElement.from_filter("johnson_r")},
         background=ZodiacalBackground.high(),
+        cerenkov_background=None,
     )
     limmag = detector.get_limmag(
         snr,
