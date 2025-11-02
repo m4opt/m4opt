@@ -221,7 +221,7 @@ class CerenkovBackground(ContextualBackground):
     >>> spectrum = background.cerenkov_emission(observer_location, obstime)
     >>> wavelength = spectrum.waveset
     >>> spectrum(wavelength[0])
-    <Quantity 5.5374254e-07 PHOTLAM>
+    <Quantity 2.63686924e-08 PHOTLAM>
 
     .. plot::
         :include-source: False

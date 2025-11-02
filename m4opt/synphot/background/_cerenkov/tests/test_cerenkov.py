@@ -117,7 +117,7 @@ def geostat_electrons_spec_flux():
     return Table(arr, names=colnames)
 
 
-def cerenkov_emission_mat(xml_path, fields=None):
+def cerenkov_emission_mat(xml_path, fields=None, factor=21):
     r"""
     Reads a MATLAB struct-style XML file and returns the results as an Astropy Table.
 
@@ -189,14 +189,14 @@ def cerenkov_emission_mat(xml_path, fields=None):
 
     wavelength = Lam
     return SourceSpectrum(
-        Empirical1D, points=wavelength, lookup_table=intensity_photlam
+        Empirical1D, points=wavelength, lookup_table=intensity_photlam / factor
     )
 
 
 def cerenkov_emission_py(
     material: str = "SiO2_suprasil_2a",
     particle: Literal["e", "p"] = "e",
-    factor: float = 1,
+    factor=21,
     nbins: int = 1000,
 ) -> tuple[u.Quantity, u.Quantity, u.Quantity]:
     r"""
@@ -311,4 +311,5 @@ def test_cerenkov_image():
     ax.set_xlabel(rf"Wavelength [{wavelength_py.unit}]")
     ax.set_ylabel(rf"Intensity [{intensity_py.unit}]")
     ax.legend()
+    plt.show()
     return fig
