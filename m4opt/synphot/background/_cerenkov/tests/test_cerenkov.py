@@ -311,5 +311,4 @@ def test_cerenkov_image():
     ax.set_xlabel(rf"Wavelength [{wavelength_py.unit}]")
     ax.set_ylabel(rf"Intensity [{intensity_py.unit}]")
     ax.legend()
-    plt.show()
     return fig
