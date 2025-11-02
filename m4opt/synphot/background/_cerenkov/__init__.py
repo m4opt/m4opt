@@ -9,7 +9,7 @@ from astropy.coordinates import EarthLocation
 from astropy.table import Table
 from astropy.time import Time
 from scipy.interpolate import CubicSpline
-from synphot import Empirical1D, SourceSpectrum
+from synphot import Empirical1D, SourceSpectrum, units
 
 from .._core import BACKGROUND_SOLID_ANGLE, ContextualBackground
 from ._electron_loss import get_electron_energy_loss
@@ -54,6 +54,13 @@ def cerenkov_emission_core(
 
     ee = energy_grid
     Fe = flux_grid
+
+    # Check if flux is zero (e.g., inside Earth)
+    if np.all(Fe.value == 0):
+        # Return a zero spectrum when flux is zero
+        Lam, _, _ = get_refraction_index(material)
+        zero_intensity = np.zeros_like(Lam.value) * units.PHOTLAM
+        return SourceSpectrum(Empirical1D, points=Lam, lookup_table=zero_intensity)
 
     # --- Material optical parameters: index of refraction and density
     # Dict: material name -> (refractive index at ~1 micron, density)
