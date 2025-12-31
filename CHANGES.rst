@@ -7,6 +7,10 @@ Changes
 
 - Allow passing any options to METIS.
 
+- Add the method ``m4opt.milp.Model.to_stream``.
+
+- Add the method ``m4opt.utils.optimization.partition_graph_color``.
+
 2.0.0 (2025-06-09)
 ==================
 
