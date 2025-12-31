@@ -4,6 +4,8 @@
 
 name: CI Tests
 
+permissions: {}
+
 on:
   - push
   - pull_request

@@ -2,6 +2,8 @@
 
 name: Cron Scheduled CI Tests
 
+permissions: {}
+
 on:
   schedule:
     # run at 6am UTC on Mondays

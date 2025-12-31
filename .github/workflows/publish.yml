@@ -1,5 +1,7 @@
 name: Publish
 
+permissions: {}
+
 on:
   schedule:
     # run every day at 4am UTC
