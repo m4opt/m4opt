@@ -2,6 +2,12 @@
 Changes
 *******
 
+2.2.0 (2026-01-15)
+==================
+
+- Add support to the scheduler for pointwise distance distributions but fixed
+  absolute magnitude.
+
 2.1.0 (2025-12-31)
 ==================
 

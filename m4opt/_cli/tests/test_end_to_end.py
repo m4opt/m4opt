@@ -34,6 +34,7 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, request):
             "--bandpass=NUV",
             "--nside=128",
             "--deadline=6hour",
+            "--no-appmag-dist",
         ]
         if absmag_mean is not None:
             args = [*args, f"--absmag-mean={absmag_mean}"]

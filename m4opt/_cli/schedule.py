@@ -138,12 +138,15 @@ def schedule(
         ),
     ] = None,
     absmag_stdev: Annotated[
-        float | None,
+        float,
         typer.Option(
             help="Standard deviation of AB absolute magnitude of source",
             show_default="AB absolute magnitude is fixed at the value provided by --absmag-mean",
         ),
-    ] = None,
+    ] = 0.0,
+    appmag_dist: Annotated[
+        bool, typer.Option(help="Enable point-wise distribution of apparent magnitude")
+    ] = True,
     snr: Annotated[float, typer.Option(help="Signal to noise ratio for detection")] = 5,
     bandpass: Annotated[
         str | None, typer.Option(help="Name of detector bandpass")
@@ -218,17 +221,17 @@ def schedule(
     2. Variable exposure time. Each field may have a different exposure time,
        adjusted for the posterior median distance along each line of sight.
        This mode is selected if you specify a value for the --absmag-mean
-       option.
+       option but also pass the --no-appmag-dist option.
 
     \b
     3. Variable exposure time with an absolute magnitude distribution. Each
        field may have a different exposure time, adjusted to optimize the
        detection probability given the posterior distance distribution and a
        Gaussian distribution of absolute magnitudes. This mode is selected if
-       you specify both the --absmag-mean and --absmag-stdev options.
+       you specify the --absmag-mean option (and, optionally, the
+       --absmag-stdev option).
     """
     adaptive_exptime = absmag_mean is not None
-    absmag_distribution = absmag_stdev is not None
 
     """Schedule a target of opportunity observation."""
     with status("loading sky map"):
@@ -335,9 +338,7 @@ def schedule(
         if mission.detector is None:
             raise NotImplementedError("This mission does not define a detector model")
         with status("evaluating exposure time map"):
-            if (
-                absmag_stdev is not None
-            ):  # same as `if absmag_distribution:` but allows mypy to infer that absmag_stdev is not None
+            if appmag_dist:
                 distmean, diststd, _ = distance.parameters_to_moments(
                     skymap_flat["DISTMU"],
                     skymap_flat["DISTSIGMA"],
@@ -431,7 +432,7 @@ def schedule(
         timelimit=timelimit, jobs=jobs, memory=memory, lowercutoff=cutoff
     ) as model:
         with status("assembling MILP model"):
-            if absmag_distribution:
+            if appmag_dist:
                 pixel_vars = model.continuous_vars(
                     n_pixels,
                     lb=0,
@@ -526,7 +527,7 @@ def schedule(
 
             with status("adding coverage constraints"):
                 if adaptive_exptime:
-                    if absmag_distribution:
+                    if appmag_dist:
                         for pixel_var, region_index, breakpoints in zip(
                             pixel_vars, pixel_to_region_map, piecewise_breakpoints
                         ):
@@ -657,6 +658,7 @@ def schedule(
                         "exptime_max": exptime_max,
                         "absmag_mean": absmag_mean,
                         "absmag_stdev": absmag_stdev,
+                        "appmag_dist": appmag_dist,
                         "bandpass": bandpass,
                         "snr": snr,
                         "cutoff": cutoff,
