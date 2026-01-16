@@ -2,6 +2,12 @@
 Changes
 *******
 
+2.2.1 (2026-01-16)
+==================
+
+- Fix crash for sky maps with invalid pixels when using a fixed absolute
+  magnitude.
+
 2.2.0 (2026-01-15)
 ==================
 

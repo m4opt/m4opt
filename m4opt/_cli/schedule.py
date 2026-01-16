@@ -355,6 +355,8 @@ def schedule(
                 appmag_quantiles = stats.norm(
                     loc=appmag_mu[:, np.newaxis], scale=appmag_sigma[:, np.newaxis]
                 ).ppf(quantiles)
+                # FIXME: prune pixels with infinite distance
+                appmag_quantiles[np.isposinf(appmag_mu)] = np.inf
 
                 with observing(
                     observer_location=observer_locations[0],
