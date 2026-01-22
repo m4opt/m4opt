@@ -2,6 +2,12 @@
 Changes
 *******
 
+2.3.0 (2026-01-16)
+==================
+
+- When available memory is limited by the ``--memory`` option, spool CPLEX's
+  node file to disk.
+
 2.2.1 (2026-01-16)
 ==================
 

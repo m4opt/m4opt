@@ -6,7 +6,7 @@ from gzip import GzipFile
 from io import BufferedWriter
 from pathlib import Path
 from shutil import copyfileobj
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, gettempdir
 from unittest.mock import patch
 
 import cplex
@@ -89,6 +89,7 @@ class Model(_Model):
 
         self.context.solver.log_output = verbose
         self.context.cplex_parameters.threads = jobs
+        self.context.cplex_parameters.workdir = gettempdir()
 
         # Disable deterministic parallelism. We're OK with results being
         # slightly dependent upon timing.
@@ -110,7 +111,8 @@ class Model(_Model):
             )
 
         if np.isfinite(memory):
-            self.context.cplex_parameters.mip.limits.treememory = memory.to_value(u.MiB)
+            self.context.cplex_parameters.mip.strategy.file = 3
+            self.context.cplex_parameters.workmem = memory.to_value(u.MiB)
 
         if lowercutoff is not None:
             # FIXME: Setting lowercutoff drastically hurts solution quality.
