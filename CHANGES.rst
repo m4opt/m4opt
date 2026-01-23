@@ -2,6 +2,12 @@
 Changes
 *******
 
+2.3.1 (2026-01-23)
+==================
+
+- Fix an issue where MILP optimization could terminate early before CPLEX had
+  found a best bound. This was prone to happen after MIP restarts.
+
 2.3.0 (2026-01-22)
 ==================
 

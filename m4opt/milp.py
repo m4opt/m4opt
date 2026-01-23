@@ -29,7 +29,9 @@ class LowerCutoffCallback:
 
     def invoke(self, context: cplex.callbacks.Context):
         best_bound = context.get_double_info(cplex.callbacks.CallbackInfo.best_bound)
-        if best_bound <= self._cutoff:
+        # Note that CPLEX indicates that it has not yet found a best bound by
+        # setting this to a large negative value.
+        if -cplex.infinity < best_bound <= self._cutoff:
             print(
                 f"giving up because best bound ({best_bound}) <= cutoff ({self._cutoff})"
             )
