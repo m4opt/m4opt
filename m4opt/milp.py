@@ -25,6 +25,7 @@ __all__ = ("Model", "SolveSolution")
 class LowerCutoffCallback:
     def __init__(self, cutoff: float):
         self._cutoff = cutoff
+        self._reached = False
 
     def invoke(self, context: cplex.callbacks.Context):
         best_bound = context.get_double_info(cplex.callbacks.CallbackInfo.best_bound)
@@ -32,6 +33,7 @@ class LowerCutoffCallback:
             print(
                 f"giving up because best bound ({best_bound}) <= cutoff ({self._cutoff})"
             )
+            self._reached = True
             context.abort()
 
 
@@ -120,8 +122,9 @@ class Model(_Model):
             # See https://github.com/IBMDecisionOptimization/docplex/issues/20
             #
             # model.context.cplex_parameters.mip.tolerances.lowercutoff = cutoff
+            self._lower_cutoff = LowerCutoffCallback(lowercutoff)
             self.get_cplex().set_callback(
-                LowerCutoffCallback(lowercutoff),
+                self._lower_cutoff,
                 cplex.callbacks.Context.id.global_progress,
             )
 
@@ -188,7 +191,17 @@ class Model(_Model):
 
     def solve(self, **kwargs):
         with patch("docplex.mp.solution.SolveSolution", SolveSolution):
-            return super().solve(**kwargs)
+            result = super().solve(**kwargs)
+        if (
+            (cutoff := getattr(self, "_lower_cutoff", None))
+            and cutoff._reached
+            and self.solve_details.status == "aborted"
+        ):
+            message = "aborted, lower cutoff reached"
+            self._solve_details._solve_status = message
+            if result is not None:
+                result.solve_details._solve_status = message
+        return result
 
     def min(self, *args):
         return np.asarray(super().min(*args)).view(VariableArray)
