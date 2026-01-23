@@ -8,6 +8,10 @@ Changes
 - When available memory is limited by the ``--memory`` option, spool CPLEX's
   node file to disk.
 
+- If the solution is aborted because the best bound falls below the objective
+  lower cutoff, then record the solution status as
+  `aborted, lower cutoff reached`.
+
 2.2.1 (2026-01-16)
 ==================
 
