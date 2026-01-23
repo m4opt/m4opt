@@ -2,7 +2,7 @@
 Changes
 *******
 
-2.3.0 (2026-01-16)
+2.3.0 (2026-01-22)
 ==================
 
 - When available memory is limited by the ``--memory`` option, spool CPLEX's
