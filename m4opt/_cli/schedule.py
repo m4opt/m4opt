@@ -23,6 +23,7 @@ from ..fov import footprint_healpix
 from ..milp import Model
 from ..observer import EarthFixedObserverLocation
 from ..synphot import TabularScaleFactor, observing
+from ..synphot.background import update_missions
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
 from ..utils.numpy import clump_nonzero_inclusive, full_indices
@@ -363,6 +364,9 @@ def schedule(
                     target_coord=hpx.healpix_to_skycoord(good)[:, np.newaxis],
                     obstime=obstimes[0],
                 ):
+                    # Update mission parameters with contextual background information
+                    update_missions(mission, observer_locations[0], obstimes[0])
+
                     exptime_pixel_s = mission.detector.get_exptime(
                         snr,
                         synphot.SourceSpectrum(synphot.ConstFlux1D(0 * u.ABmag))
@@ -400,6 +404,9 @@ def schedule(
                     target_coord=hpx.healpix_to_skycoord(good),
                     obstime=obstimes[0],
                 ):
+                    # Update mission parameters with contextual background information
+                    update_missions(mission, observer_locations[0], obstimes[0])
+
                     exptime_pixel_s = mission.detector.get_exptime(
                         snr,
                         synphot.SourceSpectrum(
