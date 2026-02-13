@@ -48,7 +48,7 @@ In normal use, |M4OPT| downloads and caches a variety of Astropy-related data so
 
 .. rubric:: Mitigation
 
-Run `m4opt prime <../guide/cli.html#m4opt-prime>`_ once before deployment to download and cache data sources. Ensure that you have a reliable Internet connection.
+Run :typer:`m4opt-prime` once before deployment to download and cache data sources. Ensure that you have a reliable Internet connection.
 
 .. _`cplex-license`:
 
