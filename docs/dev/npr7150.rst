@@ -327,7 +327,7 @@ open-source scientific Python software development.
 .. _`GitHub pull requests`: https://github.com/m4opt/m4opt/pulls
 .. _`GitHub Dependabot`: https://docs.github.com/en/code-security/getting-started/dependabot-quickstart-guide
 .. _`Line of Business`: https://www.nasa.gov/content/lines-of-business
-.. _`Top 10 Python security best practices`: https://blog.sqreen.com/top-10-python-security-best-practices/
+.. _`Top 10 Python security best practices`: https://web.archive.org/web/20230604004428/https://blog.sqreen.com/top-10-python-security-best-practices/
 .. _`CodeQL`: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/about-code-scanning-with-codeql
 .. _`ruff`: https://docs.astral.sh/ruff/
 .. _`GitHub-hosted runners`: https://docs.github.com/en/actions/using-github-hosted-runners
