@@ -8,6 +8,7 @@ on:
   schedule:
     # run at 6am UTC on Mondays
     - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 jobs:
   # Testing links in documents is a good example of something to run on a schedule
