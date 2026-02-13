@@ -31,6 +31,8 @@ import sys
 import tomllib
 from importlib import import_module
 
+from sphinx.builders import linkcheck
+
 from m4opt.utils.pybtex.styles import short_alpha  # noqa: F401
 
 try:
@@ -268,3 +270,27 @@ autodoc_typehints = "description"
 extensions += ["sphinxcontrib.bibtex"]
 bibtex_bibfiles = ["refs.bib"]
 bibtex_default_style = "short_alpha"
+
+
+# -- Options for the linkcheck extension --------------------------------------
+
+
+# FIXME: workaround for https://github.com/sphinx-doc/sphinx/pull/14299
+class CustomHyperlinkAvailabilityChecker(linkcheck.HyperlinkAvailabilityChecker):
+    """Ignore 403 errors from certain servers."""
+
+    allow_403 = ["https://doi.org/"]
+
+    def check(self, hyperlinks):
+        for result in super().check(hyperlinks):
+            if result.message.startswith("403 Client Error:") and any(
+                result.uri.startswith(prefix) for prefix in self.allow_403
+            ):
+                kw = result._asdict()
+                kw["status"] = linkcheck._Status.IGNORED
+                yield linkcheck.CheckResult(**kw)
+            else:
+                yield result
+
+
+linkcheck.HyperlinkAvailabilityChecker = CustomHyperlinkAvailabilityChecker
