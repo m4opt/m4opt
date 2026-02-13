@@ -141,7 +141,7 @@ on the `Nancy Grace Roman Space Telescope <https://roman.gsfc.nasa.gov>`_:
     roman = pysiaf.Siaf('roman')
     regions = Regions()
     for aper_name, aper in roman.apertures.items():
-        if re.match('^WFI\d\d_FULL$', aper_name):
+        if re.match(r'^WFI\d\d_FULL$', aper_name):
             aper.set_attitude_matrix(attmat)
             regions.append(PolygonSkyRegion(SkyCoord(*aper.corners('sky'), unit=u.deg)))
     regions.write('roman_wfi.ds9', overwrite=True)
