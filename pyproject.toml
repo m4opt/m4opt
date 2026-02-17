@@ -15,7 +15,7 @@ dependencies = [
     "click >= 8.2.0",  # https://github.com/pallets/click/pull/2829
     "cplex",
     "docplex",
-    "dust-extinction",
+    "dust-extinction >= 1.7",
     "dustmaps",
     "ligo.skymap >= 2.4.0",
     "networkx",

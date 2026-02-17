@@ -50,7 +50,7 @@ def DustExtinction(Ebv: float | None = None):
     >>> from m4opt.synphot.extinction import DustExtinction
     >>> extinction = DustExtinction(Ebv=1.0)
     >>> extinction(10 * u.micron)
-    <Quantity 0.7903132>
+    <Quantity 0.78756244>
 
     Or you can leave it unspecified, to evaluate later for a given sky location
     using :meth:`m4opt.synphot.observing`:
@@ -61,7 +61,7 @@ def DustExtinction(Ebv: float | None = None):
     >>> extinction = DustExtinction()
     >>> with observing(EarthLocation.of_site("Las Campanas Observatory"), SkyCoord.from_name("NGC 4993"), Time("2017-08-17")):
     ...     extinction(10 * u.micron)
-    <Quantity 0.97517859>
+    <Quantity 0.9748155>
     """
 
     if Ebv is None:
