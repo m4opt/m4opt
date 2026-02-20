@@ -34,7 +34,11 @@ class PolySampleData:
 
 @composite
 def polynomial_sample_data(
-    draw, order: int, min_dims: int = 1, max_dims: int | None = None
+    draw,
+    order: int,
+    min_dims: int = 1,
+    max_dims: int | None = None,
+    max_broadcast_dims: int | None = None,
 ):
     num_coefficients = order + 1
     shape = draw(
@@ -72,16 +76,23 @@ def polynomial_sample_data(
     xi = draw(
         arrays(
             dtype=np.float64,
-            shape=(*draw(array_shapes(min_dims=0)), ndim),
+            shape=(*draw(array_shapes(min_dims=0, max_dims=max_broadcast_dims)), ndim),
         )
     )
     return PolySampleData(points, poly, xi)
 
 
-# FIXME for Athena: set order to 3 for a multivariate cubic polynomial test case.
-# When you are read for the final challenge, remove the argument `max_dims=1` to
-# try multivariate interoplation.
-@given(polynomial_sample_data(order=1, max_dims=1))
+#
+# FIXME for Athena:
+# Change `order=1` to `order=3` for cubic polynomial sample data.
+#
+# Currently this will test univariate interpolation with scalar inputs.
+# When you for a greater challenge, do the following:
+#
+#   - Remove the keyword argument `max_dims` to try multivariate interpolation.
+#   - Remove the keyword argument `max_broadcast_dims` to try tensor inputs.
+#
+@given(polynomial_sample_data(order=1, max_dims=1, max_broadcast_dims=0))
 def test_athena_interp(data):
     """Test the interpolation scheme using data from a multivariate polynomial
     of degree that matches the order of the interpolation scheme."""
