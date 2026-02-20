@@ -10,7 +10,8 @@ from numpy.polynomial.polynomial import polyval
 from ..interp import athena_interp
 
 
-def polyndval(x, c):
+# FIXME: https://github.com/numpy/numpy/issues/30857
+def polyvalnd(x, c):
     """Evaluate an arbitrary multivariate polynomial."""
     return pu._valnd(polyval, c, *x)
 
@@ -100,9 +101,9 @@ def test_athena_interp(data):
     hi = np.asarray([pt.max() for pt in data.points])
     xi_transpose = np.moveaxis(data.xi, -1, 0)
     in_bounds = ((data.xi >= lo) & (data.xi <= hi)).all(axis=-1)
-    desired = np.where(in_bounds, polyndval(xi_transpose, data.poly), np.nan)
+    desired = np.where(in_bounds, polyvalnd(xi_transpose, data.poly), np.nan)
 
-    values = polyndval(np.meshgrid(*data.points, indexing="ij"), data.poly)
+    values = polyvalnd(np.meshgrid(*data.points, indexing="ij"), data.poly)
     actual = athena_interp(data.points, values, data.xi)
 
     np.testing.assert_array_almost_equal(actual, desired)
