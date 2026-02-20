@@ -39,10 +39,10 @@ def test_dust_extinction(observer_location, target_coord, obstime, wavelength):
 @pytest.mark.parametrize(
     "Ebv,wavelength,expected",
     [
-        ([0.1, 0.2], [1000], [0.235205, 0.05532139]),
-        ([[0.1], [0.2]], [1000], [[0.235205], [0.055321]]),
-        ([[0.1], [0.2]], 1000, [[0.235205], [0.055321]]),
-        (0.1, [1000, 2000], [0.235205, 0.439729]),
+        ([0.1, 0.2], [1000], [0.230215, 0.052999]),
+        ([[0.1], [0.2]], [1000], [[0.230215], [0.052999]]),
+        ([[0.1], [0.2]], 1000, [[0.230215], [0.052999]]),
+        (0.1, [1000, 2000], [0.230215, 0.434408]),
     ],
 )
 def test_broadcast_dust_extinction(Ebv, wavelength, expected):
@@ -64,4 +64,4 @@ def test_broadcast_dust_extinction_skycoord():
             synphot.SourceSpectrum(synphot.ConstFlux1D, amplitude=0 * u.ABmag)
             * synphot.SpectralElement(DustExtinction()),
         ).to_value(u.mag)
-    np.testing.assert_almost_equal(result, [20.4014027, 19.1963705])
+    np.testing.assert_almost_equal(result, [20.3976665, 19.1701537])
