@@ -16,6 +16,8 @@ from ...constraints import (
 from ...dynamics import EigenAxisSlew
 from ...observer import EarthFixedObserverLocation
 from .._core import Mission
+from ...synphot import Detector, bandpass_from_svo
+from ...synphot.background import SkyBackground, ZodiacalBackground
 from . import data
 
 
@@ -106,8 +108,20 @@ ztf = Mission(
     #
     # FIXME: Implement non-uniform slew rate about different axes.
     slew=EigenAxisSlew(2.5 * u.deg / u.s, 0.4 * u.deg / u.s**2),
+    # Table 1 of https://ui.adsabs.harvard.edu/abs/2020PASP..132c8001D
+    detector=Detector(
+        area=np.pi * np.square(0.5 * 1244.6 * u.mm),
+        # Table 3 of https://ui.adsabs.harvard.edu/abs/2020PASP..132c8001D
+        plate_scale=(1.01 * u.arcsec) ** 2,
+        read_noise=8,
+        gain=1 / 6.2,
+        # e2v CCD231-C6 typical dark current at 153 K
+        dark_noise=3 / u.hr,
+        bandpasses={band: bandpass_from_svo(f"Palomar/ZTF.{band}") for band in "gri"},
+        background=SkyBackground.medium() + ZodiacalBackground(),
+    ),
 )
-ztf.__doc__ = """Zwicky Transient Facility (ZTF).
+ztf.__doc__ = r"""Zwicky Transient Facility (ZTF).
 
 `ZTF <https://www.ztf.caltech.edu>`_ is a ground-based optical survey with a 47
 square degree camera on the Samuel Oschin 48 Inch Telescope at Palomar
@@ -117,7 +131,50 @@ The FOV region precisely models the layout of ZTF's :math:`4 \times 4` CCD
 mosaic including chip gaps as described in Table 1 of
 :footcite:`2019PASP..131a8002B`.
 
+Note
+----
+Dark current is set to the e2v CCD231-C6 typical specification of 3 e-/pixel/hour
+at 153 K. Note that ZTF operates at a somewhat warmer temperature (~165 K), so
+the actual dark current may be slightly higher.
+
 References
 ----------
 .. footbibliography::
+
+Examples
+--------
+
+.. plot::
+    :include-source: False
+    :caption: ZTF limiting magnitude vs. exposure time at zenith.
+
+    from astropy import units as u
+    from astropy.coordinates import AltAz, SkyCoord
+    from astropy.time import Time
+    from matplotlib import pyplot as plt
+    from m4opt.missions import ztf
+    from m4opt.synphot import observing
+    import numpy as np
+    from synphot import ConstFlux1D, SourceSpectrum
+
+    exptime = np.arange(30, 330, 30) * u.s
+    obstime = Time("2025-03-19T07:00:00")
+    loc = ztf.observer_location(obstime)
+    frame = AltAz(location=loc, obstime=obstime)
+    coord = SkyCoord(alt=90 * u.deg, az=0 * u.deg, frame=frame)
+
+    ax = plt.axes()
+    with observing(loc, coord, obstime):
+        for filt in ztf.detector.bandpasses.keys():
+            limmag = ztf.detector.get_limmag(
+                5,
+                exptime,
+                SourceSpectrum(ConstFlux1D, amplitude=0 * u.ABmag),
+                filt,
+            )
+            ax.plot(exptime, limmag, "-o", label=filt)
+    ax.invert_yaxis()
+    ax.legend()
+    ax.set_xlabel("Exposure time (s)")
+    ax.set_ylabel(r"5-$\sigma$ Limiting magnitude (AB)")
 """
