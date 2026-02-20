@@ -87,8 +87,7 @@ focal plane consists of 189 detectors arranged in 21 rafts, as shown in Figure
 
 Note
 ----
-Detector parameters are from `SMTN-002 <https://smtn-002.lsst.io/>`_
-("Calculating LSST limiting magnitudes and SNR"):
+Detector parameters are from :doc:`SMTN-002 <smtn-002:index>`:
 
 - Effective clear aperture diameter: 6.423 m
 - Plate scale: 0.2 arcsec/pixel
