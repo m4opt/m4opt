@@ -15,9 +15,9 @@ from ...constraints import (
 )
 from ...dynamics import EigenAxisSlew
 from ...observer import EarthFixedObserverLocation
-from .._core import Mission
 from ...synphot import Detector, bandpass_from_svo
 from ...synphot.background import SkyBackground, ZodiacalBackground
+from .._core import Mission
 from . import data
 
 

@@ -4,8 +4,8 @@ from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord
 from astropy.time import Time
 
-from ... import ztf
 from ....synphot._extrinsic import observing
+from ... import ztf
 
 
 def test_ztf_detector_exists():
@@ -37,9 +37,7 @@ def test_ztf_limmag_at_zenith():
             for band in "gri"
         ]
 
-    np.testing.assert_almost_equal(
-        limmags, [21.1216691, 20.8017654, 20.4476654]
-    )
+    np.testing.assert_almost_equal(limmags, [21.1216691, 20.8017654, 20.4476654])
 
 
 def test_ztf_limmag_increases_with_exptime():
