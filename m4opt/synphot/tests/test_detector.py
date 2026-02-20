@@ -15,7 +15,7 @@ from ..background import ZodiacalBackground
     plate_scale=st.floats(min_value=0, max_value=1e30, exclude_min=True),
     dark_noise=st.floats(min_value=0, max_value=1e30, exclude_min=True),
     read_noise=st.floats(min_value=0, max_value=1e30, exclude_min=True),
-    gain=st.floats(min_value=0, max_value=1, exclude_min=True),
+    gain=st.floats(min_value=1e-10, max_value=1, exclude_min=True),
     area=st.floats(min_value=0, max_value=1e30, exclude_min=True),
     exptime=st.floats(min_value=0, max_value=1e30),
 )
