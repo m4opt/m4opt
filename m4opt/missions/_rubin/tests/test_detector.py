@@ -4,8 +4,8 @@ from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord
 from astropy.time import Time
 
-from ... import rubin
 from ....synphot._extrinsic import observing
+from ... import rubin
 
 
 def test_rubin_detector_exists():
