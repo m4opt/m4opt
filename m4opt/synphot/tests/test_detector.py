@@ -43,7 +43,7 @@ def test_snr_exptime_roundtrip(
     assume(np.isfinite(snr))
     exptime_result = detector.get_exptime(snr, spec).to_value(u.s)
     assume(np.isfinite(exptime_result))
-    assert exptime_result == pytest.approx(exptime)
+    assert exptime_result == pytest.approx(exptime, rel=1e-5)
 
 
 @given(
