@@ -20,30 +20,26 @@ def test_ztf_detector_dark_noise():
 
 
 def test_ztf_limmag_at_zenith():
-    """Smoke test: compute 5-sigma limiting magnitudes for a 30s exposure at zenith."""
+    """Test 5-sigma limiting magnitudes for a 30s exposure at zenith."""
     obstime = Time("2025-03-19T07:00:00")
     loc = ztf.observer_location(obstime)
     frame = AltAz(location=loc, obstime=obstime)
     coord = SkyCoord(alt=90 * u.deg, az=0 * u.deg, frame=frame)
 
     with observing(loc, coord, obstime):
-        limmags = {}
-        for band in "gri":
-            limmags[band] = ztf.detector.get_limmag(
+        limmags = [
+            ztf.detector.get_limmag(
                 5,
                 30 * u.s,
                 synphot.SourceSpectrum(synphot.ConstFlux1D, amplitude=0 * u.ABmag),
                 band,
             ).to_value(u.mag)
+            for band in "gri"
+        ]
 
-    # Limiting magnitudes should be finite and in a reasonable range
-    for band, lm in limmags.items():
-        assert np.isfinite(lm), f"{band}-band limiting magnitude is not finite"
-        assert 18 < lm < 24, f"{band}-band limiting magnitude {lm:.1f} out of range"
-
-    # Bluer bands should generally be deeper (g > r > i)
-    assert limmags["g"] > limmags["r"]
-    assert limmags["r"] > limmags["i"]
+    np.testing.assert_almost_equal(
+        limmags, [21.1216691, 20.8017654, 20.4476654]
+    )
 
 
 def test_ztf_limmag_increases_with_exptime():
@@ -67,4 +63,5 @@ def test_ztf_limmag_increases_with_exptime():
             "r",
         ).to_value(u.mag)
 
-    assert lm_300s > lm_30s
+    np.testing.assert_almost_equal(lm_30s, 20.8017654)
+    np.testing.assert_almost_equal(lm_300s, 22.1993963)
