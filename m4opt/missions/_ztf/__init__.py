@@ -116,6 +116,7 @@ ztf = Mission(
         read_noise=8,
         gain=1 / 6.2,
         # e2v CCD231-C6 typical dark current at 153 K
+        # https://www.teledyneimaging.com/media/1317/ccd231-c6.pdf
         dark_noise=3 / u.hr,
         bandpasses={band: bandpass_from_svo(f"Palomar/ZTF.{band}") for band in "gri"},
         background=SkyBackground.medium() + ZodiacalBackground(),
