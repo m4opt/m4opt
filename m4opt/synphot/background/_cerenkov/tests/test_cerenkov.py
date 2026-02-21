@@ -2,25 +2,21 @@
 
 import xml.etree.ElementTree as ET
 from importlib import resources
-from typing import Literal
 
 import numpy as np
-import pytest
 from astropy import units as u
-from astropy.coordinates import EarthLocation, SkyCoord
+from astropy.coordinates import SkyCoord
 from astropy.table import Table
-from astropy.time import Time
 from scipy.interpolate import CubicSpline
 from synphot import Empirical1D, SourceSpectrum
 
 from ..._core import BACKGROUND_SOLID_ANGLE
 from .. import (
-    CerenkovBackground,
-    CerenkovScaleFactor,
     _REFERENCE_LOCATION,
     _REFERENCE_OBSTIME,
+    CerenkovBackground,
+    CerenkovScaleFactor,
     _cerenkov_spectrum_from_flux,
-    cerenkov_emission,
 )
 from .._electron_loss import get_electron_energy_loss
 from .._refraction_index import get_refraction_index
