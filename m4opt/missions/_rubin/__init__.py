@@ -72,6 +72,7 @@ rubin = Mission(
         # "gain can safely be assumed to be 1" for SNR calculations
         gain=1,
         # Dark current requirement: 0.2 e-/s/pixel
+        # Table 4 of https://smtn-002.lsst.io/
         dark_noise=0.2 * u.Hz,
         bandpasses={band: bandpass_from_svo(f"LSST/LSST.{band}") for band in "ugrizy"},
         background=SkyBackground.medium() + ZodiacalBackground(),
