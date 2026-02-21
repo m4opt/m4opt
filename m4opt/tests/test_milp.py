@@ -13,9 +13,20 @@ problem_size_limits = pytest.mark.parametrize(
     "num_vars", [pytest.param(1000, id="small"), pytest.param(10000, id="big")]
 )
 
-_backend = _get_backend()
+try:
+    _backend = _get_backend()
+except ImportError:
+    _backend = None
+
 _is_cplex = _backend == "cplex"
 _is_gurobi = _backend == "gurobi"
+
+pytestmark = pytest.mark.skipif(
+    _backend is None, reason="No MILP solver installed"
+)
+
+if _backend is not None:
+    from ..milp import Model, VariableArray
 
 cplex_only = pytest.mark.skipif(not _is_cplex, reason="CPLEX-only test")
 gurobi_only = pytest.mark.skipif(not _is_gurobi, reason="Gurobi-only test")
