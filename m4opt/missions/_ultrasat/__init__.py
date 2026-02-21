@@ -100,7 +100,7 @@ The skygrid includes 240 non-overlapping fields (7° radius) covering the entire
 for its low-cadence extragalactic survey. Each field is annotated with visibility 
 for at least one 180-day or 45-day period per year, and average UV extinction, 
 following the baseline survey strategy discussed in the `ULTRASAT Working Groups Reports 
-from the September 16–18, 2024 sessions <https://www.weizmann.ac.il/ultrasat/for-scientists/working-groups/working-groups>`_.
+from the September 16-18, 2024 sessions <https://www.weizmann.ac.il/ultrasat/for-scientists/working-groups/working-groups>`_.
 
 References
 ----------
