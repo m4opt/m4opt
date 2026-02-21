@@ -8,6 +8,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from ....missions import ultrasat
+from ....synphot.background import update_missions
 from ....tests.hypothesis import earth_locations, obstimes, skycoords
 from ..._extrinsic import observing
 from .._dust import DustExtinction, dust_map, reddening_law
@@ -58,6 +59,11 @@ def test_broadcast_dust_extinction_skycoord():
         obstime=Time("2024-01-01"),
         target_coord=SkyCoord([0, 0] * u.deg, [0, 90] * u.deg),
     ):
+        # Update mission parameters with contextual background information
+        update_missions(
+            ultrasat, EarthLocation(0 * u.m, 0 * u.m, 0 * u.m), Time("2024-01-01")
+        )
+
         result = ultrasat.detector.get_limmag(
             10,
             300 * u.s,
