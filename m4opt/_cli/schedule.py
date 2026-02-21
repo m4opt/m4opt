@@ -11,7 +11,7 @@ from astropy.table import QTable, vstack
 from astropy.time import Time
 from astropy_healpix import HEALPix
 from click import UsageError
-from docplex.mp.progress import ProgressData, ProgressDataRecorder
+from .._milp import ProgressData, ProgressDataRecorder
 from ligo.skymap import distance
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
