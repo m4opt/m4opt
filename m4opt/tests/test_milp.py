@@ -21,9 +21,7 @@ except ImportError:
 _is_cplex = _backend == "cplex"
 _is_gurobi = _backend == "gurobi"
 
-pytestmark = pytest.mark.skipif(
-    _backend is None, reason="No MILP solver installed"
-)
+pytestmark = pytest.mark.skipif(_backend is None, reason="No MILP solver installed")
 
 if _backend is not None:
     from ..milp import Model, VariableArray
