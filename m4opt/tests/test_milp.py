@@ -2,26 +2,57 @@
 
 from tempfile import gettempdir
 
-import docplex.mp.model
 import numpy as np
 import pytest
 from astropy import units as u
 
+from .._milp import _get_backend
 from ..milp import Model, VariableArray
 
 problem_size_limits = pytest.mark.parametrize(
     "num_vars", [pytest.param(1000, id="small"), pytest.param(10000, id="big")]
 )
 
+try:
+    _backend = _get_backend()
+except ImportError:
+    _backend = None
 
+_is_cplex = _backend == "cplex"
+_is_gurobi = _backend == "gurobi"
+
+pytestmark = pytest.mark.skipif(_backend is None, reason="No MILP solver installed")
+
+if _backend is not None:
+    from ..milp import Model, VariableArray
+
+cplex_only = pytest.mark.skipif(not _is_cplex, reason="CPLEX-only test")
+gurobi_only = pytest.mark.skipif(not _is_gurobi, reason="Gurobi-only test")
+
+
+@cplex_only
 @problem_size_limits
 def test_cplex(num_vars):
     """Test that CPLEX solver works with small and big problems."""
+    import docplex.mp.model
+
     m = docplex.mp.model.Model()
     m.binary_var_list(num_vars)
     m.solve()
 
 
+@gurobi_only
+@problem_size_limits
+def test_gurobi(num_vars):
+    """Test that Gurobi solver works with small and big problems."""
+    import gurobipy as gp
+
+    m = gp.Model()
+    m.addVars(num_vars, vtype=gp.GRB.BINARY)
+    m.optimize()
+
+
+@cplex_only
 def test_cplex_parameters():
     """Test configuration of CPLEX solver parameters."""
     m = Model()
@@ -55,18 +86,38 @@ def test_cplex_parameters():
     assert m.context.solver.log_output
 
 
+@gurobi_only
+def test_gurobi_parameters():
+    """Test configuration of Gurobi solver parameters."""
+    m = Model()
+    assert m._grb.Params.Threads == 0
+    assert m._grb.Params.LogToConsole == 1
+
+    m = Model(timelimit=1 * u.minute, jobs=3)
+    assert m._grb.Params.Threads == 3
+    assert m._grb.Params.TimeLimit == 60
+    assert m._grb.Params.MIPFocus == 1
+
+    m = Model(timelimit=1 * u.minute, jobs=3, memory=5 * u.GiB)
+    assert m._grb.Params.Threads == 3
+    assert m._grb.Params.TimeLimit == 60
+    assert m._grb.Params.NodefileStart == pytest.approx(5.0)
+
+
 def test_best_bound():
     m = Model()
-    x = m.binary_var()
+    x = m.binary_vars()
     m.maximize(x)
-    m.solve()
-    assert m.best_bound == m.solve_details.best_bound == m.objective_value == 1
+    solution = m.solve()
+    assert solution is not None
+    assert m.best_bound == pytest.approx(1)
+    assert m.objective_value == pytest.approx(1)
 
 
 @pytest.mark.parametrize(
     "tp", ["binary", "continuous", "integer", "semicontinuous", "semiinteger"]
 )
-def test_cplex_add_var_array(tp):
+def test_add_var_array(tp):
     """Test convenience functions for adding arrays of decision variables."""
     m = Model()
 
@@ -81,6 +132,17 @@ def test_cplex_add_var_array(tp):
     )
     assert result.shape == (6, 4)
 
+
+@cplex_only
+@pytest.mark.parametrize(
+    "tp", ["binary", "continuous", "integer", "semicontinuous", "semiinteger"]
+)
+def test_cplex_add_var_array_count(tp):
+    """Test that CPLEX tracks variable counts correctly."""
+    m = Model()
+    getattr(m, f"{tp}_vars")()
+    getattr(m, f"{tp}_vars")((6, 4))
+    getattr(m, f"{tp}_vars")((6, 4), lb=np.full((6, 4), 0.5), ub=np.full((6, 4), 1))
     assert getattr(m, f"number_of_{tp}_variables") == 49
 
 
@@ -104,7 +166,7 @@ def test_cplex_add_var_array(tp):
         "m.max(*x.ravel()) <= 0",
     ),
 )
-def test_cplex_operators(tp, rhs_shape, expr):
+def test_operators(tp, rhs_shape, expr):
     """Test adding constraints by broadcasting variables."""
     m = Model()
     add_vars = getattr(m, f"{tp}_vars")
@@ -120,7 +182,7 @@ def test_cplex_operators(tp, rhs_shape, expr):
     "rhs_shape",
     ((), 2, (3, 2)),
 )
-def test_cplex_broadcast_indicator(tp, rhs_shape):
+def test_broadcast_indicator(tp, rhs_shape):
     """Test adding indicator constraints by broadcasting variables."""
     m = Model()
     add_vars = getattr(m, f"{tp}_vars")
@@ -133,11 +195,19 @@ def test_cplex_broadcast_indicator(tp, rhs_shape):
 
 
 @pytest.mark.parametrize(
-    "suffix", [".lp", ".mps", ".sav", ".lp.gz", ".mps.gz", ".sav.gz"]
+    "suffix",
+    [
+        ".lp",
+        ".mps",
+        pytest.param(".sav", marks=cplex_only),
+        ".lp.gz",
+        ".mps.gz",
+        pytest.param(".sav.gz", marks=cplex_only),
+    ],
 )
 def test_to_stream(suffix, tmp_path):
     m = Model()
-    x = m.binary_var()
+    x = m.binary_vars()
     m.maximize(x)
     with (tmp_path / "model").with_suffix(suffix).open("wb") as f:
         m.to_stream(f)

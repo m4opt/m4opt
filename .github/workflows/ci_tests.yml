@@ -92,11 +92,7 @@ jobs:
     - name: Test with tox
       env:
         CPLEX_STUDIO_KEY: ${{ secrets.CPLEX_STUDIO_KEY }}
-        GRB_LICENSE_FILE_CONTENTS: ${{ secrets.GRB_LICENSE_FILE_CONTENTS }}
       run: |
-        if [ -n "$GRB_LICENSE_FILE_CONTENTS" ]; then
-          printenv GRB_LICENSE_FILE_CONTENTS > $HOME/gurobi.lic
-        fi
         tox -e ${{ matrix.toxenv }}
 
     - name: Upload coverage to codecov

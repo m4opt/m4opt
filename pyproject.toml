@@ -13,8 +13,6 @@ dependencies = [
     "astropy-healpix",
     "astroquery",
     "click >= 8.2.0",  # https://github.com/pallets/click/pull/2829
-    "cplex",
-    "docplex",
     "dust-extinction >= 1.7",
     "dustmaps",
     "ligo.skymap >= 2.4.0",
@@ -43,6 +41,13 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+cplex = [
+    "cplex",
+    "docplex",
+]
+gurobi = [
+    "gurobipy",
+]
 test = [
     "astroplan",
     "networkx",

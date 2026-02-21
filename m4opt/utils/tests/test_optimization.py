@@ -12,12 +12,13 @@ from ..optimization import pack_boxes, partition_graph, partition_graph_color, s
 def test_pack_boxes_random(n, m):
     """Test packing random boxes in multiple dimensions."""
     wh = np.random.uniform(size=(n, m))
-    eps = np.finfo(wh.dtype).eps
+    # Use a tolerance consistent with MILP solver feasibility tolerances
+    tol = 1e-6
     lower, _ = pack_boxes(wh)
     upper = lower + wh
     i, j = np.triu_indices(n, 1)
     assert m == 0 or np.all(
-        np.any((upper[j] <= lower[i] + eps) | (upper[i] <= lower[j] + eps), axis=1)
+        np.any((upper[j] <= lower[i] + tol) | (upper[i] <= lower[j] + tol), axis=1)
     )
 
 
@@ -26,12 +27,13 @@ def test_pack_boxes_random(n, m):
 def test_pack_boxes_perfect_square(n):
     """Test packing a perfect square number of unit boxes in 2 dimensions."""
     wh = np.ones((n**2, 2))
-    eps = np.finfo(wh.dtype).eps
+    # Use a tolerance consistent with MILP solver feasibility tolerances
+    tol = 1e-6
     lower, total_wh = pack_boxes(wh)
     upper = lower + wh
     i, j = np.triu_indices(n, 1)
     assert np.all(
-        np.any((upper[j] <= lower[i] + eps) | (upper[i] <= lower[j] + eps), axis=1)
+        np.any((upper[j] <= lower[i] + tol) | (upper[i] <= lower[j] + tol), axis=1)
     )
     np.testing.assert_array_equal(total_wh, [n, n])
 
