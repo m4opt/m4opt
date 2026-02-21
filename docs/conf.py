@@ -240,6 +240,7 @@ intersphinx_mapping.update(  # noqa: F405
         "python-packaging-guide": ("https://packaging.python.org/en/latest/", None),
         "regions": ("https://astropy-regions.readthedocs.io/en/stable/", None),
         "sympy": ("https://docs.sympy.org/latest/", None),
+        "smtn-002": ("https://smtn-002.lsst.io/", None),
         "synphot": ("https://synphot.readthedocs.io/en/stable/", None),
         "userguide": ("https://emfollow.docs.ligo.org/userguide/", None),
     }
