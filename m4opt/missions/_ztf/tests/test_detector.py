@@ -16,21 +16,21 @@ def test_ztf_limmag():
     coord = SkyCoord(alt=90 * u.deg, az=0 * u.deg, frame=frame)
 
     with observing(loc, coord, obstime):
-        limmags_30s = [
+        limmags = [
             ztf.detector.get_limmag(
                 5,
-                30 * u.s,
+                [30, 300] * u.s,
                 synphot.SourceSpectrum(synphot.ConstFlux1D, amplitude=0 * u.ABmag),
                 band,
             ).to_value(u.mag)
             for band in "gri"
         ]
-        lm_30s_r, lm_300s_r = ztf.detector.get_limmag(
-            5,
-            [30, 300] * u.s,
-            synphot.SourceSpectrum(synphot.ConstFlux1D, amplitude=0 * u.ABmag),
-            "r",
-        ).to_value(u.mag)
 
-    np.testing.assert_almost_equal(limmags_30s, [21.1216691, 20.8017654, 20.4476654])
-    np.testing.assert_almost_equal([lm_30s_r, lm_300s_r], [20.8017654, 22.1993963])
+    np.testing.assert_almost_equal(
+        limmags,
+        [
+            [21.1216691, 22.5947771],
+            [20.8017654, 22.1993963],
+            [20.4476654, 21.8932569],
+        ],
+    )
