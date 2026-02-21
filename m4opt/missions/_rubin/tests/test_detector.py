@@ -16,27 +16,24 @@ def test_rubin_limmag():
     coord = SkyCoord(alt=90 * u.deg, az=0 * u.deg, frame=frame)
 
     with observing(loc, coord, obstime):
-        limmags_30s = [
+        limmags = [
             rubin.detector.get_limmag(
                 5,
-                30 * u.s,
+                [30, 300] * u.s,
                 synphot.SourceSpectrum(synphot.ConstFlux1D, amplitude=0 * u.ABmag),
                 band,
             ).to_value(u.mag)
             for band in "ugrizy"
         ]
-        lm_30s_r, lm_300s_r = rubin.detector.get_limmag(
-            5,
-            [30, 300] * u.s,
-            synphot.SourceSpectrum(synphot.ConstFlux1D, amplitude=0 * u.ABmag),
-            "r",
-        ).to_value(u.mag)
 
     np.testing.assert_almost_equal(
-        limmags_30s,
-        [24.6962075, 25.4230120, 25.0115625, 24.8190254, 24.5274659, 24.0041817],
-    )
-    np.testing.assert_almost_equal(
-        [lm_30s_r, lm_300s_r],
-        [25.0115625, 26.3266559],
+        limmags,
+        [
+            [24.6962075, 26.4438678],
+            [25.4230120, 26.7672659],
+            [25.0115625, 26.3266559],
+            [24.8190254, 26.1477613],
+            [24.5274659, 25.8741048],
+            [24.0041817, 25.4119549],
+        ],
     )
