@@ -121,7 +121,6 @@ Examples
     from m4opt.missions import ultrasat
     from m4opt.synphot import observing
     import numpy as np
-    from tqdm import tqdm 
     from synphot import SourceSpectrum
     from synphot.models import BlackBody1D
 
@@ -131,43 +130,40 @@ Examples
     hpx = HEALPix(8, frame=ICRS())
     target_coords = hpx.healpix_to_skycoord(np.arange(hpx.npix))
     observer_location = EarthLocation(0 * u.m, 0 * u.m, 0 * u.m)
+    snr = np.geomspace(1e1, 1e4)
 
-    g_dwarf_spectrum = SourceSpectrum(BlackBody1D, temperature=5000 * u.K)
-    m_dwarf_spectrum = SourceSpectrum(BlackBody1D, temperature=3000 * u.K)
-    magnitudes = np.linspace(5, 25, 100) * u.ABmag
-
-    snrs_g = []
-    snrs_m = []
-    for mag in tqdm(magnitudes, desc="Calculating SNRs", unit="magnitude"):
-        with observing(
-            observer_location,
-            target_coords[np.newaxis, :, np.newaxis],
-            obstime[np.newaxis, np.newaxis, :],
-        ):
-            snr_g = ultrasat.detector.get_snr(
-                exptime=exptime,
-                source_spectrum=g_dwarf_spectrum.normalize(renorm_val=mag, band=ultrasat.detector.bandpasses['NUV'], vegaspec=None),
-                bandpass='NUV',
+    with observing(
+        observer_location,
+        target_coords[:, np.newaxis, np.newaxis],
+        obstime[np.newaxis, :, np.newaxis],
+    ):
+        limmag_g, limmag_m = [
+            np.median(
+                ultrasat.detector.get_limmag(
+                    snr=snr,
+                    exptime=exptime,
+                    source_spectrum=SourceSpectrum(
+                        BlackBody1D, temperature=temp * u.K
+                    ).normalize(
+                        renorm_val=0 * u.ABmag,
+                        band=ultrasat.detector.bandpasses["NUV"],
+                        vegaspec=None,
+                    ),
+                    bandpass="NUV",
+                ).to_value(u.mag),
+                axis=[0, 1],
             )
-            median_snr_g = np.median(snr_g)
-            snrs_g.append(median_snr_g)
-
-            snr_m = ultrasat.detector.get_snr(
-                exptime=exptime,
-                source_spectrum=m_dwarf_spectrum.normalize(renorm_val=mag, band=ultrasat.detector.bandpasses['NUV'], vegaspec=None),
-                bandpass='NUV',
-            )
-            median_snr_m = np.median(snr_m)
-            snrs_m.append(median_snr_m)
+            for temp in [5000, 3000]
+        ]
 
     fig, ax = plt.subplots()
-    ax.plot(magnitudes, snrs_g, label='G Dwarf', color='g')
-    ax.plot(magnitudes, snrs_m, label='M Dwarf', color='r')
+    ax.plot(limmag_g, snr, label="G Dwarf", color="g")
+    ax.plot(limmag_m, snr, label="M Dwarf", color="r")
     ax.set_xlim(10, 22)
     ax.set_ylim(1e1, 1e4)
-    ax.set_yscale('log')
+    ax.set_yscale("log")
     ax.set_xlabel("AB Magnitude")
-    ax.set_ylabel('SNR')
+    ax.set_ylabel("SNR")
     ax.grid(True)
     ax.legend()
 """
