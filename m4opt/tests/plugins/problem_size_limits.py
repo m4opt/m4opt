@@ -11,8 +11,7 @@ def pytest_runtest_call(item):
             pytest.skip("requires full version of CPLEX")
         # Gurobi community/restricted license limit or license error
         if type(e).__name__ == "GurobiError" and (
-            "size-limited" in str(e).lower()
-            or "license" in str(e).lower()
+            "size-limited" in str(e).lower() or "license" in str(e).lower()
         ):
             pytest.skip("requires full version of Gurobi")
         raise
