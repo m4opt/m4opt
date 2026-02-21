@@ -32,9 +32,5 @@ def test_ztf_limmag():
             "r",
         ).to_value(u.mag)
 
-    np.testing.assert_almost_equal(
-        limmags_30s, [21.1216691, 20.8017654, 20.4476654]
-    )
-    np.testing.assert_almost_equal(
-        [lm_30s_r, lm_300s_r], [20.8017654, 22.1993963]
-    )
+    np.testing.assert_almost_equal(limmags_30s, [21.1216691, 20.8017654, 20.4476654])
+    np.testing.assert_almost_equal([lm_30s_r, lm_300s_r], [20.8017654, 22.1993963])
