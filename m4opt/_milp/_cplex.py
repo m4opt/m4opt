@@ -17,7 +17,12 @@ from docplex.mp.solution import SolveSolution as _SolveSolution
 from numpy import typing as npt
 
 from ..utils.numpy import atmost_1d
-from ._base import ProgressData, ProgressDataRecorder, VariableArray, add_var_array_method
+from ._base import (
+    ProgressData,
+    ProgressDataRecorder,
+    VariableArray,
+    add_var_array_method,
+)
 
 __all__ = ("CplexModel", "CplexSolveSolution")
 

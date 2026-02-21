@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 from astropy import units as u
 
-from ..milp import Model, VariableArray
 from .._milp import _get_backend
+from ..milp import Model, VariableArray
 
 problem_size_limits = pytest.mark.parametrize(
     "num_vars", [pytest.param(1000, id="small"), pytest.param(10000, id="big")]

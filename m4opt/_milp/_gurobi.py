@@ -305,9 +305,7 @@ class GurobiModel:
         indcts = np.asarray(indcts)
         for ic in indcts.ravel():
             if isinstance(ic, GurobiIndicatorProxy):
-                self._grb.addGenConstrIndicator(
-                    ic._binvar, ic._binval, ic._constr
-                )
+                self._grb.addGenConstrIndicator(ic._binvar, ic._binval, ic._constr)
             else:
                 raise TypeError(f"Expected GurobiIndicatorProxy, got {type(ic)}")
 
@@ -526,7 +524,7 @@ class GurobiModel:
             ]
             raise ValueError(
                 f'Invalid model filename "{out_filename}". The extension must '
-                f'be one of the following: {" ".join(valid_extensions)}'
+                f"be one of the following: {' '.join(valid_extensions)}"
             )
 
         should_gzip = suffixes[-1].lower() == ".gz"

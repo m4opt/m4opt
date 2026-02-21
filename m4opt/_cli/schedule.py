@@ -11,13 +11,13 @@ from astropy.table import QTable, vstack
 from astropy.time import Time
 from astropy_healpix import HEALPix
 from click import UsageError
-from .._milp import ProgressData, ProgressDataRecorder
 from ligo.skymap import distance
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
 from scipy import stats
 
 from .. import __version__, missions
+from .._milp import ProgressData, ProgressDataRecorder
 from ..dynamics import nominal_roll
 from ..fov import footprint_healpix
 from ..milp import Model
