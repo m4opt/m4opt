@@ -40,10 +40,10 @@ How to Cite
 
 If you use |M4OPT| in your research, then please cite the following paper:
 
-   Singer, L. P., Criswell, A. W., Leggio, S. C., et al.
-   Optimal Follow-up of Gravitational-wave Events with the UltraViolet EXplorer
-   (UVEX). *Publications of the Astronomical Society of the Pacific*,
-   137(7):074501, July 2025. https://doi.org/10.1088/1538-3873/adcfc6.
+   Singer, L. P., Criswell, A. W., Leggio, S. C., et al. Optimal Follow-up of
+   Gravitational-wave Events with the UltraViolet EXplorer (UVEX).
+   *Publications of the Astronomical Society of the Pacific*, 137(7):074501,
+   July 2025. https://doi.org/10.1088/1538-3873/adcfc6.
 
 *****************
 Table of Contents
