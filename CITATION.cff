@@ -95,6 +95,5 @@ preferred-citation:
   url: https://doi.org/10.1088/1538-3873/adcfc6
   date-published: 2025-06-14
   year: 2025
-  publisher:
-    name: Publications of the Astronomical Society of the Pacific
+  journal: Publications of the Astronomical Society of the Pacific
   type: article
