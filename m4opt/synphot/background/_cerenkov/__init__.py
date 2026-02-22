@@ -326,19 +326,24 @@ class CerenkovBackground:
         # aep8.flux over energy so this loop is unnecessary.
         emin, emax = energy
         energy_bins = np.geomspace(emin, emax, num=nbins)
-        flux_values = u.Quantity([
-            aep8_flux(
-                _REFERENCE_LOCATION,
-                _REFERENCE_OBSTIME,
-                e,
-                kind="integral",
-                solar=solar,
-                particle=particle,
-            )
-            for e in energy_bins
-        ])
+        flux_values = u.Quantity(
+            [
+                aep8_flux(
+                    _REFERENCE_LOCATION,
+                    _REFERENCE_OBSTIME,
+                    e,
+                    kind="integral",
+                    solar=solar,
+                    particle=particle,
+                )
+                for e in energy_bins
+            ]
+        )
 
         return _cerenkov_spectrum_from_flux(
-            energy_bins, flux_values,
-            material=material, particle=particle, factor=factor,
+            energy_bins,
+            flux_values,
+            material=material,
+            particle=particle,
+            factor=factor,
         )

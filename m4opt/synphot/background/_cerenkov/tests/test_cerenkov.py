@@ -15,9 +15,9 @@ from ..._core import BACKGROUND_SOLID_ANGLE
 from .. import (
     _REFERENCE_LOCATION,
     _REFERENCE_OBSTIME,
-    _cerenkov_spectrum_from_flux,
     CerenkovBackground,
     CerenkovScaleFactor,
+    _cerenkov_spectrum_from_flux,
 )
 from .._electron_loss import get_electron_energy_loss
 from .._refraction_index import get_refraction_index
@@ -111,16 +111,21 @@ def test_electron_energy_loss_matches_derivation():
         Ek_tab, dEdX_tab = get_electron_energy_loss(material)
         Ek_calc, dEdX_calc = _compute_electron_energy_loss(material)
         np.testing.assert_allclose(
-            Ek_tab.value, Ek_calc.value, rtol=1e-10,
+            Ek_tab.value,
+            Ek_calc.value,
+            rtol=1e-10,
             err_msg=f"Energy mismatch for {material}",
         )
         np.testing.assert_allclose(
-            dEdX_tab.value, dEdX_calc.value, rtol=1e-10,
+            dEdX_tab.value,
+            dEdX_calc.value,
+            rtol=1e-10,
             err_msg=f"dEdX mismatch for {material}",
         )
 
 
 # ---------------------------------------------------------------------------
+
 
 def test_cerenkov_reference_regression():
     """Reference spectrum matches frozen regression values."""
