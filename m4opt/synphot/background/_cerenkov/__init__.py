@@ -253,8 +253,8 @@ class CerenkovBackground:
         beta = np.sqrt(1 - 1.0 / gamma**2)
 
         # Interpolate flux at midpoints
-        cs_fm = CubicSpline(ee.value, Fe.value, bc_type="natural", extrapolate=True)
-        Fm = u.Quantity(cs_fm(em.value), Fe.unit)
+        cs_fm = CubicSpline(ee.value, Fe.value, bc_type="natural", extrapolate=True)  # type: ignore[attr-defined]
+        Fm = u.Quantity(cs_fm(em.value), Fe.unit)  # type: ignore[attr-defined]
 
         # Cerenkov emission condition: n * beta > 1
         fC_energy = np.maximum(0, 1 - 1.0 / n_val**2 / beta**2)
@@ -266,11 +266,11 @@ class CerenkovBackground:
         cs_dEdX = CubicSpline(
             Ek.value, 1.0 / dEdX.value, bc_type="natural", extrapolate=True
         )
-        gEE = u.Quantity(cs_dEdX(em.value), 1 / dEdX.unit)
+        gEE = u.Quantity(cs_dEdX(em.value), 1 / dEdX.unit)  # type: ignore[attr-defined]
 
         # Cerenkov emission integrand at midpoints
         intg = gEE * Fm * fC_energy
-        cs_intg = CubicSpline(em.value, intg.value, bc_type="natural", extrapolate=True)
+        cs_intg = CubicSpline(em.value, intg.value, bc_type="natural", extrapolate=True)  # type: ignore[attr-defined]
 
         # Wavelength-dependent refractive index
         Lam, n, _ = REFRACTION_INDEX[material]()
