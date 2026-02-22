@@ -5,7 +5,7 @@ from importlib import resources
 
 import numpy as np
 from astropy import units as u
-from astropy.constants import c, e, hbar, m_e, m_p
+from astropy.constants import alpha, c, e, hbar, m_e, m_p
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from scipy.interpolate import CubicSpline
@@ -13,11 +13,11 @@ from synphot import Empirical1D, SourceSpectrum
 
 from ..._core import BACKGROUND_SOLID_ANGLE
 from .. import (
+    _MATERIAL_PROPERTIES,
     _REFERENCE_LOCATION,
     _REFERENCE_OBSTIME,
     CerenkovBackground,
     CerenkovScaleFactor,
-    _cerenkov_spectrum_from_flux,
 )
 from .._electron_loss import get_electron_energy_loss
 from .._refraction_index import get_refraction_index
@@ -296,6 +296,53 @@ def _cerenkov_emission_from_matlab_xml(xml_path, factor=21):
         Empirical1D,
         points=lam * u.Angstrom,
         lookup_table=intensity_photlam / factor,
+    )
+
+
+def _cerenkov_spectrum_from_flux(
+    ee, Fe, material="sio2_suprasil_2a", particle="e", factor=21,
+):
+    """Compute Cerenkov spectrum from an energy grid and flux (test helper)."""
+    if np.all(Fe.value == 0):
+        Lam, _, _ = get_refraction_index(material)
+        zero = np.zeros_like(Lam.value) * u.photon / (u.cm**2 * u.s * u.AA)
+        return SourceSpectrum(Empirical1D, points=Lam, lookup_table=zero)
+
+    n_val, rho = _MATERIAL_PROPERTIES[material]
+    em = 0.5 * (ee[:-1] + ee[1:])
+    mass = m_e if particle == "e" else m_p
+    mass_mev = (mass * c**2).to(u.MeV)
+    gamma = 1 + em / mass_mev
+    beta = np.sqrt(1 - 1.0 / gamma**2)
+    cs_fm = CubicSpline(ee.value, Fe.value, bc_type="natural", extrapolate=True)
+    Fm = u.Quantity(cs_fm(em.value), Fe.unit)
+    fC_energy = np.maximum(0, 1 - 1.0 / n_val**2 / beta**2)
+    Ek, dEdX = get_electron_energy_loss(material)
+    cs_dEdX = CubicSpline(
+        Ek.value, 1.0 / dEdX.value, bc_type="natural", extrapolate=True
+    )
+    gEE = u.Quantity(cs_dEdX(em.value), 1 / dEdX.unit)
+    intg = gEE * Fm * fC_energy
+    cs_intg = CubicSpline(em.value, intg.value, bc_type="natural", extrapolate=True)
+    Lam, n, _ = get_refraction_index(material)
+    fC_wl_e = np.maximum(
+        0, 1 - 1.0 / n[:, np.newaxis] ** 2 / beta[np.newaxis, :] ** 2
+    )
+    intg = gEE * Fm * fC_wl_e
+    cs_val = cs_intg(1.0) * intg.unit
+    Lam_cm = Lam.to(u.cm)
+    Lnorm = 2 * np.pi * alpha / rho / Lam_cm**2 * cs_val * u.photon
+    Lnorm = Lnorm.to(u.photon / (u.MeV * u.s * u.cm**2 * u.micron))
+    int_val = np.sum(intg * np.diff(ee)[np.newaxis, :], axis=1) / cs_val
+    L1mu = int_val * Lnorm
+    IC1mu = L1mu / (2 * np.pi * n**2) / u.sr
+    intensity_angstrom = IC1mu.to(u.photon / u.cm**2 / u.s / u.sr / u.Angstrom)
+    intensity_arcsec2 = intensity_angstrom.to(
+        u.photon / u.cm**2 / u.s / BACKGROUND_SOLID_ANGLE / u.Angstrom
+    )
+    intensity_photlam = intensity_arcsec2 * BACKGROUND_SOLID_ANGLE
+    return SourceSpectrum(
+        Empirical1D, points=Lam, lookup_table=intensity_photlam / factor
     )
 
 
