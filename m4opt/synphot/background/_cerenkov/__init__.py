@@ -219,27 +219,25 @@ class CerenkovBackground:
         # aep8.flux over energy so this loop is unnecessary.
         emin, emax = energy
         ee = np.geomspace(emin, emax, num=nbins)
-        Fe = u.Quantity([
-            aep8_flux(
-                _REFERENCE_LOCATION,
-                _REFERENCE_OBSTIME,
-                e,
-                kind="integral",
-                solar=solar,
-                particle=particle,
-            )
-            for e in ee
-        ])
+        Fe = u.Quantity(
+            [
+                aep8_flux(
+                    _REFERENCE_LOCATION,
+                    _REFERENCE_OBSTIME,
+                    e,
+                    kind="integral",
+                    solar=solar,
+                    particle=particle,
+                )
+                for e in ee
+            ]
+        )
 
         # Zero flux: return zero spectrum
         if np.all(Fe.value == 0):
             Lam, _, _ = get_refraction_index(material)
-            zero_flux = np.zeros_like(Lam.value) * u.photon / (
-                u.cm**2 * u.s * u.AA
-            )
-            return SourceSpectrum(
-                Empirical1D, points=Lam, lookup_table=zero_flux
-            )
+            zero_flux = np.zeros_like(Lam.value) * u.photon / (u.cm**2 * u.s * u.AA)
+            return SourceSpectrum(Empirical1D, points=Lam, lookup_table=zero_flux)
 
         n_val, rho = _MATERIAL_PROPERTIES[material]
 
@@ -255,9 +253,7 @@ class CerenkovBackground:
         beta = np.sqrt(1 - 1.0 / gamma**2)
 
         # Interpolate flux at midpoints
-        cs_fm = CubicSpline(
-            ee.value, Fe.value, bc_type="natural", extrapolate=True
-        )
+        cs_fm = CubicSpline(ee.value, Fe.value, bc_type="natural", extrapolate=True)
         Fm = u.Quantity(cs_fm(em.value), Fe.unit)
 
         # Cerenkov emission condition: n * beta > 1
@@ -274,9 +270,7 @@ class CerenkovBackground:
 
         # Cerenkov emission integrand at midpoints
         intg = gEE * Fm * fC_energy
-        cs_intg = CubicSpline(
-            em.value, intg.value, bc_type="natural", extrapolate=True
-        )
+        cs_intg = CubicSpline(em.value, intg.value, bc_type="natural", extrapolate=True)
 
         # Wavelength-dependent refractive index
         Lam, n, _ = get_refraction_index(material)
@@ -305,9 +299,7 @@ class CerenkovBackground:
         IC1mu = L1mu / (2 * np.pi * n**2) / u.sr
 
         # Convert to per-arcsec^2 per Angstrom
-        intensity_angstrom = IC1mu.to(
-            u.photon / u.cm**2 / u.s / u.sr / u.Angstrom
-        )
+        intensity_angstrom = IC1mu.to(u.photon / u.cm**2 / u.s / u.sr / u.Angstrom)
         intensity_arcsec2 = intensity_angstrom.to(
             u.photon / u.cm**2 / u.s / BACKGROUND_SOLID_ANGLE / u.Angstrom
         )

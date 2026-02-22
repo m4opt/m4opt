@@ -300,7 +300,11 @@ def _cerenkov_emission_from_matlab_xml(xml_path, factor=21):
 
 
 def _cerenkov_spectrum_from_flux(
-    ee, Fe, material="sio2_suprasil_2a", particle="e", factor=21,
+    ee,
+    Fe,
+    material="sio2_suprasil_2a",
+    particle="e",
+    factor=21,
 ):
     """Compute Cerenkov spectrum from an energy grid and flux (test helper)."""
     if np.all(Fe.value == 0):
@@ -325,9 +329,7 @@ def _cerenkov_spectrum_from_flux(
     intg = gEE * Fm * fC_energy
     cs_intg = CubicSpline(em.value, intg.value, bc_type="natural", extrapolate=True)
     Lam, n, _ = get_refraction_index(material)
-    fC_wl_e = np.maximum(
-        0, 1 - 1.0 / n[:, np.newaxis] ** 2 / beta[np.newaxis, :] ** 2
-    )
+    fC_wl_e = np.maximum(0, 1 - 1.0 / n[:, np.newaxis] ** 2 / beta[np.newaxis, :] ** 2)
     intg = gEE * Fm * fC_wl_e
     cs_val = cs_intg(1.0) * intg.unit
     Lam_cm = Lam.to(u.cm)
