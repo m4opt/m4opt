@@ -72,7 +72,9 @@ m4opt = "m4opt._cli:app"
 "*" = [
     "py.typed",
     "*.txt",
+    "*.csv",
     "*.ecsv",
+    "*.xml",
 ]
 
 [tool.pytest.ini_options]
