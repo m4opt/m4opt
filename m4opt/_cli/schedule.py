@@ -360,7 +360,7 @@ def schedule(
 
                 with observing(
                     observer_location=observer_locations
-                    if observer_locations.isscalar
+                    if isinstance(mission.observer_location, EarthFixedObserverLocation)
                     else observer_locations[0],
                     target_coord=hpx.healpix_to_skycoord(good)[:, np.newaxis],
                     obstime=obstimes[0],
@@ -399,7 +399,7 @@ def schedule(
                 distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
                 with observing(
                     observer_location=observer_locations
-                    if observer_locations.isscalar
+                    if isinstance(mission.observer_location, EarthFixedObserverLocation)
                     else observer_locations[0],
                     target_coord=hpx.healpix_to_skycoord(good),
                     obstime=obstimes[0],
