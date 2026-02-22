@@ -5,6 +5,7 @@ from importlib import resources
 
 import numpy as np
 from astropy import units as u
+from astropy.constants import c, e, hbar, m_e, m_p
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from scipy.interpolate import CubicSpline
@@ -14,9 +15,9 @@ from ..._core import BACKGROUND_SOLID_ANGLE
 from .. import (
     _REFERENCE_LOCATION,
     _REFERENCE_OBSTIME,
+    _cerenkov_spectrum_from_flux,
     CerenkovBackground,
     CerenkovScaleFactor,
-    _cerenkov_spectrum_from_flux,
 )
 from .._electron_loss import get_electron_energy_loss
 from .._refraction_index import get_refraction_index
@@ -41,6 +42,85 @@ def test_electron_energy_loss_positive():
         Ek, dEdX = get_electron_energy_loss(material)
         assert np.all(dEdX.value > 0), f"dEdX not positive for {material}"
 
+
+# ---------------------------------------------------------------------------
+# Bethe-Bloch derivation (used to verify precomputed electron energy loss data)
+# ---------------------------------------------------------------------------
+
+# For each tuple: (Atomic number Z, Mass number A, Atom count in molecular unit)
+_MATERIALS = {
+    "sio2": {"elements": [(14, 28, 1), (8, 16, 2)]},
+    "sio2_suprasil_2a": {"elements": [(14, 28, 1), (8, 16, 2)]},
+    "sapphire": {"elements": [(13, 27, 2), (8, 16, 3)]},
+}
+
+
+def _calc_dEdX(Z, A, Ek, g, b):
+    """Calculate energy loss for a single element via Bethe-Bloch."""
+    e_cgs = e.esu
+    me_cgs = m_e.cgs
+    mp_cgs = m_p.cgs
+    c_cgs = c.cgs
+    hbar_cgs = hbar.cgs
+
+    Iav = (1.3 * 10 * Z * 1 * u.eV).to(u.erg)
+
+    dedx_prefactor = (
+        2 * np.pi * e_cgs**4 * (Z / A) / (mp_cgs * me_cgs * c_cgs**2) / b**2
+    ).to(u.MeV / (u.g * u.cm**-2))
+
+    dEdXI = dedx_prefactor * (
+        np.log(((g**2 - 1) * me_cgs * c_cgs**2 / Iav) ** 2 / 2.0 / (1 + g))
+        - (2.0 / g - 1.0 / g**2) * np.log(2)
+        + 1.0 / g**2
+        + (1 - 1.0 / g) ** 2 / 8
+    )
+    dEdXI = np.maximum(dEdXI, 0)
+
+    dEdXB = (
+        4
+        * Z**2
+        / A
+        * e_cgs**6
+        / (me_cgs**2 * mp_cgs * c**4 * hbar_cgs)
+        * Ek
+        / (b * c_cgs)
+        * (np.log(183 / Z ** (1.0 / 3)) + 1.0 / 8)
+    ).to(u.MeV / (u.g * u.cm**-2))
+
+    return dEdXI + dEdXB
+
+
+def _compute_electron_energy_loss(material):
+    """Derive electron energy loss from Bethe-Bloch formula."""
+    elements = _MATERIALS[material]["elements"]
+    g = 1 + 10 ** np.arange(-3, 4.01, 0.01)
+    b = np.sqrt(1 - 1.0 / g**2)
+    Ek = ((g - 1) * m_e.cgs * c.cgs**2).to(u.MeV)
+    total_mass = sum(A * count for _, A, count in elements)
+    dEdX_total = 0
+    for Z, A, count in elements:
+        mass_fraction = A * count / total_mass
+        dEdX_total += mass_fraction * _calc_dEdX(Z, A, Ek, g, b)
+    return Ek, dEdX_total
+
+
+def test_electron_energy_loss_matches_derivation():
+    """Precomputed energy loss data matches Bethe-Bloch derivation."""
+    for material in ["sio2", "sapphire"]:
+        Ek_tab, dEdX_tab = get_electron_energy_loss(material)
+        Ek_calc, dEdX_calc = _compute_electron_energy_loss(material)
+        np.testing.assert_allclose(
+            Ek_tab.value, Ek_calc.value, rtol=1e-10,
+            err_msg=f"Energy mismatch for {material}",
+        )
+        np.testing.assert_allclose(
+            dEdX_tab.value, dEdX_calc.value, rtol=1e-10,
+            err_msg=f"dEdX mismatch for {material}",
+        )
+
+
+# ---------------------------------------------------------------------------
 
 def test_cerenkov_reference_regression():
     """Reference spectrum matches frozen regression values."""

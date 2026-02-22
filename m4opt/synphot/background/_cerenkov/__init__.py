@@ -37,36 +37,12 @@ _REFERENCE_LOCATION = EarthLocation.from_geodetic(
 _REFERENCE_OBSTIME = Time("2025-05-18T02:48:00Z")
 _REFERENCE_ENERGY = 1.0 * u.MeV
 
-
-def _aep8_flux_at(observer_location, obstime, energy, particle="e", solar="max"):
-    """Get integral flux from the AE8/AP8 radiation belt model.
-
-    Parameters
-    ----------
-    observer_location : `~astropy.coordinates.EarthLocation`
-        Observer location.
-    obstime : `~astropy.time.Time`
-        Observation time.
-    energy : `~astropy.units.Quantity`
-        Particle energy.
-    particle : {'e', 'p'}
-        Particle type.
-    solar : {'max', 'min'}
-        Solar activity condition.
-
-    Returns
-    -------
-    float
-        Integral flux in cm^-2 s^-1.
-    """
-    return aep8_flux(
-        observer_location,
-        obstime,
-        energy,
-        kind="integral",
-        solar=solar,
-        particle=particle,
-    )
+# Material optical parameters: (scalar refractive index, density)
+_MATERIAL_PROPERTIES = {
+    "sio2": (1.5, 2.2 * u.g / u.cm**3),
+    "sio2_suprasil_2a": (1.5, 2.2 * u.g / u.cm**3),
+    "sapphire": (1.75, 4.0 * u.g / u.cm**3),
+}
 
 
 class CerenkovScaleFactor(ExtrinsicScaleFactor):
@@ -87,20 +63,22 @@ class CerenkovScaleFactor(ExtrinsicScaleFactor):
         super().__init__(*args, **kwargs)
         self._particle = particle
         self._solar = solar
-        self._reference_flux = _aep8_flux_at(
+        self._reference_flux = aep8_flux(
             _REFERENCE_LOCATION,
             _REFERENCE_OBSTIME,
             _REFERENCE_ENERGY,
+            kind="integral",
             particle=particle,
             solar=solar,
         )
 
     @override
     def at(self, observer_location, target_coord, obstime):
-        current_flux = _aep8_flux_at(
+        current_flux = aep8_flux(
             observer_location,
             obstime,
             _REFERENCE_ENERGY,
+            kind="integral",
             particle=self._particle,
             solar=self._solar,
         )
@@ -109,54 +87,6 @@ class CerenkovScaleFactor(ExtrinsicScaleFactor):
         if ref == 0:
             return 0.0
         return current_flux / ref
-
-
-def _radiation_belt_flux_table(
-    observer_location,
-    obstime,
-    energy=(0.05 * u.MeV, 8.5 * u.MeV),
-    nbins=1000,
-    particle="e",
-    solar="max",
-):
-    """Return integral flux values from Earth's radiation belts.
-
-    Parameters
-    ----------
-    observer_location : `~astropy.coordinates.EarthLocation`
-        Observer location.
-    obstime : `~astropy.time.Time`
-        Observation time.
-    energy : tuple
-        (min, max) energy range.
-    nbins : int
-        Number of energy bins.
-    particle : {'e', 'p'}
-        Particle type.
-    solar : {'max', 'min'}
-        Solar activity condition.
-
-    Returns
-    -------
-    energy_bins : `~astropy.units.Quantity`
-        Energy grid.
-    flux_values : `~astropy.units.Quantity`
-        Integral flux at each energy.
-    """
-    emin, emax = energy
-    energy_bins = np.geomspace(emin, emax, num=nbins)
-    flux_integral = [
-        aep8_flux(
-            observer_location,
-            obstime,
-            e,
-            kind="integral",
-            solar=solar,
-            particle=particle,
-        )
-        for e in energy_bins
-    ]
-    return energy_bins, u.Quantity(flux_integral)
 
 
 def _cerenkov_spectrum_from_flux(
@@ -195,13 +125,7 @@ def _cerenkov_spectrum_from_flux(
         zero_intensity = np.zeros_like(Lam.value) * u.photon / (u.cm**2 * u.s * u.AA)
         return SourceSpectrum(Empirical1D, points=Lam, lookup_table=zero_intensity)
 
-    # Material optical parameters
-    material_properties = {
-        "sio2": (1.5, 2.2 * u.g / u.cm**3),
-        "sio2_suprasil_2a": (1.5, 2.2 * u.g / u.cm**3),
-        "sapphire": (1.75, 4.0 * u.g / u.cm**3),
-    }
-    n_val, rho = material_properties[material.lower()]
+    n_val, rho = _MATERIAL_PROPERTIES[material]
 
     # Midpoint energies
     em = 0.5 * (ee[:-1] + ee[1:])
@@ -272,50 +196,6 @@ def _cerenkov_spectrum_from_flux(
     )
 
 
-def cerenkov_emission(
-    observer_location,
-    obstime,
-    material="sio2_suprasil_2a",
-    particle="e",
-    factor=21,
-    solar="max",
-    energy=(0.05 * u.MeV, 8.5 * u.MeV),
-    nbins=1000,
-):
-    """Calculate Cerenkov emission spectrum at a given location and time.
-
-    Parameters
-    ----------
-    observer_location : `~astropy.coordinates.EarthLocation`
-        Observer location.
-    obstime : `~astropy.time.Time`
-        Observation time.
-    material : str
-        Optical material (default: ``'sio2_suprasil_2a'``).
-    particle : {'e', 'p'}
-        Particle type (default: ``'e'``).
-    factor : float
-        Geometric suppression factor (default: 21).
-    solar : {'max', 'min'}
-        Solar activity condition (default: ``'max'``).
-    energy : tuple
-        (min, max) energy range (default: (0.05, 8.5) MeV).
-    nbins : int
-        Number of energy bins (default: 1000).
-
-    Returns
-    -------
-    `~synphot.SourceSpectrum`
-        Cerenkov emission spectrum.
-    """
-    energy_bins, flux_values = _radiation_belt_flux_table(
-        observer_location, obstime, energy, nbins, particle, solar
-    )
-    return _cerenkov_spectrum_from_flux(
-        energy_bins, flux_values, material=material, particle=particle, factor=factor
-    )
-
-
 class CerenkovBackground:
     """Cerenkov particle-induced background radiation.
 
@@ -368,7 +248,7 @@ class CerenkovBackground:
         :caption: Electron energy loss (dE/dX) vs. kinetic energy
 
         import matplotlib.pyplot as plt
-        from m4opt.synphot.background._cerenkov import get_electron_energy_loss
+        from m4opt.synphot.background._cerenkov._electron_loss import get_electron_energy_loss
 
         Ek, dEdX_SiO2 = get_electron_energy_loss(material="sio2")
         _, dEdX_Al2O3 = get_electron_energy_loss(material="sapphire")
@@ -385,7 +265,7 @@ class CerenkovBackground:
         :caption: Refractive index of Suprasil 2A vs. wavelength
 
         import matplotlib.pyplot as plt
-        from m4opt.synphot.background._cerenkov import get_refraction_index
+        from m4opt.synphot.background._cerenkov._refraction_index import get_refraction_index
 
         L, n, _ = get_refraction_index("sio2_suprasil_2a")
 
@@ -441,13 +321,24 @@ class CerenkovBackground:
         `~synphot.SourceSpectrum`
             Reference Cerenkov emission spectrum.
         """
-        return cerenkov_emission(
-            _REFERENCE_LOCATION,
-            _REFERENCE_OBSTIME,
-            material=material,
-            particle=particle,
-            factor=factor,
-            solar=solar,
-            energy=energy,
-            nbins=nbins,
+        # Build radiation belt flux table.
+        # TODO: open issue at https://github.com/m4opt/aep8 to vectorize
+        # aep8.flux over energy so this loop is unnecessary.
+        emin, emax = energy
+        energy_bins = np.geomspace(emin, emax, num=nbins)
+        flux_values = u.Quantity([
+            aep8_flux(
+                _REFERENCE_LOCATION,
+                _REFERENCE_OBSTIME,
+                e,
+                kind="integral",
+                solar=solar,
+                particle=particle,
+            )
+            for e in energy_bins
+        ])
+
+        return _cerenkov_spectrum_from_flux(
+            energy_bins, flux_values,
+            material=material, particle=particle, factor=factor,
         )

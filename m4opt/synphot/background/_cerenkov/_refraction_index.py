@@ -13,7 +13,7 @@ from astropy.table import Table
 from . import data
 
 
-def ref_index_fused_silica():
+def _ref_index_fused_silica():
     """Refractive index (Sellmeier equation) for fused silica (SiO2)."""
     L = np.arange(0.21, 6.71, 0.01)
     n = np.sqrt(
@@ -27,7 +27,7 @@ def ref_index_fused_silica():
     return L, n, t
 
 
-def ref_index_suprasil_2a():
+def _ref_index_suprasil_2a():
     """Refractive index and transmission for Suprasil 2A (tabulated data)."""
     table_n = Table.read(
         resources.files(data) / "suprasil_2a_refractive_index.csv",
@@ -45,13 +45,13 @@ def ref_index_suprasil_2a():
     return L, n, t
 
 
-_MATERIALS = {
-    "sio2": ref_index_fused_silica,
-    "sio2_suprasil_2a": ref_index_suprasil_2a,
+REFRACTION_INDEX = {
+    "sio2": _ref_index_fused_silica,
+    "sio2_suprasil_2a": _ref_index_suprasil_2a,
 }
 
 
-def get_refraction_index(material="sio2_suprasil_2a"):
+def get_refraction_index(material):
     """Compute refractive index and transmission for a given material.
 
     Parameters
@@ -76,8 +76,7 @@ def get_refraction_index(material="sio2_suprasil_2a"):
     ValueError
         If unsupported material is specified.
     """
-    material = material.lower()
     try:
-        return _MATERIALS[material]()
+        return REFRACTION_INDEX[material]()
     except KeyError:
-        raise ValueError(f"Unknown material option: {material}")
+        raise ValueError(f"Unknown material: {material!r}")
