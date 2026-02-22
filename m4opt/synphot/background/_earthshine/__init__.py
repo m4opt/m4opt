@@ -36,8 +36,8 @@ from astropy import units as u
 from astropy.table import QTable
 from synphot import Empirical1D, SourceSpectrum, SpectralElement
 
-from ..._extrinsic import ExtrinsicScaleFactor
 from ....constraints._earth_limb import _get_angle_from_earth_limb
+from ..._extrinsic import ExtrinsicScaleFactor
 from .._core import BACKGROUND_SOLID_ANGLE
 from . import data
 
