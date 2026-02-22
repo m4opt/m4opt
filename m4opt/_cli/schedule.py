@@ -359,7 +359,7 @@ def schedule(
                 appmag_quantiles[np.isposinf(appmag_mu)] = np.inf
 
                 with observing(
-                    observer_location=observer_locations[0],
+                    observer_location=observer_locations if observer_locations.isscalar else observer_locations[0],
                     target_coord=hpx.healpix_to_skycoord(good)[:, np.newaxis],
                     obstime=obstimes[0],
                 ):
@@ -396,7 +396,7 @@ def schedule(
             else:
                 distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
                 with observing(
-                    observer_location=observer_locations[0],
+                    observer_location=observer_locations if observer_locations.isscalar else observer_locations[0],
                     target_coord=hpx.healpix_to_skycoord(good),
                     obstime=obstimes[0],
                 ):
