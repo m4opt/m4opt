@@ -5,6 +5,7 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation, SkyCoord
 from astropy.time import Time
 
+from .... import observing
 from .. import EarthshineBackground
 
 
@@ -36,8 +37,6 @@ def test_earthshine_uv_fainter_than_visible():
 
 def test_earthshine_in_context():
     """Works within observing() context."""
-    from m4opt.synphot import observing
-
     loc = EarthLocation.from_geodetic(
         lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km
     )
@@ -47,4 +46,5 @@ def test_earthshine_in_context():
     bg = EarthshineBackground()
     with observing(observer_location=loc, target_coord=coord, obstime=obstime):
         val = bg(2600 * u.AA)
+    # FIXME: add a more constraining test (e.g., regression value check)
     assert val.value > 0
