@@ -236,12 +236,8 @@ class CerenkovBackground:
         # Zero flux: return zero spectrum
         if np.all(Fe.value == 0):
             Lam, _, _ = REFRACTION_INDEX[material]()
-            zero_flux = np.zeros_like(Lam.value) * u.photon / (
-                u.cm**2 * u.s * u.AA
-            )
-            return SourceSpectrum(
-                Empirical1D, points=Lam, lookup_table=zero_flux
-            )
+            zero_flux = np.zeros_like(Lam.value) * u.photon / (u.cm**2 * u.s * u.AA)
+            return SourceSpectrum(Empirical1D, points=Lam, lookup_table=zero_flux)
 
         n_val, rho = _MATERIAL_PROPERTIES[material]
 
