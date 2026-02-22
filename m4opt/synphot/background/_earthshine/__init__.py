@@ -14,18 +14,33 @@ which provide discrete earthshine intensity levels at specific limb angles:
 - 50 deg from limb: 0.5x the "high" spectrum ("average")
 
 The scale factor is interpolated in log2-space between these calibration
-points and clamped at the boundaries. Targets below the Earth's limb
-(occluded by Earth) receive zero earthshine.
+points, extrapolated beyond them, and modulated by the Earth's illumination
+phase: earthshine is strongest when the target is on the sunlit side of
+Earth and weakest when looking toward the dark side. Targets below the
+Earth's limb (occluded by Earth) receive zero earthshine.
 
 This is relevant for satellites in Earth orbit (LEO, GEO, etc.) where
 earthshine is a significant source of stray light.
 
 .. _`Table 6.4`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-6-tabular-sky-backgrounds
 
+The illumination phase function is the Lambertian sphere phase function
+from Russell (1916) [2]_:
+
+.. math::
+
+    f(\\alpha) = \\frac{\\sin\\alpha + (\\pi - \\alpha)\\cos\\alpha}{\\pi}
+
+where :math:`\\alpha` is the angle between the Sun and the target as seen
+from Earth's center.
+
 References
 ----------
 .. [1] Prichard, L., Welty, D. and Jones, A., et al. 2022 "STIS Instrument
        Handbook," Version 21.0, (Baltimore: STScI)
+.. [2] Russell, H. N. 1916 "On the Albedo of the Planets and Their
+       Satellites," Astrophysical Journal, 43, 173.
+       https://doi.org/10.1086/142244
 """
 
 from importlib import resources
@@ -33,6 +48,7 @@ from typing import override
 
 import numpy as np
 from astropy import units as u
+from astropy.coordinates import get_sun
 from astropy.table import QTable
 from synphot import Empirical1D, SourceSpectrum, SpectralElement
 
@@ -62,8 +78,30 @@ class EarthshineBackgroundScaleFactor(ExtrinsicScaleFactor):
         angle_deg = angle.to_value(u.deg)
 
         log2_scale = np.interp(angle_deg, _LIMB_ANGLES_DEG, _LOG2_SCALE_FACTORS)
+
+        # Extrapolate beyond the last calibration point using the slope
+        # from the last two points, so earthshine decreases at large angles
+        # rather than clamping at 0.5.
+        slope = (_LOG2_SCALE_FACTORS[-1] - _LOG2_SCALE_FACTORS[-2]) / (
+            _LIMB_ANGLES_DEG[-1] - _LIMB_ANGLES_DEG[-2]
+        )
+        log2_scale = np.where(
+            angle_deg > _LIMB_ANGLES_DEG[-1],
+            _LOG2_SCALE_FACTORS[-1]
+            + slope * (angle_deg - _LIMB_ANGLES_DEG[-1]),
+            log2_scale,
+        )
+
         scale = np.exp2(log2_scale)
         scale = np.where(angle_deg > 0, scale, 0.0)
+
+        # Modulate by Earth illumination using the Lambertian sphere phase
+        # function (Russell 1916). Earthshine is strongest when the target is
+        # on the sunlit side of Earth, and weakest on the dark side.
+        sun_coord = get_sun(obstime)
+        alpha = sun_coord.separation(target_coord).rad
+        illumination = (np.sin(alpha) + (np.pi - alpha) * np.cos(alpha)) / np.pi
+        scale *= illumination
 
         if np.ndim(angle_deg) == 0:
             return scale.item()

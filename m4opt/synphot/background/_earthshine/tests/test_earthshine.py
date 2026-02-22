@@ -4,11 +4,17 @@ import numpy as np
 import pytest
 from astropy import units as u
 from astropy.constants import R_earth
-from astropy.coordinates import EarthLocation, SkyCoord
+from astropy.coordinates import EarthLocation, SkyCoord, get_sun
 from astropy.time import Time
 
 from .... import observing
 from .. import EarthshineBackground, EarthshineBackgroundScaleFactor
+
+# On 2025-01-01, the Sun is at RA~281 deg, Dec~-23 deg.
+# Use RA near the Sun for scale factor tests so the illumination
+# factor is close to 1.0 and doesn't confound the limb angle tests.
+_TEST_OBSTIME = Time("2025-01-01T00:00:00Z")
+_SUN_RA_DEG = 281.0
 
 
 def test_earthshine_high_positive():
@@ -66,17 +72,14 @@ def test_earthshine_scale_factor_calibration_points():
     # Observer at 2*R_earth from center (altitude = R_earth above surface).
     # limb_alt = arccos(R_earth / (2*R_earth)) = 60 deg.
     # limb_angle = alt + 60 deg, so alt = limb_angle - 60 deg.
+    # At the North Pole, alt = dec.
+    # Use RA near the Sun so illumination factor ~ 1.
     loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
-    obstime = Time("2025-01-01T00:00:00Z")
 
     for limb_angle_deg, expected_scale in [(24, 2.0), (38, 1.0), (50, 0.5)]:
-        # Target at altitude = limb_angle - 60 deg (in AltAz frame, the
-        # target needs altitude such that alt + limb_alt = limb_angle).
-        # At the North Pole with geocentric z-axis observer, altitude
-        # maps directly to declination offset.
         alt_deg = limb_angle_deg - 60
-        coord = SkyCoord(0 * u.deg, (90 + alt_deg) * u.deg)
-        scale = sf.at(loc, coord, obstime)
+        coord = SkyCoord(_SUN_RA_DEG * u.deg, alt_deg * u.deg)
+        scale = sf.at(loc, coord, _TEST_OBSTIME)
         np.testing.assert_allclose(scale, expected_scale, rtol=0.15)
 
 
@@ -85,34 +88,81 @@ def test_earthshine_scale_factor_below_limb():
     sf = EarthshineBackgroundScaleFactor()
 
     # Observer at 2*R_earth, limb_alt = 60 deg.
-    # Target at alt = -70 deg => limb_angle = -70 + 60 = -10 deg (below limb).
+    # Target at alt = -90 deg => limb_angle = -90 + 60 = -30 deg (below limb).
     loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
-    obstime = Time("2025-01-01T00:00:00Z")
-    # Point toward nadir (declination = -90 from zenith)
-    coord = SkyCoord(0 * u.deg, -90 * u.deg)
+    coord = SkyCoord(_SUN_RA_DEG * u.deg, -90 * u.deg)
 
-    scale = sf.at(loc, coord, obstime)
+    scale = sf.at(loc, coord, _TEST_OBSTIME)
     assert scale == 0.0
 
 
-def test_earthshine_scale_factor_clamping():
-    """Scale factor clamps at boundaries (2.0 for <24 deg, 0.5 for >50 deg)."""
+def test_earthshine_scale_factor_clamps_near_limb():
+    """Scale factor clamps at 2.0 for targets between 0 and 24 deg from limb."""
     sf = EarthshineBackgroundScaleFactor()
 
     # Observer at 2*R_earth, limb_alt = 60 deg.
     loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
-    obstime = Time("2025-01-01T00:00:00Z")
-
-    # Target at high altitude (well above 50 deg from limb)
-    # alt = 80 deg => limb_angle = 80 + 60 = 140 deg (way above 50)
-    # But with our setup, alt = limb_angle - 60, so for 80 deg limb angle:
-    # alt = 20 deg
-    coord_far = SkyCoord(0 * u.deg, (90 + 20) * u.deg)
-    scale_far = sf.at(loc, coord_far, obstime)
-    np.testing.assert_allclose(scale_far, 0.5, rtol=0.15)
 
     # Target just above limb (limb_angle ~ 5 deg, below 24 deg)
     # alt = 5 - 60 = -55 deg
-    coord_near = SkyCoord(0 * u.deg, (90 - 55) * u.deg)
-    scale_near = sf.at(loc, coord_near, obstime)
+    coord_near = SkyCoord(_SUN_RA_DEG * u.deg, -55 * u.deg)
+    scale_near = sf.at(loc, coord_near, _TEST_OBSTIME)
     np.testing.assert_allclose(scale_near, 2.0, rtol=0.15)
+
+
+def test_earthshine_scale_factor_extrapolates_far_from_limb():
+    """Scale factor extrapolates to small values far from the Earth limb."""
+    sf = EarthshineBackgroundScaleFactor()
+
+    # Observer at 2*R_earth, limb_alt = 60 deg.
+    loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
+
+    # Target at limb_angle = 80 deg (well above 50 deg calibration point).
+    # alt = 80 - 60 = 20 deg
+    coord_far = SkyCoord(_SUN_RA_DEG * u.deg, 20 * u.deg)
+    scale_far = sf.at(loc, coord_far, _TEST_OBSTIME)
+    # Should be much less than 0.5 (the value at 50 deg) due to extrapolation
+    assert scale_far < 0.1
+
+
+def test_earthshine_scale_factor_monotonic():
+    """Scale factor is monotonically decreasing with increasing limb angle."""
+    sf = EarthshineBackgroundScaleFactor()
+
+    loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
+
+    # Test limb angles from 24 deg to 120 deg.
+    # Use RA near the Sun so illumination is roughly constant.
+    # Start from 24 deg (below that, the limb component is clamped at 2.0
+    # and the illumination variation can break strict monotonicity).
+    limb_angles = [24, 30, 38, 50, 60, 80, 100, 120]
+    scales = []
+    for la in limb_angles:
+        alt_deg = la - 60
+        coord = SkyCoord(_SUN_RA_DEG * u.deg, alt_deg * u.deg)
+        scales.append(sf.at(loc, coord, _TEST_OBSTIME))
+
+    for i in range(1, len(scales)):
+        assert scales[i] <= scales[i - 1]
+
+
+def test_earthshine_illumination_sunlit_vs_dark():
+    """Earthshine is stronger when looking toward the sunlit side of Earth."""
+    sf = EarthshineBackgroundScaleFactor()
+
+    loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
+
+    # Use the same limb angle (38 deg => alt = -22 deg) but different RAs:
+    # one near the Sun (sunlit limb) and one opposite (dark limb).
+    sun = get_sun(_TEST_OBSTIME)
+    alt_deg = -22  # limb angle = 38 deg
+
+    coord_sunlit = SkyCoord(sun.ra, alt_deg * u.deg)
+    coord_dark = SkyCoord(sun.ra + 180 * u.deg, alt_deg * u.deg)
+
+    scale_sunlit = sf.at(loc, coord_sunlit, _TEST_OBSTIME)
+    scale_dark = sf.at(loc, coord_dark, _TEST_OBSTIME)
+
+    assert scale_sunlit > 0
+    assert scale_dark >= 0
+    assert scale_sunlit > 2 * scale_dark
