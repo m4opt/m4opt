@@ -28,7 +28,7 @@ from synphot import Empirical1D, SourceSpectrum, SpectralElement
 from ..._extrinsic import ExtrinsicScaleFactor
 from .._core import BACKGROUND_SOLID_ANGLE
 from ._electron_loss import get_electron_energy_loss
-from ._refraction_index import get_refraction_index
+from ._refraction_index import REFRACTION_INDEX
 
 # Reference location: geostationary orbit at lon=15°, lat=0°, height=35786 km
 _REFERENCE_LOCATION = EarthLocation.from_geodetic(
@@ -158,9 +158,9 @@ class CerenkovBackground:
         :caption: Refractive index of Suprasil 2A vs. wavelength
 
         import matplotlib.pyplot as plt
-        from m4opt.synphot.background._cerenkov._refraction_index import get_refraction_index
+        from m4opt.synphot.background._cerenkov._refraction_index import REFRACTION_INDEX
 
-        L, n, _ = get_refraction_index("sio2_suprasil_2a")
+        L, n, _ = REFRACTION_INDEX["sio2_suprasil_2a"]()
 
         fig, ax = plt.subplots()
         ax.plot(L.value, n)
@@ -235,9 +235,13 @@ class CerenkovBackground:
 
         # Zero flux: return zero spectrum
         if np.all(Fe.value == 0):
-            Lam, _, _ = get_refraction_index(material)
-            zero_flux = np.zeros_like(Lam.value) * u.photon / (u.cm**2 * u.s * u.AA)
-            return SourceSpectrum(Empirical1D, points=Lam, lookup_table=zero_flux)
+            Lam, _, _ = REFRACTION_INDEX[material]()
+            zero_flux = np.zeros_like(Lam.value) * u.photon / (
+                u.cm**2 * u.s * u.AA
+            )
+            return SourceSpectrum(
+                Empirical1D, points=Lam, lookup_table=zero_flux
+            )
 
         n_val, rho = _MATERIAL_PROPERTIES[material]
 
@@ -273,7 +277,7 @@ class CerenkovBackground:
         cs_intg = CubicSpline(em.value, intg.value, bc_type="natural", extrapolate=True)
 
         # Wavelength-dependent refractive index
-        Lam, n, _ = get_refraction_index(material)
+        Lam, n, _ = REFRACTION_INDEX[material]()
 
         # Emission factor for all (wavelength, energy) pairs
         fC_wavelength_energy = np.maximum(

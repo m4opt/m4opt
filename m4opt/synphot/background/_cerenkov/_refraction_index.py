@@ -49,34 +49,3 @@ REFRACTION_INDEX = {
     "sio2": _ref_index_fused_silica,
     "sio2_suprasil_2a": _ref_index_suprasil_2a,
 }
-
-
-def get_refraction_index(material):
-    """Compute refractive index and transmission for a given material.
-
-    Parameters
-    ----------
-    material : str
-        Supported options:
-
-        - ``'sio2'``: fused silica (Sellmeier equation)
-        - ``'sio2_suprasil_2a'``: Suprasil 2A (tabulated data)
-
-    Returns
-    -------
-    L : `~astropy.units.Quantity`
-        Wavelengths in Angstrom.
-    n : `~numpy.ndarray`
-        Refractive index.
-    t : `~astropy.units.Quantity` or None
-        Transmission per 1 cm (only for Suprasil 2A), or None.
-
-    Raises
-    ------
-    ValueError
-        If unsupported material is specified.
-    """
-    try:
-        return REFRACTION_INDEX[material]()
-    except KeyError:
-        raise ValueError(f"Unknown material: {material!r}")
