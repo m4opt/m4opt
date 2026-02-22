@@ -87,8 +87,7 @@ class EarthshineBackgroundScaleFactor(ExtrinsicScaleFactor):
         )
         log2_scale = np.where(
             angle_deg > _LIMB_ANGLES_DEG[-1],
-            _LOG2_SCALE_FACTORS[-1]
-            + slope * (angle_deg - _LIMB_ANGLES_DEG[-1]),
+            _LOG2_SCALE_FACTORS[-1] + slope * (angle_deg - _LIMB_ANGLES_DEG[-1]),
             log2_scale,
         )
 
