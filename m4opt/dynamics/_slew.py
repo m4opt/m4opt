@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import override
 
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import Angle, SkyCoord
 from astropy.coordinates.matrix_utilities import rotation_matrix
+
+from ..utils.typing_extensions import override
 
 
 def matrix_trace(matrix):

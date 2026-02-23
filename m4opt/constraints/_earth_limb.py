@@ -1,11 +1,10 @@
-from typing import override
-
 import numpy as np
 from astropy import units as u
 from astropy.constants import R_earth
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
 from astropy.time import Time
 
+from ..utils.typing_extensions import override
 from ._core import Constraint
 
 

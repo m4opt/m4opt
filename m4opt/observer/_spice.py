@@ -1,5 +1,3 @@
-from typing import override
-
 import numpy as np
 import numpy.typing as npt
 import spiceypy as spice
@@ -8,6 +6,7 @@ from astropy.coordinates import EarthLocation
 from astropy.time import Time
 from astropy.utils.data import download_file
 
+from ..utils.typing_extensions import override
 from ._core import ObserverLocation
 
 

@@ -5,7 +5,7 @@ authors = [{name = "M4OPT Developers", email = "leo.singer@ligo.org"}]
 license = "BSD-3-Clause"
 description = "Multi-Mission Multi-Messenger Observation Planning Toolkit"
 readme = "README.rst"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "aep8",
     "antiprism-python",
@@ -29,6 +29,7 @@ dependencies = [
     "sympy",
     "synphot",
     "typer >= 0.16.0",
+    "typing_extensions; python_version < \"3.12\"",
     "xdg-base-dirs",
 ]
 classifiers = [
@@ -37,6 +38,7 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Operating System :: MacOS",
     "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Astronomy",
     "Typing :: Typed",

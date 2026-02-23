@@ -1,5 +1,4 @@
 from importlib import resources
-from typing import override
 
 import numpy as np
 from astropy import units as u
@@ -8,6 +7,7 @@ from astropy.table import QTable
 from scipy.interpolate import RegularGridInterpolator
 from synphot import Empirical1D, SourceSpectrum, SpectralElement
 
+from ....utils.typing_extensions import override
 from ..._extrinsic import ExtrinsicScaleFactor
 from .._core import BACKGROUND_SOLID_ANGLE
 from . import data

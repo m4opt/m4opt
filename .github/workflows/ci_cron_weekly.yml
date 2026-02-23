@@ -20,12 +20,12 @@ jobs:
       matrix:
         include:
           - name: Check links in docs using tox
-            python: '3.12'
+            python: '3.11'
             toxenv: linkcheck
 
-          - name: Python 3.12 with latest dev versions of key dependencies
-            python: '3.12'
-            toxenv: py312-test-devdeps
+          - name: Python 3.11 with latest dev versions of key dependencies
+            python: '3.11'
+            toxenv: py311-test-devdeps
 
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2

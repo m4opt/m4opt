@@ -1,10 +1,9 @@
-from typing import override
-
 from astropy import units as u
 from astropy.coordinates import TEME, SkyCoord
 from satellite_tle import fetch_tle_from_celestrak
 from sgp4.api import SGP4_ERRORS, Satrec
 
+from ..utils.typing_extensions import override
 from ._core import ObserverLocation
 
 
