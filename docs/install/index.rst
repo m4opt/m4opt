@@ -7,6 +7,10 @@ The recommended way to install |M4OPT| is using :doc:`pip:index`::
 
     $ pip install m4opt
 
+.. important::
+    Currently only Python 3.11 is supported due to temporary issues with
+    CPLEX versions.
+
 .. rubric:: Optional: Third-Party Solvers
 
 For the largest problems, |M4OPT| requires a commercial MIP solver: `IBM ILOG

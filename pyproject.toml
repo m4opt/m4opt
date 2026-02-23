@@ -5,7 +5,7 @@ authors = [{name = "M4OPT Developers", email = "leo.singer@ligo.org"}]
 license = "BSD-3-Clause"
 description = "Multi-Mission Multi-Messenger Observation Planning Toolkit"
 readme = "README.rst"
-requires-python = ">=3.11"
+requires-python = ">=3.11, <3.12"
 dependencies = [
     "aep8",
     "antiprism-python",
@@ -13,7 +13,7 @@ dependencies = [
     "astropy-healpix",
     "astroquery",
     "click >= 8.2.0",  # https://github.com/pallets/click/pull/2829
-    "cplex",
+    "cplex >= 22.1.1.0, < 22.1.2.0",
     "docplex",
     "dust-extinction >= 1.7",
     "dustmaps",
@@ -39,7 +39,6 @@ classifiers = [
     "Operating System :: MacOS",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Astronomy",
     "Typing :: Typed",
 ]
