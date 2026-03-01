@@ -10,13 +10,15 @@ from astropy.coordinates import (
     UnitSphericalRepresentation,
 )
 
+BASE_COUNT = {"icosahedron": 10, "octahedron": 4, "tetrahedron": 2}
+
 
 def triangulation_number(b, c):
     return b * b + b * c + c * c
 
 
 def solve_number_of_vertices(n, base, class_):
-    base_count = {"icosahedron": 10, "octahedron": 4, "tetrahedron": 2}[base]
+    base_count = BASE_COUNT[base]
 
     if class_ == "I":
         b = int(np.ceil(np.sqrt((n - 2) / base_count)))
@@ -40,6 +42,30 @@ def solve_number_of_vertices(n, base, class_):
         raise ValueError("Unknown breakdown class")
 
     return base_count * t + 2, b, c
+
+
+def num_vertices(
+    b: int,
+    c: int,
+    base: Literal["icosahedron", "octahedron", "tetrahedron"] | str,
+):
+    return BASE_COUNT[base] * triangulation_number(b, c) + 2
+
+
+def num_faces(
+    b: int,
+    c: int,
+    base: Literal["icosahedron", "octahedron", "tetrahedron"] | str,
+):
+    return BASE_COUNT[base] * triangulation_number(b, c) * 2
+
+
+def num_edges(
+    b: int,
+    c: int,
+    base: Literal["icosahedron", "octahedron", "tetrahedron"] | str,
+):
+    return BASE_COUNT[base] * triangulation_number(b, c) * 3
 
 
 def for_subdivision(
