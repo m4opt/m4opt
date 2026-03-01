@@ -91,6 +91,72 @@ def rectangle_to_polygon(region: RectangleSkyRegion):
     )
 
 
+def bounding_radius(region: Region | Regions) -> u.Quantity:
+    """Compute the maximum angular distance from the FOV center to any boundary point.
+
+    Parameters
+    ----------
+    region:
+        The shape of the field of view in the standard orientation
+        (centered at R.A.=0, Dec.=0).
+
+    Returns
+    -------
+    :
+        The bounding radius as an angular quantity.
+
+    Examples
+    --------
+
+    First, some imports:
+
+    >>> from astropy.coordinates import SkyCoord
+    >>> from astropy import units as u
+    >>> from regions import CircleSkyRegion, PolygonSkyRegion, RectangleSkyRegion, Regions
+    >>> from m4opt.fov import bounding_radius
+
+    A circle at the origin returns its radius:
+
+    >>> region = CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg)
+    >>> bounding_radius(region).to(u.deg)
+    <Quantity 3. deg>
+
+    An offset circle returns the separation plus the radius:
+
+    >>> region = CircleSkyRegion(SkyCoord(1 * u.deg, 0 * u.deg), 3 * u.deg)
+    >>> bounding_radius(region).to(u.deg)
+    <Quantity 4. deg>
+
+    A rectangle returns the half-diagonal:
+
+    >>> region = RectangleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 6 * u.deg, 8 * u.deg)
+    >>> bounding_radius(region).to(u.deg)  # doctest: +FLOAT_CMP
+    <Quantity 5. deg>
+
+    A compound region returns the max over sub-regions:
+
+    >>> regions = Regions([
+    ...     CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg),
+    ...     CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 5 * u.deg)])
+    >>> bounding_radius(regions).to(u.deg)
+    <Quantity 5. deg>
+    """
+    origin = SkyCoord(0 * u.deg, 0 * u.deg)
+    match region:
+        case Regions():
+            return max(bounding_radius(sub) for sub in region.regions)
+        case CircleSkyRegion():
+            return origin.separation(region.center) + region.radius
+        case RectangleSkyRegion():
+            return bounding_radius(rectangle_to_polygon(region))
+        case PolygonSkyRegion():
+            return origin.separation(region.vertices).max()
+        case _:
+            raise NotImplementedError(
+                f"Bounding radius is not implemented for {region.__class__.__name__}"
+            )
+
+
 def footprint_inner(region: Region | Regions, frame: SkyOffsetFrame):
     match region:
         case Regions():

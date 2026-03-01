@@ -68,6 +68,20 @@ def invert_footprints_to_regions(footprints, n_pixels):
     return pixel_to_region_map, region_to_fields_map
 
 
+def prefilter_fields(hpx, skymap_flat, target_coords, fov_radius):
+    """Return boolean mask of fields overlapping nonzero sky map probability."""
+    from astropy.coordinates import search_around_sky
+
+    nonzero_pixels = np.flatnonzero(skymap_flat["PROB"] > 0)
+    if len(nonzero_pixels) == 0:
+        return np.zeros(len(target_coords), dtype=bool)
+    pixel_coords = hpx.healpix_to_skycoord(nonzero_pixels)
+    idx_field, _, _, _ = search_around_sky(target_coords, pixel_coords, fov_radius)
+    mask = np.zeros(len(target_coords), dtype=bool)
+    mask[np.unique(idx_field)] = True
+    return mask
+
+
 LARGE_EXPTIME = 1e10
 
 
@@ -206,6 +220,12 @@ def schedule(
             rich_help_panel="Solver Options",
         ),
     ] = None,
+    prefilter: Annotated[
+        bool,
+        typer.Option(
+            help="Pre-filter fields by sky map overlap before evaluating constraints",
+        ),
+    ] = False,
 ):
     """Generate an observing plan for a GW sky map.
 
@@ -260,6 +280,16 @@ def schedule(
 
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
+
+        if prefilter:
+            from ..fov import bounding_radius
+
+            fov_radius = bounding_radius(mission.fov)
+            candidate_mask = prefilter_fields(
+                hpx, skymap_flat, target_coords, fov_radius
+            )
+            target_coords = target_coords[candidate_mask]
+
         exptime_min_s = exptime_min.to_value(u.s)
         cadence_s = cadence.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
