@@ -438,7 +438,7 @@ def schedule(
         timelimit=timelimit, jobs=jobs, memory=memory, lowercutoff=cutoff
     ) as model:
         with status("assembling MILP model"):
-            if appmag_dist:
+            if adaptive_exptime and appmag_dist:
                 pixel_vars = model.continuous_vars(
                     n_pixels,
                     lb=0,
