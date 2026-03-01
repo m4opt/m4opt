@@ -93,3 +93,26 @@ def test_end_to_end_no_solution(run_scheduler):
 def test_end_to_end_solution(run_scheduler):
     table = run_scheduler("--timelimit=1min", "--exptime-min=300s")
     assert len(table) >= 3
+
+
+def test_fixed_exptime_with_appmag_dist(fits_path, ecsv_path, run_cli):
+    """Fixed exposure time mode should work when appmag_dist is True (default).
+
+    Regression test for https://github.com/m4opt/m4opt/issues/XXX:
+    When --absmag-mean is not provided (fixed exposure time) but appmag_dist
+    defaults to True, the scheduler would crash with an UnboundLocalError
+    accessing piecewise_breakpoints.
+    """
+    result = run_cli(
+        app,
+        "schedule",
+        fits_path,
+        ecsv_path,
+        "--bandpass=NUV",
+        "--nside=128",
+        "--deadline=6hour",
+        "--exptime-min=300s",
+        "--timelimit=1s",
+        # Notably: no --no-appmag-dist and no --absmag-mean
+    )
+    assert result.exit_code == 0
