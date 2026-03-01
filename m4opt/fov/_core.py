@@ -118,13 +118,13 @@ def bounding_radius(region: Region | Regions) -> u.Quantity:
     A circle at the origin returns its radius:
 
     >>> region = CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg)
-    >>> bounding_radius(region).to_value(u.deg)
+    >>> bounding_radius(region).to_value(u.deg)  # doctest: +FLOAT_CMP
     3.0
 
     An offset circle returns the separation plus the radius:
 
     >>> region = CircleSkyRegion(SkyCoord(1 * u.deg, 0 * u.deg), 3 * u.deg)
-    >>> bounding_radius(region).to_value(u.deg)
+    >>> bounding_radius(region).to_value(u.deg)  # doctest: +FLOAT_CMP
     4.0
 
     A rectangle returns the half-diagonal:
@@ -138,7 +138,7 @@ def bounding_radius(region: Region | Regions) -> u.Quantity:
     >>> regions = Regions([
     ...     CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg),
     ...     CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 5 * u.deg)])
-    >>> bounding_radius(regions).to_value(u.deg)
+    >>> bounding_radius(regions).to_value(u.deg)  # doctest: +FLOAT_CMP
     5.0
     """
     origin = SkyCoord(0 * u.deg, 0 * u.deg)
