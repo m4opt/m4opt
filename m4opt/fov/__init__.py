@@ -1,3 +1,3 @@
-from ._core import footprint, footprint_healpix
+from ._core import contains, footprint, footprint_healpix
 
-__all__ = ("footprint", "footprint_healpix")
+__all__ = ("contains", "footprint", "footprint_healpix")
