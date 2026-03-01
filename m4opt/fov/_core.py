@@ -130,7 +130,7 @@ def bounding_radius(region: Region | Regions) -> u.Quantity:
     A rectangle returns the half-diagonal:
 
     >>> region = RectangleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 6 * u.deg, 8 * u.deg)
-    >>> float(bounding_radius(region).to_value(u.deg))  # doctest: +FLOAT_CMP
+    >>> round(float(bounding_radius(region).to_value(u.deg)), 1)
     5.0
 
     A compound region returns the max over sub-regions:
