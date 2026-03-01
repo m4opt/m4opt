@@ -1,8 +1,15 @@
 import healpy as hp
 import numpy as np
 from astropy import units as u
-from astropy.coordinates import SkyCoord, SkyOffsetFrame
+from astropy.coordinates import (
+    ICRS,
+    SkyCoord,
+    SkyOffsetFrame,
+    UnitSphericalRepresentation,
+)
+from astropy.wcs import WCS
 from astropy_healpix import HEALPix
+from numpy import typing as npt
 from regions import (
     CircleSkyRegion,
     PolygonSkyRegion,
@@ -355,3 +362,81 @@ def footprint_healpix(
     return unwrap_scalar(
         footprint_healpix_inner(hpx, region, target_coord.skyoffset_frame(rotation))
     )
+
+
+def contains(region: Region | Regions, target_coord: SkyCoord) -> npt.NDArray[np.bool_]:
+    """
+    Test if a region contains a given sky coordinate.
+
+    This is similar to :meth:`regions.SkyRegion.contains`, but does not require
+    you to specify a :class:`~astropy.wcs.WCS`.
+
+    Parameters
+    ----------
+    region
+        A sky region.
+    target_coord
+        The coordinates to test.
+
+    Returns
+    -------
+    :
+        A flag indicating whether each targert coordinate is contained within
+        the region.
+
+    Notes
+    -----
+    Edges of polygons and rectangles are assumed to be great circle arcs.
+
+    When using a :class:`regions.PolygonSkyRegion`, this method is only valid
+    for polygons that fit in a single hemisphere, because it relies on
+    transforming the polygon to a gnomonic projection.
+
+    Examples
+    --------
+    >>> from astropy.coordinates import SkyCoord
+    >>> from astropy import units as u
+    >>> from regions import CircleSkyRegion, PolygonSkyRegion, RectangleSkyRegion
+    >>> from m4opt.fov import contains
+    >>> region = CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 5 * u.deg)
+    >>> contains(region, SkyCoord(0 * u.deg, 0 * u.deg))
+    np.True_
+    >>> region = PolygonSkyRegion(SkyCoord([359, 1, 1, 359] * u.deg, [-2, -2, 2, 2] * u.deg))
+    >>> contains(region, SkyCoord(0 * u.deg, 0 * u.deg))
+    True
+    >>> region = RectangleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 2 * u.deg, 4 * u.deg)
+    >>> contains(region, SkyCoord(0 * u.deg, 0 * u.deg))
+    True
+    """
+    match region:
+        case Regions():
+            return np.logical_or.reduce(
+                [contains(r, target_coord) for r in region.regions]
+            )
+        case CircleSkyRegion():
+            return region.center.separation(target_coord) <= region.radius
+        case RectangleSkyRegion():
+            return contains(rectangle_to_polygon(region), target_coord)
+        case PolygonSkyRegion():
+            center = (
+                region.vertices.transform_to(ICRS())
+                .represent_as(UnitSphericalRepresentation)
+                .sum()
+            )
+            wcs = WCS(
+                {
+                    "CTYPE1": "RA---TAN",
+                    "CTYPE2": "DEC--TAN",
+                    "CRVAL1": center.lon.deg,
+                    "CRVAL2": center.lat.deg,
+                    "CUNIT1": "deg",
+                    "CUNIT2": "deg",
+                }
+            )
+            result = region.contains(target_coord, wcs)
+            if target_coord.isscalar:
+                return result.item()
+            else:
+                return result
+        case _:
+            raise NotImplementedError
