@@ -1,6 +1,7 @@
+import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from regions import CircleSkyRegion, RectangleSkyRegion, Regions
+from regions import CircleSkyRegion, EllipseSkyRegion, RectangleSkyRegion, Regions
 
 from m4opt.fov import bounding_radius
 
@@ -36,6 +37,13 @@ def test_compound():
     )
     result = bounding_radius(regions)
     assert u.isclose(result, 5 * u.deg)
+
+
+def test_unsupported_region():
+    """Unsupported region type raises NotImplementedError."""
+    region = EllipseSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 5 * u.deg, 2 * u.deg)
+    with pytest.raises(NotImplementedError):
+        bounding_radius(region)
 
 
 def test_rubin_fov():
