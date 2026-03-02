@@ -87,11 +87,12 @@ def prefilter_fields(hpx, skymap_flat, target_coords, fov_radius, level):
     """
     from astropy.coordinates import search_around_sky
 
-    prob = np.asarray(skymap_flat["PROB"])
-    sorted_idx = np.argsort(prob)[::-1]
-    cumprob = np.cumsum(prob[sorted_idx])
-    n_keep = np.searchsorted(cumprob, level) + 1
-    kept_pixels = sorted_idx[:n_keep]
+    from ligo.skymap.postprocess.util import find_greedy_credible_levels
+
+    credible_levels = find_greedy_credible_levels(np.asarray(skymap_flat["PROB"]))
+    kept_pixels = np.flatnonzero(credible_levels <= level)
+    if len(kept_pixels) == 0:
+        return np.zeros(len(target_coords), dtype=bool)
     pixel_coords = hpx.healpix_to_skycoord(kept_pixels)
     idx_field, _, _, _ = search_around_sky(target_coords, pixel_coords, fov_radius)
     mask = np.zeros(len(target_coords), dtype=bool)
@@ -237,7 +238,7 @@ def schedule(
             rich_help_panel="Solver Options",
         ),
     ] = None,
-    prefilter: Annotated[
+    max_credible_level: Annotated[
         float | None,
         typer.Option(
             min=0,
@@ -300,12 +301,12 @@ def schedule(
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
 
-        if prefilter is not None:
+        if max_credible_level is not None:
             from ..fov import bounding_radius
 
             fov_radius = bounding_radius(mission.fov)
             candidate_mask = prefilter_fields(
-                hpx, skymap_flat, target_coords, fov_radius, prefilter
+                hpx, skymap_flat, target_coords, fov_radius, max_credible_level
             )
             target_coords = target_coords[candidate_mask]
 

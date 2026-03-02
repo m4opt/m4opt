@@ -10,10 +10,14 @@ from ..schedule import prefilter_fields
 def test_prefilter_keeps_overlapping_fields():
     """Fields overlapping pixels in the credible region are kept."""
     hpx = HEALPix(nside=32, frame=ICRS(), order="nested")
-    # Create a sky map with one high-probability pixel at (0, 0)
-    pixel_index = hpx.skycoord_to_healpix(SkyCoord(0 * u.deg, 0 * u.deg))
-    prob = np.full(hpx.npix, 1e-30)
-    prob[pixel_index] = 1.0
+    npix = hpx.npix
+    # Create a sky map with a cluster of high-probability pixels near (0, 0)
+    prob = np.full(npix, 1e-30)
+    # Set ~100 pixels near the pole to high probability
+    center = SkyCoord(0 * u.deg, 0 * u.deg)
+    all_coords = hpx.healpix_to_skycoord(np.arange(npix))
+    nearby = center.separation(all_coords) < 10 * u.deg
+    prob[nearby] = 1.0
     prob /= prob.sum()
     skymap_flat = Table({"PROB": prob})
 
