@@ -68,6 +68,37 @@ def invert_footprints_to_regions(footprints, n_pixels):
     return pixel_to_region_map, region_to_fields_map
 
 
+def prefilter_fields(hpx, skymap_flat, target_coords, fov_radius, level):
+    """Return boolean mask of fields overlapping the credible region.
+
+    Parameters
+    ----------
+    hpx:
+        HEALPix pixelization.
+    skymap_flat:
+        Rasterized sky map table with a ``PROB`` column.
+    target_coords:
+        Sky coordinates of field centers.
+    fov_radius:
+        Bounding angular radius of the field of view.
+    level:
+        Cumulative probability level (0 to 1) defining the credible region.
+
+    """
+    from astropy.coordinates import search_around_sky
+    from ligo.skymap.postprocess.util import find_greedy_credible_levels
+
+    credible_levels = find_greedy_credible_levels(np.asarray(skymap_flat["PROB"]))
+    kept_pixels = np.flatnonzero(credible_levels <= level)
+    if len(kept_pixels) == 0:
+        return np.zeros(len(target_coords), dtype=bool)
+    pixel_coords = hpx.healpix_to_skycoord(kept_pixels)
+    idx_field, _, _, _ = search_around_sky(target_coords, pixel_coords, fov_radius)
+    mask = np.zeros(len(target_coords), dtype=bool)
+    mask[np.unique(idx_field)] = True
+    return mask
+
+
 LARGE_EXPTIME = 1e10
 
 
@@ -206,6 +237,14 @@ def schedule(
             rich_help_panel="Solver Options",
         ),
     ] = None,
+    max_credible_level: Annotated[
+        float | None,
+        typer.Option(
+            min=0,
+            max=1,
+            help="Pre-filter fields to those overlapping the given credible level (0 to 1) before evaluating constraints. For example, 0.999 keeps only fields overlapping the 99.9%% credible region",
+        ),
+    ] = None,
 ):
     """Generate an observing plan for a GW sky map.
 
@@ -260,6 +299,16 @@ def schedule(
 
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
+
+        if max_credible_level is not None:
+            from ..fov import bounding_radius
+
+            fov_radius = bounding_radius(mission.fov)
+            candidate_mask = prefilter_fields(
+                hpx, skymap_flat, target_coords, fov_radius, max_credible_level
+            )
+            target_coords = target_coords[candidate_mask]
+
         exptime_min_s = exptime_min.to_value(u.s)
         cadence_s = cadence.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
