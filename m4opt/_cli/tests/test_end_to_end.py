@@ -98,7 +98,7 @@ def test_end_to_end_solution(run_scheduler):
 def test_prefilter_equivalence(fits_path, tmp_path, run_cli):
     """Pre-filtered and unfiltered runs produce equivalent schedules.
 
-    The prefilter discards only zero-probability fields before constraint
+    The prefilter discards low-probability fields before constraint
     evaluation. Due to ``np.argpartition`` tie-breaking in the top-50
     selection, the exact set of fields may differ slightly at the boundary,
     but both runs should find near-optimal solutions.
@@ -119,7 +119,7 @@ def test_prefilter_equivalence(fits_path, tmp_path, run_cli):
     assert result1.exit_code == 0
 
     result2 = run_cli(
-        app, "schedule", fits_path, ecsv_prefilter, *common_args, "--prefilter"
+        app, "schedule", fits_path, ecsv_prefilter, *common_args, "--prefilter=0.999"
     )
     assert result2.exit_code == 0
 

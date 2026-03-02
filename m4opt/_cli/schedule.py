@@ -68,14 +68,31 @@ def invert_footprints_to_regions(footprints, n_pixels):
     return pixel_to_region_map, region_to_fields_map
 
 
-def prefilter_fields(hpx, skymap_flat, target_coords, fov_radius):
-    """Return boolean mask of fields overlapping nonzero sky map probability."""
+def prefilter_fields(hpx, skymap_flat, target_coords, fov_radius, level):
+    """Return boolean mask of fields overlapping the credible region.
+
+    Parameters
+    ----------
+    hpx:
+        HEALPix pixelization.
+    skymap_flat:
+        Rasterized sky map table with a ``PROB`` column.
+    target_coords:
+        Sky coordinates of field centers.
+    fov_radius:
+        Bounding angular radius of the field of view.
+    level:
+        Cumulative probability level (0 to 1) defining the credible region.
+
+    """
     from astropy.coordinates import search_around_sky
 
-    nonzero_pixels = np.flatnonzero(skymap_flat["PROB"] > 0)
-    if len(nonzero_pixels) == 0:
-        return np.zeros(len(target_coords), dtype=bool)
-    pixel_coords = hpx.healpix_to_skycoord(nonzero_pixels)
+    prob = np.asarray(skymap_flat["PROB"])
+    sorted_idx = np.argsort(prob)[::-1]
+    cumprob = np.cumsum(prob[sorted_idx])
+    n_keep = np.searchsorted(cumprob, level) + 1
+    kept_pixels = sorted_idx[:n_keep]
+    pixel_coords = hpx.healpix_to_skycoord(kept_pixels)
     idx_field, _, _, _ = search_around_sky(target_coords, pixel_coords, fov_radius)
     mask = np.zeros(len(target_coords), dtype=bool)
     mask[np.unique(idx_field)] = True
@@ -221,11 +238,13 @@ def schedule(
         ),
     ] = None,
     prefilter: Annotated[
-        bool,
+        float | None,
         typer.Option(
-            help="Pre-filter fields by sky map overlap before evaluating constraints",
+            min=0,
+            max=1,
+            help="Pre-filter fields to those overlapping the given credible level (0 to 1) before evaluating constraints. For example, 0.999 keeps only fields overlapping the 99.9%% credible region",
         ),
-    ] = False,
+    ] = None,
 ):
     """Generate an observing plan for a GW sky map.
 
@@ -281,12 +300,12 @@ def schedule(
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
 
-        if prefilter:
+        if prefilter is not None:
             from ..fov import bounding_radius
 
             fov_radius = bounding_radius(mission.fov)
             candidate_mask = prefilter_fields(
-                hpx, skymap_flat, target_coords, fov_radius
+                hpx, skymap_flat, target_coords, fov_radius, prefilter
             )
             target_coords = target_coords[candidate_mask]
 
