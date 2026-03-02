@@ -86,7 +86,6 @@ def prefilter_fields(hpx, skymap_flat, target_coords, fov_radius, level):
 
     """
     from astropy.coordinates import search_around_sky
-
     from ligo.skymap.postprocess.util import find_greedy_credible_levels
 
     credible_levels = find_greedy_credible_levels(np.asarray(skymap_flat["PROB"]))

@@ -119,7 +119,12 @@ def test_prefilter_equivalence(fits_path, tmp_path, run_cli):
     assert result1.exit_code == 0
 
     result2 = run_cli(
-        app, "schedule", fits_path, ecsv_prefilter, *common_args, "--max-credible-level=0.999"
+        app,
+        "schedule",
+        fits_path,
+        ecsv_prefilter,
+        *common_args,
+        "--max-credible-level=0.999",
     )
     assert result2.exit_code == 0
 
