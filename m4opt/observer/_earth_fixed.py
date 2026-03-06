@@ -1,6 +1,7 @@
+from typing import override
+
 from astropy.coordinates import EarthLocation
 
-from ..utils.typing_extensions import override
 from ._core import ObserverLocation
 
 
