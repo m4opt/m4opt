@@ -26,7 +26,7 @@ __ https://skillsbuild.org
 2. Click the :guilabel:`Log in` or :guilabel:`Sign up` button in the top-right
    corner of the page. Select :guilabel:`College software downloads`. Register
    using your institutional email address (for example, one that ends in
-   `.edu`).
+   ``.edu``).
 
    .. note::
       If you encounter issues with being recognized as part of an academic
@@ -37,24 +37,34 @@ __ https://skillsbuild.org
 
 3. Navigate to
    :guilabel:`Data Science` in the left sidebar and then click
-   :guilabel:`ILOG CPLEX Optimization Studio`.
+   :guilabel:`ILOG CPLEX Optimization Studio`. Under
+   :guilabel:`Download method`, select :guilabel:`HTTP`. Then click the
+   :guilabel:`Download` button.
+
+4. In the :guilabel:`Part number` search box, enter ``G0D3KML``. Then click the
+   :guilabel:`Search` button. This should bring up the search result,
+   ``IBM ILOG CPLEX Optimization Studio V22.1.2 Multiplatform Multilingual eAssembly``.
+
+   .. important::
+      It is important that you select version 22.1.2 because this is the
+      version of CPLEX that is currently used by |M4OPT|.
 
 4. Following the onscreen instructions, download and run the appropriate
    installer for your operating system.
 
    .. hint::
       If you are installing CPLEX on a remote Linux system, copy the installer
-      file (e.g. :file:`cplex_studio2211.linux_x86_64.bin`) to that system.
+      file (e.g. :file:`cplex_studio2212.linux_x86_64.bin`) to that system.
       Launch the installer by running the command
-      ``sh cplex_studio2211.linux_x86_64.bin``.
+      ``sh cplex_studio2212.linux_x86_64.bin``.
 
 5. Make a note of where the installer placed ILOG CPLEX Optimization Studio
-   (for example, :file:`/opt/ibm/ILOG/CPLEX_Studio2211`). In the Python
+   (for example, :file:`/opt/ibm/ILOG/CPLEX_Studio2212`). In the Python
    environment in which you have installed |M4OPT|, run the following command
    to enable your full academic version, updating the path as appropriate for
    your system::
 
-         $ docplex config --upgrade /opt/ibm/ILOG/CPLEX_Studio2211
+         $ docplex config --upgrade /opt/ibm/ILOG/CPLEX_Studio2212
 
 All others
 ----------
