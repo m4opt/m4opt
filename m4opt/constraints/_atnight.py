@@ -1,7 +1,8 @@
+from typing import override
+
 from astropy import units as u
 from astropy.coordinates import AltAz, get_sun
 
-from ..utils.typing_extensions import override
 from ._core import Constraint
 
 
