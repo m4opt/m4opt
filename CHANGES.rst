@@ -2,6 +2,16 @@
 Changes
 *******
 
+2.4.0 (2026-03-06)
+==================
+
+- Add exposure time models for Vera C. Rubin Observatory and Zwicky Transient
+  Facility.
+
+- Update installation instructions for users of academic editions of CPLEX.
+
+- Drop support for Python 3.12.
+
 2.3.1 (2026-01-23)
 ==================
 
