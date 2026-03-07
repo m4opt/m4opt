@@ -7,7 +7,7 @@ description = "Multi-Mission Multi-Messenger Observation Planning Toolkit"
 readme = "README.rst"
 requires-python = ">=3.12, <3.15"
 dependencies = [
-    "aep8",
+    "aep8 >= 1.0.0",
     "antiprism-python",
     "astropy >= 7.1.0",
     "astropy-healpix",

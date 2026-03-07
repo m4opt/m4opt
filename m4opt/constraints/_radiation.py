@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from aep8 import flux
+import aep8
 from astropy import units as u
 
 from ._core import Constraint
@@ -47,13 +47,10 @@ class RadiationBeltConstraint(Constraint):
 
     def __call__(self, observer_location, target_coord, obstime):
         return (
-            flux(
+            aep8.model(particle=self.particle, solar=self.solar).integral_flux(
                 observer_location,
                 obstime,
                 self.energy,
-                kind="integral",
-                solar=self.solar,
-                particle=self.particle,
             )
             <= self.flux
         )
