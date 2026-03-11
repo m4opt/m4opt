@@ -473,9 +473,7 @@ def _bisect_graph_milp(graph, **kwargs):
     digraph = graph.to_directed()
     sentinel = object()
     sources = [(sentinel, 0), (sentinel, 1)]
-    digraph.add_edges_from(
-        (src, node) for node in graph.nodes for src in sources
-    )
+    digraph.add_edges_from((src, node) for node in graph.nodes for src in sources)
 
     with Model(**kwargs) as m:
         flows = m.integer_vars(
@@ -486,16 +484,14 @@ def _bisect_graph_milp(graph, **kwargs):
 
         m.maximize(
             m.sum_vars_all_different(
-                data["flow"]
-                for _, _, data in digraph.out_edges(sources[0], data=True)
+                data["flow"] for _, _, data in digraph.out_edges(sources[0], data=True)
             )
         )
 
         # Eq. (7): ordering constraint (single constraint for k=2)
         m.add_constraints_(
             m.sum_vars_all_different(
-                data["flow"]
-                for _, _, data in digraph.out_edges(sources[i], data=True)
+                data["flow"] for _, _, data in digraph.out_edges(sources[i], data=True)
             )
             <= m.sum_vars_all_different(
                 data["flow"]
@@ -580,9 +576,7 @@ def _bisect_graph(graph, milp_max_nodes=500, milp_timelimit=30, **kwargs):
         return _bisect_graph_heuristic(graph)
 
     try:
-        return _bisect_graph_milp(
-            graph, timelimit=milp_timelimit * u.s, **kwargs
-        )
+        return _bisect_graph_milp(graph, timelimit=milp_timelimit * u.s, **kwargs)
     except Exception:
         return _bisect_graph_heuristic(graph)
 
