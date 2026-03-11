@@ -313,6 +313,15 @@ class GurobiModel:
         """Same as add_indicator_constraints (batch version)."""
         self.add_indicator_constraints(indcts)
 
+    def add_sos1(self, vars):
+        """Add an SOS1 (Special Ordered Set type 1) constraint.
+
+        At most one variable in the set can be nonzero.
+        """
+        vars_unwrapped = [_unwrap(v) for v in vars]
+        weights = list(range(1, len(vars_unwrapped) + 1))
+        self._grb.addSOS(GRB.SOS_TYPE1, vars_unwrapped, weights)
+
     def add_user_cut_constraint(self, ct):
         """Add a user cut constraint (added as a regular constraint in Gurobi)."""
         self.add_constraint_(ct)
