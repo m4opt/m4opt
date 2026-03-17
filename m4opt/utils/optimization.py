@@ -150,7 +150,7 @@ def partition_graph(
 
 def partition_graph_milp(
     graph: nx.Graph,
-    n: int,
+    k: int,
     **kwargs,
 ) -> np.ndarray:
     """Partition a graph into contiguous subgraphs.
@@ -163,7 +163,7 @@ def partition_graph_milp(
     graph
         A graph in the form of a :class:`networkx.Graph` object, an adjacency
         matrix, or an edge weight matrix.
-    n
+    k
         The desired number of partitions. The returned number of partitions may
         be smaller.
     kwargs
@@ -200,7 +200,7 @@ def partition_graph_milp(
     """
     digraph = graph.to_directed()
     sentinel = object()
-    flow_source_nodes = [(sentinel, i) for i in range(n)]
+    flow_source_nodes = [(sentinel, i) for i in range(k)]
     digraph.add_edges_from(
         (flow_source_node, node)
         for node in graph.nodes
@@ -233,7 +233,7 @@ def partition_graph_milp(
                 data["flow"]
                 for _, _, data in digraph.out_edges(flow_source_nodes[i + 1], data=True)
             )
-            for i in range(n - 1)
+            for i in range(k - 1)
         )
 
         # Eq. (8)
@@ -287,7 +287,7 @@ def partition_graph_milp(
 
 def partition_graph_milp2(
     graph: nx.Graph,
-    n: int,
+    k: int,
     **kwargs,
 ) -> np.ndarray:
     """Partition a graph into contiguous subgraphs.
@@ -301,7 +301,7 @@ def partition_graph_milp2(
     graph
         A graph in the form of a :class:`networkx.Graph` object, an adjacency
         matrix, or an edge weight matrix.
-    n
+    k
         The desired number of partitions. The returned number of partitions may
         be smaller.
     kwargs
@@ -336,9 +336,11 @@ def partition_graph_milp2(
             cmap="prism",
         )
     """
+    nmin = int(np.floor(graph.number_of_nodes() / k))
+    nmax = int(np.ceil(graph.number_of_nodes() / k))
     digraph = graph.to_directed()
     sentinel = object()
-    flow_source_nodes = [(sentinel, i) for i in range(n)]
+    flow_source_nodes = [(sentinel, i) for i in range(k)]
     digraph.add_edges_from(
         (flow_source_node, node)
         for node in graph.nodes
@@ -346,11 +348,11 @@ def partition_graph_milp2(
     )
 
     with Model(**kwargs) as m:
-        flows = m.integer_vars(
-            digraph.number_of_edges(), lb=0, ub=graph.number_of_nodes()
-        )
-        for (_, _, data), flow in zip(digraph.edges.data(), flows):
-            data["flow"] = flow
+        for node, _, data in digraph.edges.data():
+            if node in flow_source_nodes:
+                data["flow"] = m.semiinteger_var(lb=nmin, ub=nmax)
+            else:
+                data["flow"] = m.integer_var(lb=0, ub=nmax - 1)
 
         m.maximize(
             m.sum_vars_all_different(
@@ -369,7 +371,7 @@ def partition_graph_milp2(
                 data["flow"]
                 for _, _, data in digraph.out_edges(flow_source_nodes[i + 1], data=True)
             )
-            for i in range(n - 1)
+            for i in range(k - 1)
         )
 
         # Eq. (8)
