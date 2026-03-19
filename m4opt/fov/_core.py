@@ -390,7 +390,8 @@ def contains(region: Region | Regions, target_coord: SkyCoord) -> npt.NDArray[np
 
     When using a :class:`regions.PolygonSkyRegion`, this method is only valid
     for polygons that fit in a single hemisphere, because it relies on
-    transforming the polygon to a gnomonic projection.
+    transforming the polygon to a gnomonic projection, which is a projection
+    of half of the sphere in which great circles are straight lines.
 
     Examples
     --------
