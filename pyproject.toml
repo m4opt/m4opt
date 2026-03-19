@@ -25,6 +25,7 @@ dependencies = [
     "satellitetle",
     "scipy",
     "sgp4",
+    "shapely >= 2.1.0",
     "spiceypy",
     "sympy",
     "synphot",
