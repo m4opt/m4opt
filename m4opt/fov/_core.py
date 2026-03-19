@@ -1,5 +1,6 @@
 import healpy as hp
 import numpy as np
+import shapely
 from astropy import units as u
 from astropy.coordinates import (
     ICRS,
@@ -12,6 +13,8 @@ from astropy_healpix import HEALPix
 from numpy import typing as npt
 from regions import (
     CircleSkyRegion,
+    PixCoord,
+    PolygonPixelRegion,
     PolygonSkyRegion,
     RectangleSkyRegion,
     Region,
@@ -88,6 +91,38 @@ def rectangle_to_polygon(region: RectangleSkyRegion):
             SkyCoord([-x, x, x, -x], [-y, -y, y, y]),
             region.center.skyoffset_frame(region.angle),
         )
+    )
+
+
+def is_convex(region: PolygonSkyRegion) -> bool:
+    """Check if a spherical polygon is convex
+
+    Notes
+    -----
+    This should agree exactly with the convexity check in the query_polygon
+    function of healpy/healpix-cxx."""
+    coords = region.vertices.cartesian
+    dotprods = coords.cross(np.roll(coords, 1)).dot(np.roll(coords, 2))
+    signs = np.sign(dotprods)
+    return np.all(np.abs(dotprods) >= 1e-10) and np.all(signs[1:] == signs[0])
+
+
+def centered_wcs(region: PolygonSkyRegion) -> WCS:
+    """Create a local WCS centered on the polygon."""
+    center = (
+        region.vertices.transform_to(ICRS())
+        .represent_as(UnitSphericalRepresentation)
+        .sum()
+    )
+    return WCS(
+        {
+            "CTYPE1": "RA---TAN",
+            "CTYPE2": "DEC--TAN",
+            "CRVAL1": center.lon.deg,
+            "CRVAL2": center.lat.deg,
+            "CUNIT1": "deg",
+            "CUNIT2": "deg",
+        }
     )
 
 
@@ -230,6 +265,18 @@ def footprint(
     )
 
 
+def footprint_healpix_convex_polygon_inner(
+    hpx: HEALPix, region: PolygonSkyRegion, frame: SkyOffsetFrame
+):
+    return query_polygon(
+        hpx.nside,
+        skycoord_to_healpy_vec(
+            skycoord_to_offset(region.vertices, frame[..., np.newaxis])
+        ),
+        nest=hpx.order == "nested",
+    )
+
+
 def footprint_healpix_inner(
     hpx: HEALPix, region: Region | Regions, frame: SkyOffsetFrame
 ):
@@ -249,13 +296,28 @@ def footprint_healpix_inner(
                 nest=hpx.order == "nested",
             )
         case PolygonSkyRegion():
-            return query_polygon(
-                hpx.nside,
-                skycoord_to_healpy_vec(
-                    skycoord_to_offset(region.vertices, frame[..., np.newaxis])
-                ),
-                nest=hpx.order == "nested",
-            )
+            if is_convex(region):
+                return footprint_healpix_convex_polygon_inner(hpx, region, frame)
+            else:
+                wcs = centered_wcs(region)
+                pixel_region = region.to_pixel(wcs)
+                triangles: list[shapely.Polygon] = (
+                    shapely.constrained_delaunay_triangles(
+                        shapely.polygons(np.transpose(pixel_region.vertices.xy))
+                    )
+                ).geoms
+                return concat_healpix(
+                    *(
+                        footprint_healpix_convex_polygon_inner(
+                            hpx,
+                            PolygonPixelRegion(
+                                PixCoord(*np.transpose(triangle.exterior.coords[:-1]))
+                            ).to_sky(wcs),
+                            frame,
+                        )
+                        for triangle in triangles
+                    )
+                )
         case RectangleSkyRegion():
             return footprint_healpix_inner(hpx, rectangle_to_polygon(region), frame)
         case _:
@@ -343,6 +405,12 @@ def footprint_healpix(
     array([[array([5696, 5824, 5951]), array([5824])],
            [array([5696]), array([5696])]], dtype=object)
 
+    And even non-convex polygon regions:
+
+    >>> region = PolygonSkyRegion(SkyCoord([-2, 0, 2, 2, -2] * u.deg, [2, 0, 2, -2, -2] * u.deg))
+    >>> footprint_healpix(hpx, region, target_coord)
+    array([6593, 6722])
+
     Compound regions are also fine:
 
     >>> regions = Regions([
@@ -419,22 +487,7 @@ def contains(region: Region | Regions, target_coord: SkyCoord) -> npt.NDArray[np
         case RectangleSkyRegion():
             return contains(rectangle_to_polygon(region), target_coord)
         case PolygonSkyRegion():
-            center = (
-                region.vertices.transform_to(ICRS())
-                .represent_as(UnitSphericalRepresentation)
-                .sum()
-            )
-            wcs = WCS(
-                {
-                    "CTYPE1": "RA---TAN",
-                    "CTYPE2": "DEC--TAN",
-                    "CRVAL1": center.lon.deg,
-                    "CRVAL2": center.lat.deg,
-                    "CUNIT1": "deg",
-                    "CUNIT2": "deg",
-                }
-            )
-            result = region.contains(target_coord, wcs)
+            result = region.contains(target_coord, centered_wcs(region))
             if target_coord.isscalar:
                 return result.item()
             else:
