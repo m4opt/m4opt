@@ -108,7 +108,7 @@ def is_convex(region: PolygonSkyRegion) -> bool:
     coords = region.vertices.cartesian
     dotprods = coords.cross(np.roll(coords, 1)).dot(np.roll(coords, 2))
     signs = np.sign(dotprods)
-    return np.all(np.abs(dotprods) >= 1e-10) and np.all(signs[1:] == signs[0])
+    return (np.all(np.abs(dotprods) >= 1e-10) and np.all(signs[1:] == signs[0])).item()
 
 
 def centered_wcs(region: PolygonSkyRegion) -> WCS:
