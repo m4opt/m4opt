@@ -2,6 +2,14 @@
 Changes
 *******
 
+2.5.0 (2026-03-20)
+==================
+
+- Add support for pointlike FOVs and FOVs that are nonconvex polygons.
+
+- The function ``m4opt.fov.footprint_healpix`` now has a default value for the
+  ``target_coord`` argument.
+
 2.4.0 (2026-03-06)
 ==================
 
