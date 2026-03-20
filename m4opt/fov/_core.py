@@ -349,7 +349,7 @@ def footprint_healpix_inner(
 def footprint_healpix(
     hpx: HEALPix,
     region: Region | Regions,
-    target_coord: SkyCoord,
+    target_coord: SkyCoord | None = None,
     rotation: u.Quantity[u.physical.angle] | None = None,
 ):
     """
@@ -455,6 +455,8 @@ def footprint_healpix(
       ...
     NotImplementedError: Footprint transformations are not implemented for EllipseSkyRegion
     """
+    if target_coord is None:
+        target_coord = SkyCoord(0 * u.deg, 0 * u.deg)
     return unwrap_scalar(
         footprint_healpix_inner(hpx, region, target_coord.skyoffset_frame(rotation))
     )
