@@ -93,7 +93,7 @@ def polynomial_sample_data(
 #   - Remove the keyword argument `max_dims` to try multivariate interpolation.
 #   - Remove the keyword argument `max_broadcast_dims` to try tensor inputs.
 #
-@given(polynomial_sample_data(order=3, max_dims=1, max_broadcast_dims=0))
+@given(polynomial_sample_data(order=3))
 def test_athena_interp(data):
     """Test the interpolation scheme using data from a multivariate polynomial
     of degree that matches the order of the interpolation scheme."""
