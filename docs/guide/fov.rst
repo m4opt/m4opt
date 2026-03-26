@@ -15,9 +15,9 @@ Supported region types
 You supply the field of view of the detector using
 :doc:`Astropy regions <regions:index>`. The following region types are
 supported: :class:`~regions.CircleSkyRegion`,
-:class:`~regions.PolygonSkyRegion`, :class:`~regions.RectangleSkyRegion`, and
-any :class:`~regions.Regions` object consisting regions of the aforementioned
-types.
+:class:`~regions.PointSkyRegion`, :class:`~regions.PolygonSkyRegion`,
+:class:`~regions.RectangleSkyRegion`, and any :class:`~regions.Regions` object
+consisting regions of the aforementioned types.
 
 .. note:: All of these region types are treated as true spherical geometry.
     :class:`~regions.CircleSkyRegion` is treated as a
