@@ -5,7 +5,6 @@ from operator import itemgetter
 import networkx as nx
 import numpy as np
 import pymetis
-from scipy.sparse import csr_array
 
 from ..milp import Model
 
@@ -67,9 +66,11 @@ def pack_boxes(wh: np.ndarray, **kwargs) -> tuple[np.ndarray, np.ndarray]:
 
 
 def partition_graph(
-    graph: np.ndarray | csr_array | nx.Graph,
+    graph: nx.Graph,
     n: int,
     recursive: bool | None = None,
+    node_weight: str | None = None,
+    edge_weight: str = "weight",
     **kwargs,
 ) -> np.ndarray:
     """Partition a graph into contiguous subgraphs.
@@ -81,13 +82,16 @@ def partition_graph(
     Parameters
     ----------
     graph
-        A graph in the form of a :class:`networkx.Graph` object, an adjacency
-        matrix, or an edge weight matrix.
+        A graph in the form of a :class:`networkx.Graph` object.
     n
         The desired number of partitions. The returned number of partitions may
         be smaller.
     recursive
         Whether to use recursive or K-way partitioning.
+    node_weight
+        Optional key for node weights.
+    edge_weight
+        Optional key for edge weights.
     kwargs
         Additional arguments passed to :class:`pymetis.Options`.
 
@@ -107,6 +111,7 @@ def partition_graph(
     Example
     -------
     .. plot::
+        :caption: Basic example of graph partitioning.
 
         from matplotlib import pyplot as plt
         from m4opt.utils.optimization import partition_graph
@@ -123,17 +128,42 @@ def partition_graph(
             node_color=part,
             cmap="prism",
         )
-    """
-    if isinstance(graph, nx.Graph):
-        sparse = nx.to_scipy_sparse_array(graph)
-    else:
-        sparse = csr_array(graph)
 
+    .. plot::
+        :caption: Graph partitioning with node weights (larger weights toward center).
+
+        from matplotlib import pyplot as plt
+        from m4opt.utils.optimization import partition_graph
+        import networkx as nx
+        import numpy as np
+
+        graph = nx.triangular_lattice_graph(30, 50)
+        center = np.mean(list(nx.get_node_attributes(graph, "pos").values()), axis=0)
+        for node, data in graph.nodes(data=True):
+            data["distance"] = np.ceil(np.sqrt(np.sum(np.square(node - center))) ** 3).astype(
+                np.intp
+            )
+
+        part = partition_graph(graph, 50, seed=42, node_weight="distance")
+        ax = plt.axes(aspect=1)
+        nx.draw(
+            graph,
+            ax=ax,
+            pos=nx.get_node_attributes(graph, "pos"),
+            node_size=50,
+            node_color=part,
+            cmap="prism",
+        )
+    """
+    sparse = nx.to_scipy_sparse_array(graph, weight=edge_weight)
     _, result = pymetis.part_graph(
         nparts=n,
         adjacency=None,
         adjncy=sparse.indices,
         xadj=sparse.indptr,
+        vweights=None
+        if node_weight is None
+        else [data for _, data in graph.nodes(data=node_weight)],
         eweights=sparse.data.astype(np.intp),
         options=pymetis.Options(**kwargs),
         recursive=recursive,
@@ -142,15 +172,14 @@ def partition_graph(
 
 
 def partition_graph_color(
-    graph: np.ndarray | nx.Graph, partition: np.ndarray, **kwargs
+    graph: nx.Graph, partition: np.ndarray, **kwargs
 ) -> np.ndarray:
     """Find a coloring for a partition of a graph.
 
     Parameters
     ----------
     graph
-        A graph in the form of a :class:`networkx.Graph` object or an adjacency
-        matrix.
+        A graph in the form of a :class:`networkx.Graph` object.
     partition
         Partition assignments of the nodes in the graphs as returned by
         :meth:`partition_graph`.

@@ -38,17 +38,8 @@ def test_pack_boxes_perfect_square(n):
 
 def test_partition_graph():
     n = 5
-    kwargs = dict(n=n, seed=42)
     graph = nx.triangular_lattice_graph(10, 20)
-    sparse_adjacency = nx.to_scipy_sparse_array(graph)
-    dense_adjacency = nx.to_numpy_array(graph)
-
-    # Test that all three graph encodings return the same partition.
-    part1 = partition_graph(graph, **kwargs)
-    part2 = partition_graph(sparse_adjacency, **kwargs)
-    part3 = partition_graph(dense_adjacency, **kwargs)
-    np.testing.assert_array_equal(part1, part2)
-    np.testing.assert_array_equal(part2, part3)
+    assert len(np.unique(partition_graph(graph, n, seed=42))) <= n
 
     # Test that if seed argument is missing, we still get a valid result.
     assert len(np.unique(partition_graph(graph, n))) <= n
