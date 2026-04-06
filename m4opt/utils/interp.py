@@ -41,7 +41,7 @@ def athena_interp_1d(points, y, intp):
     # ensure interpolation can be performed
     if N < 3:
         raise ValueError("athena_interp requires at least 3 points")
-    if not np.allclose(np.diff(points), np.diff(points)[0]):
+    if not np.allclose(np.diff(points), dx):
         raise ValueError("Interpolation must be over regularly sampled grid")
 
     # bounds
@@ -67,23 +67,23 @@ def athena_interp_1d(points, y, intp):
 
     # Left Case Interpolation
     if np.any(left):
-        m1 = (y[i2[left]] - y[i1[left]]) / dx
-        m2 = (y[i3[left]] - y[i1[left]]) / (2 * dx)
+        m1 = (y[i2[left]] - y[i1[left]])
+        m2 = (y[i3[left]] - y[i1[left]]) / 2
         y0 = y[i1[left]]
         y1 = y[i2[left]]
         dxl = (intp[left] - points[i1[left]]) / (points[i2[left]] - points[i1[left]])
 
         yinterp[left] = (
             (2 * dxl**3 - 3 * dxl**2 + 1)[..., None] * y0
-            + (dxl**3 - 2 * dxl**2 + dxl)[..., None] * (m1 * dx)
+            + (dxl**3 - 2 * dxl**2 + dxl)[..., None] * m1
             + (-2 * dxl**3 + 3 * dxl**2)[..., None] * y1
-            + (dxl**3 - dxl**2)[..., None] * (m2 * dx)
+            + (dxl**3 - dxl**2)[..., None] * m2
         )
 
     # Middle Case --> Traditional Catmull-Rom Formula
     if np.any(middle):
-        m1 = (y[i2[middle]] - y[i0[middle]]) / (2 * dx)
-        m2 = (y[i3[middle]] - y[i1[middle]]) / (2 * dx)
+        m1 = (y[i2[middle]] - y[i0[middle]]) / 2
+        m2 = (y[i3[middle]] - y[i1[middle]]) / 2
         y0 = y[i1[middle]]
         y1 = y[i2[middle]]
         dxm = (intp[middle] - points[i1[middle]]) / (
@@ -92,15 +92,15 @@ def athena_interp_1d(points, y, intp):
 
         yinterp[middle] = (
             (2 * dxm**3 - 3 * dxm**2 + 1)[..., None] * y0
-            + (dxm**3 - 2 * dxm**2 + dxm)[..., None] * (m1 * dx)
+            + (dxm**3 - 2 * dxm**2 + dxm)[..., None] * m1
             + (-2 * dxm**3 + 3 * dxm**2)[..., None] * y1
-            + (dxm**3 - dxm**2)[..., None] * (m2 * dx)
+            + (dxm**3 - dxm**2)[..., None] * m2
         )
 
     # Right Case
     if np.any(right):
-        m1 = (y[i2[right]] - y[i0[right]]) / (2 * dx)
-        m2 = (y[i2[right]] - y[i1[right]]) / dx
+        m1 = (y[i2[right]] - y[i0[right]]) / 2
+        m2 = (y[i2[right]] - y[i1[right]])
         y0 = y[i1[right]]
         y1 = y[i2[right]]
         dxr = (intp[right] - points[i1[right]]) / (
@@ -109,9 +109,9 @@ def athena_interp_1d(points, y, intp):
 
         yinterp[right] = (
             (2 * dxr**3 - 3 * dxr**2 + 1)[..., None] * y0
-            + (dxr**3 - 2 * dxr**2 + dxr)[..., None] * (m1 * dx)
+            + (dxr**3 - 2 * dxr**2 + dxr)[..., None] * m1
             + (-2 * dxr**3 + 3 * dxr**2)[..., None] * y1
-            + (dxr**3 - dxr**2)[..., None] * (m2 * dx)
+            + (dxr**3 - dxr**2)[..., None] * m2
         )
 
     # accounting for exact matches between intp and points
