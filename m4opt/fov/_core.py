@@ -82,6 +82,32 @@ def skycoord_to_healpy_vec(coord: SkyCoord):
     return np.moveaxis(coord.cartesian.xyz.value, 0, -1)
 
 
+def circle_to_polygon(region: CircleSkyRegion, n: int) -> PolygonSkyRegion:
+    """Convert a circle region to a polygon that approximates it.
+
+    Parameters
+    ----------
+    region
+        The circle to approximate.
+    n
+        The number of vertices.
+
+    Notes
+    -----
+    Unlike :meth:`regions.CircleSkyRegion.to_polygon`, this function does not
+    require a :class:`~astropy.wcs.WCS` object.
+    """
+    return PolygonSkyRegion(
+        SkyCoord(
+            region.radius,
+            0 * u.deg,
+            frame=region.center.skyoffset_frame(
+                np.linspace(0, 360, n, endpoint=False) * u.deg
+            ),
+        ).icrs
+    )
+
+
 def rectangle_to_polygon(region: RectangleSkyRegion):
     """Convert a rectangle region to a polygon.
 
