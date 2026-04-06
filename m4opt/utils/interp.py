@@ -67,7 +67,7 @@ def athena_interp_1d(points, y, intp):
 
     # Left Case Interpolation
     if np.any(left):
-        m1 = (y[i2[left]] - y[i1[left]])
+        m1 = y[i2[left]] - y[i1[left]]
         m2 = (y[i3[left]] - y[i1[left]]) / 2
         y0 = y[i1[left]]
         y1 = y[i2[left]]
@@ -100,7 +100,7 @@ def athena_interp_1d(points, y, intp):
     # Right Case
     if np.any(right):
         m1 = (y[i2[right]] - y[i0[right]]) / 2
-        m2 = (y[i2[right]] - y[i1[right]])
+        m2 = y[i2[right]] - y[i1[right]]
         y0 = y[i1[right]]
         y1 = y[i2[right]]
         dxr = (intp[right] - points[i1[right]]) / (
