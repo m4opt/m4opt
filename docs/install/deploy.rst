@@ -40,15 +40,20 @@ Deployment Notes
 Astropy Data Sources
 ^^^^^^^^^^^^^^^^^^^^
 
-In normal use, |M4OPT| downloads and caches a variety of Astropy-related data sources that may be time-consuming to download or may be unavailable if your network connection is down:
+In normal use, |M4OPT| downloads and caches a variety of Astropy-related data sources that may be time-consuming to download or may be unavailable if your network connection is down or if the remote service is down:
 
 - Well-known observatory locations for :meth:`astropy.coordinates.SkyCoord.from_name`
 - Dust map for :obj:`m4opt.synphot.extinction.DustExtinction`
 - Precise Earth orientation data for :class:`~astropy.coordinates.SkyCoord` :class:`~astropy.coordinates.EarthLocation` transformations (see :ref:`Astropy documentation on working offline <astropy:iers-working-offline>`)
+- :doc:`astroquery:svo_fps/svo_fps`
 
 .. rubric:: Mitigation
 
-Run :typer:`m4opt-prime` once before deployment to download and cache data sources. Ensure that you have a reliable Internet connection.
+- Ensure that you have a reliable Internet connection.
+- Run :typer:`m4opt-prime` once before deployment to download and cache data sources.
+- Configure the Astroquery cache to never expire. Edit the :ref:`Astroquery configuration file <astroquery:default_config>` at :file:`$HOME/.astropy/config/astroquery.cfg` and add the following line::
+
+    cache_timeout = -1
 
 .. _`cplex-license`:
 
