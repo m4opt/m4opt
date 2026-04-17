@@ -231,6 +231,7 @@ intersphinx_mapping.update(  # noqa: F405
     {
         "astropy": ("https://docs.astropy.org/en/stable/", None),
         "astropy_healpix": ("https://astropy-healpix.readthedocs.io/en/stable/", None),
+        "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
         "docplex": ("http://ibmdecisionoptimization.github.io/docplex-doc/mp/", None),
         "dust-extinction": ("https://dust-extinction.readthedocs.io/en/latest/", None),
         "irbem": ("https://prbem.github.io/IRBEM/", None),
