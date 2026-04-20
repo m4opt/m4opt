@@ -8,7 +8,15 @@ import pymetis
 
 from ..milp import Model
 
-__all__ = ("pack_boxes", "partition_graph", "partition_graph_color", "solve_tsp")
+__all__ = (
+    "pack_boxes",
+    "partition_graph",
+    "partition_graph_milp",
+    "partition_graph_milp2",
+    "partition_graph_milp_recursive",
+    "partition_graph_color",
+    "solve_tsp",
+)
 
 
 def pack_boxes(wh: np.ndarray, **kwargs) -> tuple[np.ndarray, np.ndarray]:
@@ -169,6 +177,525 @@ def partition_graph(
         recursive=recursive,
     )
     return np.asarray(result)
+
+
+def partition_graph_milp(
+    graph: nx.Graph,
+    n: int,
+    **kwargs,
+) -> np.ndarray:
+    """Partition a graph into contiguous subgraphs.
+
+    Partition a graph into subgraphs using the MILP flow formulation from
+    Section 4 of :footcite:`2019arXiv191105723M`.
+
+    Parameters
+    ----------
+    graph
+        A graph in the form of a :class:`networkx.Graph` object, an adjacency
+        matrix, or an edge weight matrix.
+    n
+        The desired number of partitions. The returned number of partitions may
+        be smaller.
+    kwargs
+        Additional arguments passed to :class:`m4opt.milp.Model`.
+
+    Returns
+    -------
+    :
+        Partition assignments for all nodes.
+
+    References
+    ----------
+    .. footbibliography::
+
+    Example
+    -------
+    .. plot::
+
+        from matplotlib import pyplot as plt
+        from m4opt.utils.optimization import partition_graph_milp
+        import networkx as nx
+
+        graph = nx.triangular_lattice_graph(10, 20)
+        part = partition_graph_milp(graph, 5)
+        ax = plt.axes(aspect=1)
+        nx.draw(
+            graph,
+            ax=ax,
+            pos=nx.get_node_attributes(graph, "pos"),
+            node_size=50,
+            node_color=part,
+            cmap="prism",
+        )
+    """
+    digraph = graph.to_directed()
+    sentinel = object()
+    flow_source_nodes = [(sentinel, i) for i in range(n)]
+    digraph.add_edges_from(
+        (flow_source_node, node)
+        for node in graph.nodes
+        for flow_source_node in flow_source_nodes
+    )
+
+    with Model(**kwargs) as m:
+        flows = m.integer_vars(
+            digraph.number_of_edges(), lb=0, ub=graph.number_of_nodes()
+        )
+        has_flows = m.binary_vars(digraph.number_of_edges())
+        for (_, _, data), flow, has_flow in zip(digraph.edges.data(), flows, has_flows):
+            data["flow"] = flow
+            data["has_flow"] = has_flow
+
+        m.maximize(
+            m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[0], data=True)
+            )
+        )
+
+        # Eq. (7)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[i], data=True)
+            )
+            <= m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[i + 1], data=True)
+            )
+            for i in range(n - 1)
+        )
+
+        # Eq. (8)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.in_edges(node, data=True)
+            )
+            - m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.out_edges(node, data=True)
+            )
+            == 1
+            for node in graph.nodes
+        )
+
+        # Eq. (9)
+        M = graph.number_of_edges()
+        m.add_constraints_(flow <= M * on for flow, on in zip(flows, has_flows))
+
+        # Eq. (10)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["has_flow"] for _, _, data in digraph.out_edges(node, data=True)
+            )
+            <= 1
+            for node in flow_source_nodes
+        )
+
+        # Eq. (11)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["has_flow"] for _, _, data in digraph.in_edges(node, data=True)
+            )
+            <= 1
+            for node in graph.nodes
+        )
+
+        solution = m.solve()
+
+    edges, flows = list(
+        zip(*(((v1, v2), data["flow"]) for v1, v2, data in digraph.edges(data=True)))
+    )
+    flows = np.rint(solution.get_values(flows)).astype(bool)
+    digraph.remove_edges_from(edge for edge, flow in zip(edges, flows) if not flow)
+    digraph.remove_nodes_from(flow_source_nodes)
+    graph = nx.convert_node_labels_to_integers(digraph.to_undirected(as_view=True))
+    result = np.empty(graph.number_of_nodes(), dtype=np.intp)
+    for component, nodes in enumerate(nx.connected_components(graph)):
+        result[list(nodes)] = component
+    return result
+
+
+def partition_graph_milp2(
+    graph: nx.Graph,
+    n: int,
+    **kwargs,
+) -> np.ndarray:
+    """Partition a graph into contiguous subgraphs.
+
+    Partition a graph into subgraphs using the MILP flow formulation from
+    Section 4 of :footcite:`2019arXiv191105723M`, but with the Eqs (10-11)
+    replaced with SOS1 constraints.
+
+    Parameters
+    ----------
+    graph
+        A graph in the form of a :class:`networkx.Graph` object, an adjacency
+        matrix, or an edge weight matrix.
+    n
+        The desired number of partitions. The returned number of partitions may
+        be smaller.
+    kwargs
+        Additional arguments passed to :class:`m4opt.milp.Model`.
+
+    Returns
+    -------
+    :
+        Partition assignments for all nodes.
+
+    References
+    ----------
+    .. footbibliography::
+
+    Example
+    -------
+    .. plot::
+
+        from matplotlib import pyplot as plt
+        from m4opt.utils.optimization import partition_graph_milp2
+        import networkx as nx
+
+        graph = nx.triangular_lattice_graph(10, 20)
+        part = partition_graph_milp2(graph, 5)
+        ax = plt.axes(aspect=1)
+        nx.draw(
+            graph,
+            ax=ax,
+            pos=nx.get_node_attributes(graph, "pos"),
+            node_size=50,
+            node_color=part,
+            cmap="prism",
+        )
+    """
+    digraph = graph.to_directed()
+    sentinel = object()
+    flow_source_nodes = [(sentinel, i) for i in range(n)]
+    digraph.add_edges_from(
+        (flow_source_node, node)
+        for node in graph.nodes
+        for flow_source_node in flow_source_nodes
+    )
+
+    with Model(**kwargs) as m:
+        flows = m.integer_vars(
+            digraph.number_of_edges(), lb=0, ub=graph.number_of_nodes()
+        )
+        for (_, _, data), flow in zip(digraph.edges.data(), flows):
+            data["flow"] = flow
+
+        m.maximize(
+            m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[0], data=True)
+            )
+        )
+
+        # Eq. (7)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[i], data=True)
+            )
+            <= m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[i + 1], data=True)
+            )
+            for i in range(n - 1)
+        )
+
+        # Eq. (8)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.in_edges(node, data=True)
+            )
+            - m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.out_edges(node, data=True)
+            )
+            == 1
+            for node in graph.nodes
+        )
+
+        # Eq. (10)
+        for node in flow_source_nodes:
+            m.add_sos1(
+                [data["flow"] for _, _, data in digraph.out_edges(node, data=True)]
+            )
+
+        # Eq. (11)
+        for node in graph.nodes:
+            m.add_sos1(
+                [data["flow"] for _, _, data in digraph.in_edges(node, data=True)]
+            )
+
+        solution = m.solve()
+
+    edges, flows = list(
+        zip(*(((v1, v2), data["flow"]) for v1, v2, data in digraph.edges(data=True)))
+    )
+    flows = np.rint(solution.get_values(flows)).astype(bool)
+    digraph.remove_edges_from(edge for edge, flow in zip(edges, flows) if not flow)
+    digraph.remove_nodes_from(flow_source_nodes)
+    graph = nx.convert_node_labels_to_integers(digraph.to_undirected(as_view=True))
+    result = np.empty(graph.number_of_nodes(), dtype=np.intp)
+    for component, nodes in enumerate(nx.connected_components(graph)):
+        result[list(nodes)] = component
+    return result
+
+
+def _ensure_connected_bisection(graph, group0, group1):
+    """Repair a bisection so that each group is connected.
+
+    If either group has disconnected components, reassign the smaller
+    disconnected components to the other group (if they are adjacent to it).
+    """
+    for _ in range(50):  # iterate until stable
+        changed = False
+        for groups in [(group0, group1), (group1, group0)]:
+            this, other = groups
+            sub = graph.subgraph(this)
+            components = list(nx.connected_components(sub))
+            if len(components) <= 1:
+                continue
+            # Keep the largest component, try to move others
+            components.sort(key=len, reverse=True)
+            for comp in components[1:]:
+                # Check if this component is adjacent to the other group
+                adjacent = any(
+                    neighbor in other
+                    for node in comp
+                    for neighbor in graph.neighbors(node)
+                )
+                if adjacent:
+                    this -= comp
+                    other |= comp
+                    changed = True
+        if not changed:
+            break
+    return group0, group1
+
+
+def _bisect_graph_heuristic(graph):
+    """Bisect a graph using Kernighan-Lin with connectivity repair.
+
+    Fast heuristic for large subgraphs where MILP is too slow.
+    """
+    group0, group1 = nx.community.kernighan_lin_bisection(graph)
+    group0, group1 = set(group0), set(group1)
+    return _ensure_connected_bisection(graph, group0, group1)
+
+
+def _bisect_graph_milp(graph, **kwargs):
+    """Bisect a graph into 2 balanced connected parts using the MILP flow
+    formulation with SOS1 constraints.
+
+    Parameters
+    ----------
+    graph
+        A :class:`networkx.Graph` to bisect.
+    kwargs
+        Additional arguments passed to :class:`m4opt.milp.Model`.
+
+    Returns
+    -------
+    group0, group1
+        Two sets of node labels.
+    """
+    digraph = graph.to_directed()
+    sentinel = object()
+    sources = [(sentinel, 0), (sentinel, 1)]
+    digraph.add_edges_from((src, node) for node in graph.nodes for src in sources)
+
+    with Model(**kwargs) as m:
+        flows = m.integer_vars(
+            digraph.number_of_edges(), lb=0, ub=graph.number_of_nodes()
+        )
+        for (_, _, data), flow in zip(digraph.edges.data(), flows):
+            data["flow"] = flow
+
+        m.maximize(
+            m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.out_edges(sources[0], data=True)
+            )
+        )
+
+        # Eq. (7): ordering constraint (single constraint for k=2)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.out_edges(sources[i], data=True)
+            )
+            <= m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(sources[i + 1], data=True)
+            )
+            for i in range(1)
+        )
+
+        # Eq. (8): flow conservation
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.in_edges(node, data=True)
+            )
+            - m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.out_edges(node, data=True)
+            )
+            == 1
+            for node in graph.nodes
+        )
+
+        # SOS1 constraints (replacing Eqs 10-11)
+        for node in sources:
+            m.add_sos1(
+                [data["flow"] for _, _, data in digraph.out_edges(node, data=True)]
+            )
+        for node in graph.nodes:
+            m.add_sos1(
+                [data["flow"] for _, _, data in digraph.in_edges(node, data=True)]
+            )
+
+        solution = m.solve()
+
+    edges, flows = list(
+        zip(*(((v1, v2), data["flow"]) for v1, v2, data in digraph.edges(data=True)))
+    )
+    flows = np.rint(solution.get_values(flows)).astype(bool)
+    digraph.remove_edges_from(edge for edge, flow in zip(edges, flows) if not flow)
+    digraph.remove_nodes_from(sources)
+
+    components = list(nx.connected_components(digraph.to_undirected(as_view=True)))
+
+    if len(components) >= 2:
+        # Sort by size; return the largest and merge the rest
+        components.sort(key=len, reverse=True)
+        group0 = components[0]
+        group1 = set()
+        for c in components[1:]:
+            group1 |= c
+        return group0, group1
+    else:
+        # Bisection failed; split arbitrarily
+        return _bisect_graph_heuristic(graph)
+
+
+def _bisect_graph(graph, milp_max_nodes=500, milp_timelimit=30, **kwargs):
+    """Bisect a graph into 2 balanced connected parts.
+
+    For small subgraphs (<= milp_max_nodes), uses the MILP flow formulation.
+    For larger subgraphs, uses the Kernighan-Lin heuristic with connectivity
+    repair.
+
+    Parameters
+    ----------
+    graph
+        A :class:`networkx.Graph` to bisect.
+    milp_max_nodes
+        Maximum number of nodes for which to use the MILP formulation.
+        Larger graphs use the Kernighan-Lin heuristic.
+    milp_timelimit
+        Time limit in seconds for each MILP bisection.
+    kwargs
+        Additional arguments passed to :class:`m4opt.milp.Model`.
+
+    Returns
+    -------
+    group0, group1
+        Two sets of node labels.
+    """
+    import astropy.units as u
+
+    if graph.number_of_nodes() > milp_max_nodes:
+        return _bisect_graph_heuristic(graph)
+
+    try:
+        return _bisect_graph_milp(graph, timelimit=milp_timelimit * u.s, **kwargs)
+    except Exception:
+        return _bisect_graph_heuristic(graph)
+
+
+def partition_graph_milp_recursive(
+    graph: nx.Graph,
+    n: int,
+    **kwargs,
+) -> np.ndarray:
+    """Partition a graph into contiguous subgraphs using recursive bisection.
+
+    At each level, the graph is bisected into two balanced connected parts
+    using the MILP flow formulation from Section 4 of
+    :footcite:`2019arXiv191105723M` with SOS1 constraints and k=2.
+    The number of target partitions is split proportionally to the sizes of
+    the two halves. This reduces the problem from a single k=240 MILP
+    (~1.3M variables) to ~480 bisection MILPs of decreasing size.
+
+    Parameters
+    ----------
+    graph
+        A graph in the form of a :class:`networkx.Graph` object.
+    n
+        The desired number of partitions.
+    kwargs
+        Additional arguments passed to :class:`m4opt.milp.Model`.
+
+    Returns
+    -------
+    :
+        Partition assignments for all nodes.
+
+    References
+    ----------
+    .. footbibliography::
+
+    Example
+    -------
+    .. plot::
+
+        from matplotlib import pyplot as plt
+        from m4opt.utils.optimization import partition_graph_milp_recursive
+        import networkx as nx
+
+        graph = nx.triangular_lattice_graph(10, 20)
+        part = partition_graph_milp_recursive(graph, 5)
+        ax = plt.axes(aspect=1)
+        nx.draw(
+            graph,
+            ax=ax,
+            pos=nx.get_node_attributes(graph, "pos"),
+            node_size=50,
+            node_color=part,
+            cmap="prism",
+        )
+    """
+    graph = nx.convert_node_labels_to_integers(graph)
+    num_nodes = graph.number_of_nodes()
+    result = np.empty(num_nodes, dtype=np.intp)
+    next_label = [0]
+
+    def _recurse(nodes, k):
+        if k <= 1 or len(nodes) <= 1:
+            label = next_label[0]
+            next_label[0] += 1
+            for node in nodes:
+                result[node] = label
+            return
+
+        if len(nodes) <= k:
+            # More partitions requested than nodes; each node is its own
+            for node in nodes:
+                result[node] = next_label[0]
+                next_label[0] += 1
+            return
+
+        subgraph = graph.subgraph(nodes)
+        group0, group1 = _bisect_graph(subgraph, **kwargs)
+
+        # Split k proportionally to group sizes
+        total = len(group0) + len(group1)
+        k0 = max(1, min(k - 1, round(k * len(group0) / total)))
+        k1 = k - k0
+
+        _recurse(list(group0), k0)
+        _recurse(list(group1), k1)
+
+    _recurse(list(range(num_nodes)), n)
+    return result
 
 
 def partition_graph_color(
