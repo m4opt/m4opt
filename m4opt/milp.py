@@ -133,7 +133,7 @@ class Model(_Model):
     # FIXME: remove once
     # https://github.com/IBMDecisionOptimization/docplex/issues/17 is fixed.
     @property
-    def best_bound(self):
+    def best_bound(self) -> float:
         """Get best bound for the last solve.
 
         Notes
@@ -191,7 +191,7 @@ class Model(_Model):
     def add_indicator_constraints_(self, indcts):
         return super().add_indicator_constraints_(atmost_1d(indcts))
 
-    def solve(self, **kwargs):
+    def solve(self, **kwargs) -> "SolveSolution":
         with patch("docplex.mp.solution.SolveSolution", SolveSolution):
             result = super().solve(**kwargs)
         if (
