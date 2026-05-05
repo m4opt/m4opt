@@ -2,6 +2,15 @@
 Changes
 *******
 
+2.6.0 (2026-04-05)
+==================
+
+- Add support for partitioning graphs with node and edge weights.
+
+- Add function to convert circle sky regions to polygons.
+
+- Add function to calculate approximate orientation of UVEX for a ground pass.
+
 2.5.0 (2026-03-20)
 ==================
 
