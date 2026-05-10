@@ -1,0 +1,51 @@
+"""Refractive index and transmission for optical materials.
+
+Python conversion of the MATLAB script ``refraction_index.m`` by Eran Ofek,
+available at https://github.com/EranOfek/AstroPack.
+"""
+
+from importlib import resources
+
+import astropy.units as u
+import numpy as np
+from astropy.table import Table
+
+from . import data
+
+
+def _ref_index_fused_silica():
+    """Refractive index (Sellmeier equation) for fused silica (SiO2)."""
+    L = np.arange(0.21, 6.71, 0.01)
+    n = np.sqrt(
+        1
+        + 0.6961663 * L**2 / (L**2 - 0.0684043**2)
+        + 0.4079426 * L**2 / (L**2 - 0.1162414**2)
+        + 0.8974794 * L**2 / (L**2 - 9.896161**2)
+    )
+    L = (L * u.micron).to(u.Angstrom)
+    t = None
+    return L, n, t
+
+
+def _ref_index_suprasil_2a():
+    """Refractive index and transmission for Suprasil 2A (tabulated data)."""
+    table_n = Table.read(
+        resources.files(data) / "suprasil_2a_refractive_index.csv",
+        format="ascii.csv",
+    )
+    L = table_n["wavelength"] * u.Angstrom
+    n = table_n["refractive_index"]
+
+    table_t = Table.read(
+        resources.files(data) / "suprasil_2a_transmission.csv",
+        format="ascii.csv",
+    )
+    t = table_t["transmission"] / u.cm
+
+    return L, n, t
+
+
+REFRACTION_INDEX = {
+    "sio2": _ref_index_fused_silica,
+    "sio2_suprasil_2a": _ref_index_suprasil_2a,
+}
