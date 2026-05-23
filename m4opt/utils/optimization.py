@@ -8,7 +8,14 @@ import pymetis
 
 from ..milp import Model
 
-__all__ = ("pack_boxes", "partition_graph", "partition_graph_color", "solve_tsp")
+__all__ = (
+    "pack_boxes",
+    "partition_graph",
+    "partition_graph_milp",
+    "partition_graph_milp2",
+    "partition_graph_color",
+    "solve_tsp",
+)
 
 
 def pack_boxes(wh: np.ndarray, **kwargs) -> tuple[np.ndarray, np.ndarray]:
@@ -169,6 +176,271 @@ def partition_graph(
         recursive=recursive,
     )
     return np.asarray(result)
+
+
+def partition_graph_milp(
+    graph: nx.Graph,
+    k: int,
+    **kwargs,
+) -> np.ndarray:
+    """Partition a graph into contiguous subgraphs.
+
+    Partition a graph into subgraphs using the MILP flow formulation from
+    Section 4 of :footcite:`2019arXiv191105723M`.
+
+    Parameters
+    ----------
+    graph
+        A graph in the form of a :class:`networkx.Graph` object, an adjacency
+        matrix, or an edge weight matrix.
+    k
+        The desired number of partitions. The returned number of partitions may
+        be smaller.
+    kwargs
+        Additional arguments passed to :class:`m4opt.milp.Model`.
+
+    Returns
+    -------
+    :
+        Partition assignments for all nodes.
+
+    References
+    ----------
+    .. footbibliography::
+
+    Example
+    -------
+    .. plot::
+
+        from matplotlib import pyplot as plt
+        from m4opt.utils.optimization import partition_graph_milp
+        import networkx as nx
+
+        graph = nx.triangular_lattice_graph(10, 20)
+        part = partition_graph_milp(graph, 5)
+        ax = plt.axes(aspect=1)
+        nx.draw(
+            graph,
+            ax=ax,
+            pos=nx.get_node_attributes(graph, "pos"),
+            node_size=50,
+            node_color=part,
+            cmap="prism",
+        )
+    """
+    digraph = graph.to_directed()
+    sentinel = object()
+    flow_source_nodes = [(sentinel, i) for i in range(k)]
+    digraph.add_edges_from(
+        (flow_source_node, node)
+        for node in graph.nodes
+        for flow_source_node in flow_source_nodes
+    )
+
+    with Model(**kwargs) as m:
+        flows = m.integer_vars(
+            digraph.number_of_edges(), lb=0, ub=graph.number_of_nodes()
+        )
+        has_flows = m.binary_vars(digraph.number_of_edges())
+        for (_, _, data), flow, has_flow in zip(digraph.edges.data(), flows, has_flows):
+            data["flow"] = flow
+            data["has_flow"] = has_flow
+
+        m.maximize(
+            m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[0], data=True)
+            )
+        )
+
+        # Eq. (7)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[i], data=True)
+            )
+            <= m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[i + 1], data=True)
+            )
+            for i in range(k - 1)
+        )
+
+        # Eq. (8)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.in_edges(node, data=True)
+            )
+            - m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.out_edges(node, data=True)
+            )
+            == 1
+            for node in graph.nodes
+        )
+
+        # Eq. (9)
+        M = graph.number_of_edges()
+        m.add_constraints_(flow <= M * on for flow, on in zip(flows, has_flows))
+
+        # Eq. (10)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["has_flow"] for _, _, data in digraph.out_edges(node, data=True)
+            )
+            <= 1
+            for node in flow_source_nodes
+        )
+
+        # Eq. (11)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["has_flow"] for _, _, data in digraph.in_edges(node, data=True)
+            )
+            <= 1
+            for node in graph.nodes
+        )
+
+        solution = m.solve()
+
+    edges, flows = list(
+        zip(*(((v1, v2), data["flow"]) for v1, v2, data in digraph.edges(data=True)))
+    )
+    flows = np.rint(solution.get_values(flows)).astype(bool)
+    digraph.remove_edges_from(edge for edge, flow in zip(edges, flows) if not flow)
+    digraph.remove_nodes_from(flow_source_nodes)
+    graph = nx.convert_node_labels_to_integers(digraph.to_undirected(as_view=True))
+    result = np.empty(graph.number_of_nodes(), dtype=np.intp)
+    for component, nodes in enumerate(nx.connected_components(graph)):
+        result[list(nodes)] = component
+    return result
+
+
+def partition_graph_milp2(
+    graph: nx.Graph,
+    k: int,
+    **kwargs,
+) -> np.ndarray:
+    """Partition a graph into contiguous subgraphs.
+
+    Partition a graph into subgraphs using the MILP flow formulation from
+    Section 4 of :footcite:`2019arXiv191105723M`, but with the Eqs (10-11)
+    replaced with SOS1 constraints.
+
+    Parameters
+    ----------
+    graph
+        A graph in the form of a :class:`networkx.Graph` object, an adjacency
+        matrix, or an edge weight matrix.
+    k
+        The desired number of partitions. The returned number of partitions may
+        be smaller.
+    kwargs
+        Additional arguments passed to :class:`m4opt.milp.Model`.
+
+    Returns
+    -------
+    :
+        Partition assignments for all nodes.
+
+    References
+    ----------
+    .. footbibliography::
+
+    Example
+    -------
+    .. plot::
+
+        from matplotlib import pyplot as plt
+        from m4opt.utils.optimization import partition_graph_milp2
+        import networkx as nx
+
+        graph = nx.triangular_lattice_graph(10, 20)
+        part = partition_graph_milp2(graph, 5)
+        ax = plt.axes(aspect=1)
+        nx.draw(
+            graph,
+            ax=ax,
+            pos=nx.get_node_attributes(graph, "pos"),
+            node_size=50,
+            node_color=part,
+            cmap="prism",
+        )
+    """
+    nmin = int(np.floor(graph.number_of_nodes() / k))
+    nmax = int(np.ceil(graph.number_of_nodes() / k))
+    digraph = graph.to_directed()
+    sentinel = object()
+    flow_source_nodes = [(sentinel, i) for i in range(k)]
+    digraph.add_edges_from(
+        (flow_source_node, node)
+        for node in graph.nodes
+        for flow_source_node in flow_source_nodes
+    )
+
+    with Model(**kwargs) as m:
+        for node, _, data in digraph.edges.data():
+            if node in flow_source_nodes:
+                data["flow"] = m.semiinteger_var(lb=nmin, ub=nmax)
+            else:
+                data["flow"] = m.integer_var(lb=0, ub=nmax - 1)
+
+        m.maximize(
+            m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[0], data=True)
+            )
+        )
+
+        # Eq. (7)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[i], data=True)
+            )
+            <= m.sum_vars_all_different(
+                data["flow"]
+                for _, _, data in digraph.out_edges(flow_source_nodes[i + 1], data=True)
+            )
+            for i in range(k - 1)
+        )
+
+        # Eq. (8)
+        m.add_constraints_(
+            m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.in_edges(node, data=True)
+            )
+            - m.sum_vars_all_different(
+                data["flow"] for _, _, data in digraph.out_edges(node, data=True)
+            )
+            == 1
+            for node in graph.nodes
+        )
+
+        # Eq. (10)
+        for node in flow_source_nodes:
+            m.add_sos1(
+                [data["flow"] for _, _, data in digraph.out_edges(node, data=True)]
+            )
+
+        # Eq. (11)
+        for node in graph.nodes:
+            m.add_sos1(
+                [data["flow"] for _, _, data in digraph.in_edges(node, data=True)]
+            )
+
+        solution = m.solve()
+
+    edges, flows = list(
+        zip(*(((v1, v2), data["flow"]) for v1, v2, data in digraph.edges(data=True)))
+    )
+    flows = np.rint(solution.get_values(flows)).astype(bool)
+    digraph.remove_edges_from(edge for edge, flow in zip(edges, flows) if not flow)
+    digraph.remove_nodes_from(flow_source_nodes)
+    graph = nx.convert_node_labels_to_integers(digraph.to_undirected(as_view=True))
+    result = np.empty(graph.number_of_nodes(), dtype=np.intp)
+    for component, nodes in enumerate(nx.connected_components(graph)):
+        result[list(nodes)] = component
+    return result
 
 
 def partition_graph_color(
