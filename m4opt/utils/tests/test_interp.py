@@ -88,7 +88,7 @@ def polynomial_sample_data(
 # Change `order=1` to `order=3` for cubic polynomial sample data.
 #
 # Currently this will test univariate interpolation with scalar inputs.
-# When you for a greater challenge, do the following:
+# When you are ready for a greater challenge, do the following:
 #
 #   - Remove the keyword argument `max_dims` to try multivariate interpolation.
 #   - Remove the keyword argument `max_broadcast_dims` to try tensor inputs.
