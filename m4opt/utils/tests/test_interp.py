@@ -40,6 +40,7 @@ def polynomial_sample_data(
     min_dims: int = 1,
     max_dims: int | None = None,
     max_broadcast_dims: int | None = None,
+    regular: bool = False,
 ):
     num_coefficients = order + 1
     shape = draw(
@@ -47,22 +48,25 @@ def polynomial_sample_data(
     )
     ndim = len(shape)
 
-    points = [
-        draw(
-            arrays(
-                dtype=np.float64,
-                shape=dim,
-                elements=floats(
-                    allow_nan=False,
-                    allow_infinity=False,
-                    min_value=-10000,
-                    max_value=10000,
-                ),
-                unique=True,
-            ).map(np.sort)
-        )
-        for dim in shape
-    ]
+    if regular:
+        points = [np.arange(n) for n in shape]
+    else:
+        points = [
+            draw(
+                arrays(
+                    dtype=np.float64,
+                    shape=dim,
+                    elements=floats(
+                        allow_nan=False,
+                        allow_infinity=False,
+                        min_value=-10000,
+                        max_value=10000,
+                    ),
+                    unique=True,
+                ).map(np.sort)
+            )
+            for dim in shape
+        ]
 
     poly = draw(
         arrays(
@@ -88,12 +92,13 @@ def polynomial_sample_data(
 # Change `order=1` to `order=3` for cubic polynomial sample data.
 #
 # Currently this will test univariate interpolation with scalar inputs.
-# When you for a greater challenge, do the following:
+# When you are ready for a greater challenge, do the following:
 #
 #   - Remove the keyword argument `max_dims` to try multivariate interpolation.
 #   - Remove the keyword argument `max_broadcast_dims` to try tensor inputs.
+#   - Remove the keyword argument `regular` to try irregularly spaced inputs.
 #
-@given(polynomial_sample_data(order=3))
+@given(polynomial_sample_data(order=3, regular=True))
 def test_athena_interp(data):
     """Test the interpolation scheme using data from a multivariate polynomial
     of degree that matches the order of the interpolation scheme."""
