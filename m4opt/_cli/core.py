@@ -1,8 +1,9 @@
 from typing import Annotated
 
-import click
 import typer
 from astropy import units as u
+from typer._click.types import ParamType
+from typer._types import TyperChoice
 from typer.main import get_click_type as _get_click_type
 from typer.main import lenient_issubclass
 
@@ -17,7 +18,7 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
-class QuantityClickType(click.ParamType):
+class QuantityClickType(ParamType):
     name = "Astropy quantity"
 
     def convert(self, value, param, ctx):
@@ -34,7 +35,7 @@ class QuantityClickType(click.ParamType):
         return result
 
 
-class MissionClickType(click.Choice):
+class MissionClickType(TyperChoice):
     def __init__(self):
         choices = [name for name in missions.__all__ if name[0].islower()]
         super().__init__(choices)
