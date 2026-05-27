@@ -1,5 +1,13 @@
 import numpy as np
 
+#coefficients for interpolation
+def cr_coeff(t, ndim):
+    hshape = t.shape + (1,) * ndim
+    h0 = (2*t**3 - 3*t**2 + 1).reshape(hshape)
+    h1 = (t**3 - 2*t**2 + t).reshape(hshape)
+    h2 = (-2*t**3 + 3*t**2).reshape(hshape)
+    h3 = (t**3 - t**2).reshape(hshape)
+    return h0, h1, h2, h3
 
 def athena_interp_1d(points, y, intp):
     """
@@ -7,7 +15,7 @@ def athena_interp_1d(points, y, intp):
 
     Parameters
     ----------
-    points : the integer values at which a function is sampled
+    points : the integer values at which a function is sampled 
     y : numpy.ndarray
         The function f(x) sampled at regularly spaced values (points), such that
         y[0] = f(points[0]), y[1] = f(points[1]), etc.
@@ -19,111 +27,96 @@ def athena_interp_1d(points, y, intp):
     yinterp : numpy.ndarray
         The interpolated function, f(t)
     """
-
-    # make everything into numpy arrays
+    
+    #make everything into numpy arrays
     points = np.asarray(points)
     y = np.asarray(y)
+    #if y.ndim == 1:
+    #    y = y[:,None]
     intp = np.asarray(intp)
 
-    scalar_input = intp.ndim == 0
+    #account for a scalar intp input
+    scalar_input = (intp.ndim == 0)
     intp = np.atleast_1d(intp)
 
-    # sort input arrays
+    N = len(points) #number of sample points on the grid
+
+    #ensure sampled points are sorted
     idx = np.argsort(points)
     points = points[idx]
-    y = np.take(y, idx, axis=0)
+    y = y[idx]
 
-    N = len(points)
+    #spacing of input points
+    dpoints = np.diff(points)
+    dx = dpoints[0]
 
-    # spacing of input points
-    dx = np.diff(points)[0]
-
-    # ensure interpolation can be performed
+    #ensure interpolation can be performed
     if N < 3:
         raise ValueError("athena_interp requires at least 3 points")
-    if not np.allclose(np.diff(points), dx):
+    if not np.allclose(dpoints, dx):
         raise ValueError("Interpolation must be over regularly sampled grid")
 
-    # bounds
+    #bounds
     lo, hi = points[0], points[-1]
-
-    # interval indices
-    i = np.searchsorted(points, intp) - 1
-    i = np.clip(i, 0, N - 2)
     valid = (intp >= lo) & (intp <= hi)
 
-    # base indices
+    #interval indices
+    i = np.searchsorted(points, intp) - 1
+
+    #base indices
     i0 = i - 1
     i1 = i
     i2 = i + 1
     i3 = i + 2
+    
+    #four cases: exact match, left edge, middle (normal), right edge
+    exact_mat = np.isclose(intp[:, None], points[None, :])
+    exact = exact_mat.any(axis=1)
+    left = (i == 0) & (~exact)
+    right = (i == N - 2) & (~exact)
+    middle = (i > 0) & (i < N - 2) & (~exact)
 
-    # three cases: left edge, middle (normal), right edge
-    left = i == 0
-    right = i >= N - 2
-    middle = ~(left | right)
+    outshape = (len(intp),) + y.shape[1:]
+    yinterp = np.full(outshape, np.nan, dtype=float) #empty interpolated points array
 
-    yinterp = np.full(intp.shape + y.shape[1:], np.nan, dtype=float)
-
-    # Left Case Interpolation
+    #Left Case Interpolation
     if np.any(left):
-        m1 = y[i2[left]] - y[i1[left]]
+        m1 = (y[i2[left]] - y[i1[left]]) / 2
         m2 = (y[i3[left]] - y[i1[left]]) / 2
         y0 = y[i1[left]]
         y1 = y[i2[left]]
-        dxl = (intp[left] - points[i1[left]]) / (points[i2[left]] - points[i1[left]])
+        dxl = (intp[left] - points[i1[left]]) / dx
+        h0, h1, h2, h3 = cr_coeff(dxl, y0.ndim - 1)
+        yinterp[left] = h0 * y0 + h1 * m1 + h2 * y1 + h3 * m2
 
-        yinterp[left] = (
-            (2 * dxl**3 - 3 * dxl**2 + 1)[..., None] * y0
-            + (dxl**3 - 2 * dxl**2 + dxl)[..., None] * m1
-            + (-2 * dxl**3 + 3 * dxl**2)[..., None] * y1
-            + (dxl**3 - dxl**2)[..., None] * m2
-        )
-
-    # Middle Case --> Traditional Catmull-Rom Formula
+    #Middle Case Interpolation (Traditional Catmull-Rom Formula)
     if np.any(middle):
         m1 = (y[i2[middle]] - y[i0[middle]]) / 2
         m2 = (y[i3[middle]] - y[i1[middle]]) / 2
         y0 = y[i1[middle]]
         y1 = y[i2[middle]]
-        dxm = (intp[middle] - points[i1[middle]]) / (
-            points[i2[middle]] - points[i1[middle]]
-        )
+        dxm = (intp[middle] - points[i1[middle]]) / dx
+        h0, h1, h2, h3 = cr_coeff(dxm, y0.ndim - 1)
+        yinterp[middle] = h0 * y0 + h1 * m1 + h2 * y1 + h3 * m2
 
-        yinterp[middle] = (
-            (2 * dxm**3 - 3 * dxm**2 + 1)[..., None] * y0
-            + (dxm**3 - 2 * dxm**2 + dxm)[..., None] * m1
-            + (-2 * dxm**3 + 3 * dxm**2)[..., None] * y1
-            + (dxm**3 - dxm**2)[..., None] * m2
-        )
-
-    # Right Case
+    #Right Case
     if np.any(right):
         m1 = (y[i2[right]] - y[i0[right]]) / 2
-        m2 = y[i2[right]] - y[i1[right]]
+        m2 = (y[i2[right]] - y[i1[right]]) / 2
         y0 = y[i1[right]]
         y1 = y[i2[right]]
-        dxr = (intp[right] - points[i1[right]]) / (
-            points[i2[right]] - points[i1[right]]
-        )
+        dxr = (intp[right] - points[i1[right]]) / dx
+        h0, h1, h2, h3 = cr_coeff(dxr, y0.ndim - 1)
+        yinterp[right] = h0 * y0 + h1 * m1 + h2 * y1 + h3 * m2
 
-        yinterp[right] = (
-            (2 * dxr**3 - 3 * dxr**2 + 1)[..., None] * y0
-            + (dxr**3 - 2 * dxr**2 + dxr)[..., None] * m1
-            + (-2 * dxr**3 + 3 * dxr**2)[..., None] * y1
-            + (dxr**3 - dxr**2)[..., None] * m2
-        )
-
-    # accounting for exact matches between intp and points
-    exact = np.isclose(intp, points[i1])
-    yinterp[exact] = y[i1[exact]]
-    # i1 is not allowed to be N - 1 so the below accounts for an exact match of the last value in points
-    yinterp[np.isclose(intp, points[-1])] = np.take(y, -1, axis=0)
+    #accounting for exact matches between intp and points
+    exact_idx = exact_mat.argmax(axis=1)
+    if np.any(exact):
+        yinterp[exact] = y[exact_idx[exact]]
     yinterp[~valid] = np.nan
     if scalar_input:
-        return np.squeeze(yinterp)
+        return yinterp[0]
     return yinterp
-
 
 def athena_interp(points, values, xi):
     """
@@ -139,14 +132,20 @@ def athena_interp(points, values, xi):
     -------
     interpolated values at xi
     """
-
+    
     xi = np.asarray(xi)
     out = values
+    ndim = len(points)
+    if xi.shape[-1] != ndim:
+        raise ValueError("Sample points are incorrectly entered.")
+    
+    orig_shape = xi.shape[:-1]
+    xi_flat = xi.reshape(-1, ndim)
 
-    # interpolates across each dimension of the input xi
-    for dim in reversed(range(len(points))):
+    for dim in reversed(range(ndim)):
         out = np.moveaxis(out, dim, 0)
-        out = athena_interp_1d(points[dim], out, xi[..., dim])
+        out = athena_interp_1d(points[dim], out, xi_flat[:, dim])
         out = np.moveaxis(out, 0, dim)
-
+    out = np.asarray(out)
+    out = out.reshape(orig_shape + out.shape[1:])
     return out
