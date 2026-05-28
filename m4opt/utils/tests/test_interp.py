@@ -98,7 +98,7 @@ def polynomial_sample_data(
 #   - Remove the keyword argument `max_broadcast_dims` to try tensor inputs.
 #   - Remove the keyword argument `regular` to try irregularly spaced inputs.
 #
-@given(polynomial_sample_data(order=1, max_dims=1, max_broadcast_dims=0, regular=True))
+@given(polynomial_sample_data(order=3, regular=True))
 def test_athena_interp(data):
     """Test the interpolation scheme using data from a multivariate polynomial
     of degree that matches the order of the interpolation scheme."""
