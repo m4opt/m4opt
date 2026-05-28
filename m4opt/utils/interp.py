@@ -10,6 +10,6 @@ def athena_interp(points, values, xi):
         points,
         values,
         xi,
-        method="linear",
+        method="cubic",
         bounds_error=False,
     )
