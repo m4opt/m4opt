@@ -1,16 +1,14 @@
 import numpy as np
 
-
-# coefficients for interpolation
+#coefficients for interpolation
 def cr_coeff(t):
     t2 = t * t
     t3 = t2 * t
-    h0 = 2 * t3 - 3 * t2 + 1
-    h1 = t3 - 2 * t2 + t
-    h2 = -2 * t3 + 3 * t2
+    h0 = 2*t3 - 3*t2 + 1
+    h1 = t3 - 2*t2 + t 
+    h2 = -2*t3 + 3*t2
     h3 = t3 - t2
     return h0, h1, h2, h3
-
 
 def athena_interp_1d(points, y, intp):
     """
@@ -18,7 +16,7 @@ def athena_interp_1d(points, y, intp):
 
     Parameters
     ----------
-    points : the integer values at which a function is sampled
+    points : the integer values at which a function is sampled 
     y : numpy.ndarray
         The function f(x) sampled at regularly spaced values (points), such that
         y[0] = f(points[0]), y[1] = f(points[1]), etc.
@@ -30,103 +28,97 @@ def athena_interp_1d(points, y, intp):
     yinterp : numpy.ndarray
         The interpolated function, f(t)
     """
-
-    # make everything into numpy arrays
+    
+    #make everything into numpy arrays
     points = np.asarray(points)
     y = np.asarray(y)
     intp = np.asarray(intp)
 
-    # account for a scalar intp input
-    scalar_input = intp.ndim == 0
+    #account for a scalar intp input
+    scalar_input = (intp.ndim == 0)
     intp = np.atleast_1d(intp)
 
-    N = len(points)  # number of sample points on the grid
-
+    N = len(points) #number of sample points on the grid
     if y.ndim == 1:
-        y = y[:, None]
+        y = y[:,None]
 
-    # ensure sampled points are sorted
+    #ensure sampled points are sorted
     if not np.all(points[:-1] <= points[1:]):
         idx = np.argsort(points)
         points = points[idx]
         y = y[idx]
 
-    # spacing of input points
+    #spacing of input points
     dpoints = np.diff(points)
     dx = dpoints[0]
 
-    # ensure interpolation can be performed
+    #ensure interpolation can be performed
     if N < 3:
         raise ValueError("athena_interp requires at least 3 points")
     if not np.allclose(dpoints, dx):
         raise ValueError("Interpolation must be over regularly sampled grid")
 
-    # bounds
-    lo, hi = points[0], points[-1]
-    valid = (intp >= lo) & (intp <= hi)
+    #normalize to unit spacing for interpolation
+    points_n = (points - points[0]) / dx
+    intp_n = (intp - points[0]) / dx
 
-    # interval indices
-    i = np.searchsorted(points, intp) - 1
+    #bounds
+    lo, hi = points_n[0], points_n[-1]
+    valid = (intp_n >= lo) & (intp_n <= hi)
 
-    # base indices
+    #interval indices
+    i = np.searchsorted(points_n, intp_n) - 1
+
+    #base indices
     i0 = i - 1
     i1 = i
     i2 = i + 1
     i3 = i + 2
-
-    # four cases: exact match, left edge, middle (normal), right edge
+    
+    #four cases: exact match, left edge, middle (normal), right edge
     exact_idx = np.clip(i + 1, 0, N - 1)
-    exact = valid & (points[exact_idx] == intp)
+    exact = valid & (points_n[exact_idx] == intp_n)
     left = valid & (i == 0) & (~exact)
     right = valid & (i == N - 2) & (~exact)
     middle = valid & (i > 0) & (i < N - 2) & (~exact)
 
-    yinterp = np.full(
-        (len(intp), y.shape[-1]), np.nan, dtype=float
-    )  # empty interpolated points array
+    yinterp = np.full((len(intp_n), y.shape[-1]), np.nan, dtype=float) #empty interpolated points array
 
-    # Left Case Interpolation
+    #Left Case Interpolation
     if np.any(left):
         m1 = (y[i2[left]] - y[i1[left]]) / 2
         m2 = (y[i3[left]] - y[i1[left]]) / 2
         y0 = y[i1[left]]
         y1 = y[i2[left]]
-        dxl = (intp[left] - points[i1[left]]) / dx
+        dxl = intp_n[left] - points_n[i1[left]]
         h0, h1, h2, h3 = cr_coeff(dxl)
-        yinterp[left] = (
-            h0[:, None] * y0 + h1[:, None] * m1 + h2[:, None] * y1 + h3[:, None] * m2
-        )
+        yinterp[left] = h0[:, None] * y0 + h1[:, None] * m1 + h2[:, None] * y1 + h3[:, None] * m2
 
-    # Middle Case Interpolation (Traditional Catmull-Rom Formula)
+    #Middle Case Interpolation (Traditional Catmull-Rom Formula)
     if np.any(middle):
         m1 = (y[i2[middle]] - y[i0[middle]]) / 2
         m2 = (y[i3[middle]] - y[i1[middle]]) / 2
         y0 = y[i1[middle]]
         y1 = y[i2[middle]]
-        dxm = (intp[middle] - points[i1[middle]]) / dx
+        dxm = (intp_n[middle] - points_n[i1[middle]]) 
         h0, h1, h2, h3 = cr_coeff(dxm)
-        yinterp[middle] = (
-            h0[:, None] * y0 + h1[:, None] * m1 + h2[:, None] * y1 + h3[:, None] * m2
-        )
+        yinterp[middle] = h0[:, None] * y0 + h1[:, None] * m1 + h2[:, None] * y1 + h3[:, None] * m2
 
-    # Right Case
+    #Right Case
     if np.any(right):
         m1 = (y[i2[right]] - y[i0[right]]) / 2
         m2 = (y[i2[right]] - y[i1[right]]) / 2
         y0 = y[i1[right]]
         y1 = y[i2[right]]
-        dxr = (intp[right] - points[i1[right]]) / dx
+        dxr = intp_n[right] - points_n[i1[right]]
         h0, h1, h2, h3 = cr_coeff(dxr)
-        yinterp[right] = (
-            h0[:, None] * y0 + h1[:, None] * m1 + h2[:, None] * y1 + h3[:, None] * m2
-        )
+        yinterp[right] = h0[:, None] * y0 + h1[:, None] * m1 + h2[:, None] * y1 + h3[:, None] * m2
 
-    # accounting for exact matches between intp and points
+    #accounting for exact matches between intp and points
     if np.any(exact):
         yinterp[exact] = y[exact_idx[exact]]
     yinterp[~valid] = np.nan
     return yinterp[0] if scalar_input else yinterp
-
 
 def athena_interp(points, values, xi):
     """
@@ -142,17 +134,17 @@ def athena_interp(points, values, xi):
     -------
     interpolated values at xi
     """
-
+    
     xi = np.asarray(xi)
     ndim = len(points)
 
     if xi.shape[-1] != ndim:
         raise ValueError("Sample points are incorrectly entered.")
-
+    
     orig_shape = xi.shape[:-1]
     xi_flat = xi.reshape(-1, ndim)
     M = len(xi_flat)
-
+    
     out = np.asarray(values, dtype=float)
 
     for dim in range(ndim - 1, -1, -1):
@@ -166,4 +158,4 @@ def athena_interp(points, values, xi):
         out = np.moveaxis(out, 0, dim)
     idx = (np.arange(M),) * ndim
     out = out[idx]
-    return out.reshape(orig_shape)
+    return out.reshape(orig_shape if orig_shape else (1,))
