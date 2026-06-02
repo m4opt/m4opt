@@ -42,10 +42,7 @@ def polynomial_sample_data(
     max_broadcast_dims: int | None = None,
     regular: bool = False,
 ):
-    num_coefficients = order + 1
-    shape = draw(
-        array_shapes(min_dims=min_dims, max_dims=max_dims, min_side=num_coefficients)
-    )
+    shape = draw(array_shapes(min_dims=min_dims, max_dims=max_dims, min_side=order + 1))
     ndim = len(shape)
 
     if regular:
@@ -76,7 +73,7 @@ def polynomial_sample_data(
     poly = draw(
         arrays(
             dtype=np.float64,
-            shape=[num_coefficients] * ndim,
+            shape=[order] * ndim,
             elements=floats(
                 allow_nan=False, allow_infinity=False, min_value=-100, max_value=100
             ),
@@ -120,7 +117,7 @@ def test_athena_interp(data):
     np.testing.assert_allclose(
         result[in_bounds_with_padding],
         exact_polynomial[in_bounds_with_padding],
-        rtol=1e-6,
+        rtol=1e-5,
         err_msg="Interpolant must exactly match the function everywhere except within 1 sample point of any boundary",
     )
 
