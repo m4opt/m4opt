@@ -19,9 +19,9 @@ they need to use the Python packages that come with the full academic software
 distribution of IBM ILOG CPLEX Optimization Studio, following the instructions
 below.
 
-1. In a Web browser, navigate to the `IBM SkillsBuild`__ site.
+1. In a Web browser, navigate to the `IBM SkillsBuild Technology Access`__ site.
 
-__ https://skillsbuild.org
+__ https://academic.ibm.com/a2mt/
 
 2. Click the :guilabel:`Log in` or :guilabel:`Sign up` button in the top-right
    corner of the page. Select :guilabel:`College software downloads`. Register
