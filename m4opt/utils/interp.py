@@ -1,124 +1,26 @@
-import numpy as np
+import numpy as np 
 
-#coefficients for interpolation
-def cr_coeff(t):
-    t2 = t * t
-    t3 = t2 * t
-    h0 = 2*t3 - 3*t2 + 1
-    h1 = t3 - 2*t2 + t 
-    h2 = -2*t3 + 3*t2
-    h3 = t3 - t2
-    return h0, h1, h2, h3
-
-def athena_interp_1d(points, y, intp):
+def athena_interp_1d(tensors, t):
     """
-    Perform Catmull-Rom interpolation on a regularly sampled series.
+    1-Dimensional Catmull-Rom interpolation.
 
     Parameters
     ----------
-    points : the integer values at which a function is sampled 
-    y : numpy.ndarray
-        The function f(x) sampled at regularly spaced values (points), such that
-        y[0] = f(points[0]), y[1] = f(points[1]), etc.
-    intp : numpy.ndarray
-        The abscissae at which to evaluate the interpolant.
+    tensors : list of values associated with 4 points neighboring query points
+    t : normalized positions of query points between two closest points
 
     Returns
     -------
-    yinterp : numpy.ndarray
-        The interpolated function, f(t)
+    interpolated values at t
     """
-    
-    #make everything into numpy arrays
-    points = np.asarray(points)
-    y = np.asarray(y)
-    intp = np.asarray(intp)
-
-    #account for a scalar intp input
-    scalar_input = (intp.ndim == 0)
-    intp = np.atleast_1d(intp)
-
-    N = len(points) #number of sample points on the grid
-    if y.ndim == 1:
-        y = y[:,None]
-
-    #ensure sampled points are sorted
-    if not np.all(points[:-1] <= points[1:]):
-        idx = np.argsort(points)
-        points = points[idx]
-        y = y[idx]
-
-    #spacing of input points
-    dpoints = np.diff(points)
-    dx = dpoints[0]
-
-    #ensure interpolation can be performed
-    if N < 3:
-        raise ValueError("athena_interp requires at least 3 points")
-    if not np.allclose(dpoints, dx):
-        raise ValueError("Interpolation must be over regularly sampled grid")
-
-    #normalize to unit spacing for interpolation
-    points_n = (points - points[0]) / dx
-    intp_n = (intp - points[0]) / dx
-
-    #bounds
-    lo, hi = points_n[0], points_n[-1]
-    valid = (intp_n >= lo) & (intp_n <= hi)
-
-    #interval indices
-    i = np.searchsorted(points_n, intp_n) - 1
-
-    #base indices
-    i0 = i - 1
-    i1 = i
-    i2 = i + 1
-    i3 = i + 2
-    
-    #four cases: exact match, left edge, middle (normal), right edge
-    exact_idx = np.clip(i + 1, 0, N - 1)
-    exact = valid & (points_n[exact_idx] == intp_n)
-    left = valid & (i == 0) & (~exact)
-    right = valid & (i == N - 2) & (~exact)
-    middle = valid & (i > 0) & (i < N - 2) & (~exact)
-
-    yinterp = np.full((len(intp_n), y.shape[-1]), np.nan, dtype=float) #empty interpolated points array
-
-    #Left Case Interpolation
-    if np.any(left):
-        m1 = (y[i2[left]] - y[i1[left]]) / 2
-        m2 = (y[i3[left]] - y[i1[left]]) / 2
-        y0 = y[i1[left]]
-        y1 = y[i2[left]]
-        dxl = intp_n[left] - points_n[i1[left]]
-        h0, h1, h2, h3 = cr_coeff(dxl)
-        yinterp[left] = h0[:, None] * y0 + h1[:, None] * m1 + h2[:, None] * y1 + h3[:, None] * m2
-
-    #Middle Case Interpolation (Traditional Catmull-Rom Formula)
-    if np.any(middle):
-        m1 = (y[i2[middle]] - y[i0[middle]]) / 2
-        m2 = (y[i3[middle]] - y[i1[middle]]) / 2
-        y0 = y[i1[middle]]
-        y1 = y[i2[middle]]
-        dxm = (intp_n[middle] - points_n[i1[middle]]) 
-        h0, h1, h2, h3 = cr_coeff(dxm)
-        yinterp[middle] = h0[:, None] * y0 + h1[:, None] * m1 + h2[:, None] * y1 + h3[:, None] * m2
-
-    #Right Case
-    if np.any(right):
-        m1 = (y[i2[right]] - y[i0[right]]) / 2
-        m2 = (y[i2[right]] - y[i1[right]]) / 2
-        y0 = y[i1[right]]
-        y1 = y[i2[right]]
-        dxr = intp_n[right] - points_n[i1[right]]
-        h0, h1, h2, h3 = cr_coeff(dxr)
-        yinterp[right] = h0[:, None] * y0 + h1[:, None] * m1 + h2[:, None] * y1 + h3[:, None] * m2
-
-    #accounting for exact matches between intp and points
-    if np.any(exact):
-        yinterp[exact] = y[exact_idx[exact]]
-    yinterp[~valid] = np.nan
-    return yinterp[0] if scalar_input else yinterp
+    t2 = t * t
+    t3 = t2 * t
+    h0, h1, h2, h3 = 2*t3 - 3*t2 + 1, t3 - 2*t2 + t, -2*t3 + 3*t2, t3 - t2
+    y0, y1, y2, y3 = tensors[:, 0], tensors[:, 1], tensors[:, 2], tensors[:, 3]
+    m1 = (y2 - y0) / 2 #tangent 1
+    m2 = (y3 - y1) / 2 #tangent 2
+    intp = h0 * y1 + h1 * m1 + h2 * y2 + h3 * m2 #Catmull-Rom Formula
+    return intp
 
 def athena_interp(points, values, xi):
     """
@@ -134,28 +36,65 @@ def athena_interp(points, values, xi):
     -------
     interpolated values at xi
     """
-    
+    #array everything
+    points = [np.asarray(p) for p in points]
+    values = np.asarray(values)
     xi = np.asarray(xi)
-    ndim = len(points)
-
-    if xi.shape[-1] != ndim:
-        raise ValueError("Sample points are incorrectly entered.")
     
-    orig_shape = xi.shape[:-1]
-    xi_flat = xi.reshape(-1, ndim)
-    M = len(xi_flat)
-    
-    out = np.asarray(values, dtype=float)
+    xi_orig_shape = xi.shape 
+    dim = len(points) #dimension of points
 
-    for dim in range(ndim - 1, -1, -1):
-        out = np.moveaxis(out, dim, 0)
-        grid_size = out.shape[0]
-        rest_shape = out.shape[1:]
-        out = out.reshape(grid_size, -1)
-        t = xi_flat[:, dim]
-        out = athena_interp_1d(points[dim], out, t)
-        out = out.reshape((M,) + rest_shape)
-        out = np.moveaxis(out, 0, dim)
-    idx = (np.arange(M),) * ndim
-    out = out[idx]
-    return out.reshape(orig_shape if orig_shape else (1,))
+    if xi.ndim == 1 and dim == 1:
+        xi_flat = xi[:, np.newaxis]
+    elif xi.ndim == 1 and dim > 1:
+        xi_flat = xi[np.newaxis, :]
+    else: 
+        xi_flat = xi.reshape(-1, dim)
+
+    num_queries = xi_flat.shape[0] #number of query points
+    mins = [] #minima by axis of points
+    maxs = [] #maxima by axis of points
+    t_list = [] #list of normalized positions between 2 closest points
+    idx_arr = [] #array of tensor indices
+    offsets = np.arange(-2, 2) 
+    
+    for i in range(dim):
+        p_i = points[i]
+        if len(p_i) < 3:
+            raise ValueError("At least 3 points in each dimension are required.")
+        dpoints = np.diff(p_i)
+        dx = dpoints[0]
+        if not np.allclose(dpoints, dx):
+            raise ValueError("Interpolation must be over regularly sampled grid.")
+        mins.append(p_i[0])
+        maxs.append(p_i[-1])
+        idx_i = np.searchsorted(p_i, xi_flat[:, i])  #index of query point on axis
+        idx_i_clip = np.clip(idx_i, 1, len(p_i) - 1)
+        t_i = (xi_flat[:, i] - p_i[idx_i_clip - 1]) / dx #normalize position of query point
+        t_list.append(t_i)
+        grid_i = idx_i_clip[:, np.newaxis] + offsets #indices of all neighboring points
+        grid_i = np.clip(grid_i, 0, values.shape[i] - 1)
+        target_shape = [num_queries] + [1] * dim #target shape of 1s
+        target_shape[i + 1] = 4 #replace the given axis's position with 4
+        idx_arr.append(grid_i.reshape(target_shape)) #reshape and store
+    
+    out_of_bounds = np.any(xi_flat < mins, axis=1) | np.any(xi_flat > maxs, axis=1)
+    tens = np.array(values[tuple(idx_arr)]) #tensor array
+
+    for i in reversed(range(dim)):
+        t = t_list[i] 
+        remaining_spatial_axes = i 
+        t_expanded = t[(slice(None),) + (None,) * remaining_spatial_axes]
+        t_broadcasted = np.broadcast_to(t_expanded, tens.shape[:-1])
+        tensors_2d = tens.reshape(-1, 4)
+        t_1d = t_broadcasted.ravel()
+        interp_flat = athena_interp_1d(tensors_2d, t_1d)
+        tens = interp_flat.reshape(tens.shape[:-1])
+    if not np.issubdtype(tens.dtype, np.floating):
+        tens = tens.astype(np.float64)
+    tens[out_of_bounds] = np.nan
+    if len(xi_orig_shape) == 1:
+        return tens.reshape(1)
+    
+    out_shape = xi_orig_shape[:-1] + values.shape[dim:]
+    return tens.reshape(out_shape if out_shape else ())
