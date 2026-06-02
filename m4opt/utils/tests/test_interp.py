@@ -42,14 +42,16 @@ def polynomial_sample_data(
     max_broadcast_dims: int | None = None,
     regular: bool = False,
 ):
-    num_coefficients = order + 1
-    shape = draw(
-        array_shapes(min_dims=min_dims, max_dims=max_dims, min_side=num_coefficients)
-    )
+    shape = draw(array_shapes(min_dims=min_dims, max_dims=max_dims, min_side=order + 1))
     ndim = len(shape)
 
     if regular:
-        points = [np.arange(n) for n in shape]
+        points = [
+            draw(floats(-10000, 10000, allow_nan=False, allow_infinity=False))
+            + np.arange(n)
+            * draw(floats(1e-3, 10000, allow_nan=False, allow_infinity=False))
+            for n in shape
+        ]
     else:
         points = [
             draw(
@@ -71,7 +73,7 @@ def polynomial_sample_data(
     poly = draw(
         arrays(
             dtype=np.float64,
-            shape=[num_coefficients] * ndim,
+            shape=[order] * ndim,
             elements=floats(
                 allow_nan=False, allow_infinity=False, min_value=-100, max_value=100
             ),
@@ -87,28 +89,36 @@ def polynomial_sample_data(
     return PolySampleData(points, poly, xi)
 
 
-#
-# FIXME for Athena:
-# Change `order=1` to `order=3` for cubic polynomial sample data.
-#
-# Currently this will test univariate interpolation with scalar inputs.
-# When you are ready for a greater challenge, do the following:
-#
-#   - Remove the keyword argument `max_dims` to try multivariate interpolation.
-#   - Remove the keyword argument `max_broadcast_dims` to try tensor inputs.
-#   - Remove the keyword argument `regular` to try irregularly spaced inputs.
-#
 @given(polynomial_sample_data(order=3, regular=True))
 def test_athena_interp(data):
     """Test the interpolation scheme using data from a multivariate polynomial
     of degree that matches the order of the interpolation scheme."""
     lo = np.asarray([pt.min() for pt in data.points])
     hi = np.asarray([pt.max() for pt in data.points])
-    xi_transpose = np.moveaxis(data.xi, -1, 0)
-    in_bounds = ((data.xi >= lo) & (data.xi <= hi)).all(axis=-1)
-    desired = np.where(in_bounds, polyvalnd(xi_transpose, data.poly), np.nan)
-
+    delta = np.asarray([pt[1] - pt[0] for pt in data.points])
+    ndim = len(data.points)
     values = polyvalnd(np.meshgrid(*data.points, indexing="ij"), data.poly)
-    actual = athena_interp(data.points, values, data.xi)
+    result = athena_interp(data.points, values, data.xi)
 
-    np.testing.assert_array_almost_equal(actual, desired)
+    assert result.shape == (*(data.xi.shape[:-1] or (1,)), *values.shape[ndim:]), (
+        "The shape of the output must match what would have been returned by scipy.interpolate.interpn. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interpn.html"
+    )
+
+    out_of_bounds = ((data.xi < lo) & (data.xi > hi)).any(axis=-1)
+    assert np.isnan(result[out_of_bounds]).all(), (
+        "Interpolant must retern NaN for all out-of-bounds input points"
+    )
+
+    xi_transpose = np.moveaxis(data.xi, -1, 0)
+    exact_polynomial = np.atleast_1d(polyvalnd(xi_transpose, data.poly))
+    in_bounds_with_padding = ((data.xi >= lo + delta) & (data.xi <= hi - delta)).all(
+        axis=-1
+    )
+    np.testing.assert_allclose(
+        result[in_bounds_with_padding],
+        exact_polynomial[in_bounds_with_padding],
+        atol=1e-6,
+        err_msg="Interpolant must exactly match the function everywhere except within 1 sample point of any boundary",
+    )
+
+    # FIXME: Add test for points near boundary
