@@ -4,16 +4,9 @@ import numpy as np
 from hypothesis import given
 from hypothesis.extra.numpy import array_shapes, arrays
 from hypothesis.strategies import composite, floats
-from numpy.polynomial import polyutils as pu
-from numpy.polynomial.polynomial import polyval
+from numpy.polynomial.polynomial import polyvalnd
 
 from ..interp import athena_interp
-
-
-# FIXME: https://github.com/numpy/numpy/issues/30857
-def polyvalnd(x, c):
-    """Evaluate an arbitrary multivariate polynomial."""
-    return pu._valnd(polyval, c, *x)
 
 
 @dataclass
