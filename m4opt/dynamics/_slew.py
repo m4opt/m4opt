@@ -219,44 +219,46 @@ class EigenAxisSlew(Slew):
         )
         return Angle(np.arccos(0.5 * (matrix_trace(mat) - 1)) * u.rad).to(u.deg)
 
+
 class GroundSlew(ABC):
     """Base class for ground-based telescope slew time models."""
 
     @abstractmethod
     def time(
         self,
-        init_pos: u.Quantity[u.physical.angle], 
-        fin_pos: u.Quantity[u.physical.angle], 
+        init_pos: u.Quantity[u.physical.angle],
+        fin_pos: u.Quantity[u.physical.angle],
         motion_range: tuple[float, float] | None = None,
     ) -> u.Quantity[u.physical.time]:
         """Calculate the time to execute an optimal slew.
-        
+
         Parameters
         ----------
         init_pos:
-            Initial position of the telescope/dome component. 
+            Initial position of the telescope/dome component.
         fin_pos:
             Final desired position of the telescope/dome component.
         motion_range:
             Range of motion of the telescope/dome component. Defaults
             to None if the component can freely rotate.
-        
+
         Returns
         -------
         :
             Time to slew between the initial and final positions.
         """
 
+
 @dataclass
 class GroundSlewComponent(GroundSlew):
-    """Model slew time for a ground telescope component (e.g. dome along 
+    """Model slew time for a ground telescope component (e.g. dome along
     the azimuth axis, telescope mount along the altitude axis).
 
-    The slew time is calculated using JPE's third order point-to-point 
-    motion profile formulae <insert citation here> if jerk is specified.  
+    The slew time is calculated using JPE's third order point-to-point
+    motion profile formulae <insert citation here> if jerk is specified.
     Otherwise, the slew time is calculated as specified in EigenAxisSlew.
 
-    Note: code is written for 
+    Note: code is written for
     """
 
     max_angular_velocity: u.Quantity[u.physical.angular_velocity]
@@ -264,52 +266,54 @@ class GroundSlewComponent(GroundSlew):
 
     max_angular_acceleration: u.Quantity[u.physical.angular_acceleration]
     """Maximum angular acceleration."""
-    
-    max_angular_jerk: u.Quantity | None = None   
-    """Maximum angular jerk. Defaults to None if a value isn't specified.""" 
-    
+
+    max_angular_jerk: u.Quantity | None = None
+    """Maximum angular jerk. Defaults to None if a value isn't specified."""
+
     settling_time: u.Quantity[u.physical.time] = 0 * u.s
     """Time to settle to rest after a slew."""
-    
+
     @staticmethod
     def separation(
-        init_pos: u.Quantity[u.physical.angle], 
-        fin_pos: u.Quantity[u.physical.angle], 
+        init_pos: u.Quantity[u.physical.angle],
+        fin_pos: u.Quantity[u.physical.angle],
         motion_range: tuple[float, float] | None = None,
     ) -> u.Quantity[u.physical.angle]:
         """
-        Determine the smallest angular separation between an initial and final position. 
+        Determine the smallest angular separation between an initial and final position.
 
         Parameters
         ----------
         init_pos:
-            Initial position of the telescope/dome component. Must be 
+            Initial position of the telescope/dome component. Must be
             within the bounds of motion_range (if not freely rotating).
         fin_pos:
             Final desired position of the telescope/dome component. Does
             not necessarily have to be within the bounds of motion_range.
-            (E.g. if rotation is allowed between -270 and 270 degrees, a 
+            (E.g. if rotation is allowed between -270 and 270 degrees, a
             desired position of 300 degrees is still allowed.)
         motion_range:
-            Range of motion of the telescope/dome component in degrees. 
-            Defaults to None if the component can freely rotate. Assumes 
+            Range of motion of the telescope/dome component in degrees.
+            Defaults to None if the component can freely rotate. Assumes
             continuity between lower and upper bounds.
-        
+
         Returns
         -------
         min_dist:
             Shortest possible angular separation of the two positions.
         """
         if not init_pos.unit.is_equivalent(fin_pos.unit):
-            raise ValueError("Initial and final position values should be in the same angular units.")
-        
+            raise ValueError(
+                "Initial and final position values should be in the same angular units."
+            )
+
         full_rot = 360 * u.deg
-        
-        #Free Rotation Case
+
+        # Free Rotation Case
         if motion_range is None:
             min_dist = Angle(fin_pos - init_pos).wrap_at(180 * u.deg)
-    
-        #Limited Rotation Case
+
+        # Limited Rotation Case
         else:
             lo, hi = u.Quantity(motion_range, u.deg)
             init_pos = np.atleast_1d(init_pos)
@@ -317,17 +321,29 @@ class GroundSlewComponent(GroundSlew):
             if init_pos.shape != fin_pos.shape:
                 raise ValueError("init_pos and fin_pos must have matching shapes.")
             if (np.any(init_pos < lo)) or (np.any(init_pos > hi)):
-                raise ValueError("Current positions and/or bounds are entered incorrectly. At least one position is out of bounds.")
+                raise ValueError(
+                    "Current positions and/or bounds are entered incorrectly. At least one position is out of bounds."
+                )
             min_dist = np.empty(init_pos.shape) * init_pos.unit
             for idx in np.ndindex(init_pos.shape):
                 position = fin_pos[idx]
-                lowest = position - full_rot * (np.floor((position - lo)/ full_rot))
-                possible = u.Quantity(np.arange(lowest / position.unit, hi / position.unit, full_rot / position.unit) * position.unit, u.deg)
+                lowest = position - full_rot * (np.floor((position - lo) / full_rot))
+                possible = u.Quantity(
+                    np.arange(
+                        lowest / position.unit,
+                        hi / position.unit,
+                        full_rot / position.unit,
+                    )
+                    * position.unit,
+                    u.deg,
+                )
                 if len(possible) == 0:
-                    raise ValueError(f"No reachable solution for target position {position}.")
+                    raise ValueError(
+                        f"No reachable solution for target position {position}."
+                    )
                 diff = possible - init_pos[idx]
                 min_dist[idx] = diff[np.argmin(np.abs(diff))]
-        return min_dist if min_dist.size > 1 else min_dist.flatten()[0]             
+        return min_dist if min_dist.size > 1 else min_dist.flatten()[0]
 
     @staticmethod
     def _movetime(
@@ -338,19 +354,21 @@ class GroundSlewComponent(GroundSlew):
         settling_time: u.Quantity[u.physical.time] = 0 * u.s,
     ) -> u.Quantity[u.physical.time]:
         """See https://www.jpe-innovations.com/precision-point/third-order-point-to-point-motion-profile/"""
-        dist = np.abs(dist) #ensures positive distance
+        dist = np.abs(dist)  # ensures positive distance
         total_time = u.Quantity(np.zeros(dist.shape), u.s)
-        
-        #Infinite Jerk Case
+
+        # Infinite Jerk Case
         if jmax is None:
             xcrit = np.square(vmax) / amax
-            total_time = np.where(dist <= xcrit, 2 * np.sqrt(dist / amax), vmax / amax + dist / vmax)
-        
-        #Finite Jerk Case
-        else:    
+            total_time = np.where(
+                dist <= xcrit, 2 * np.sqrt(dist / amax), vmax / amax + dist / vmax
+            )
+
+        # Finite Jerk Case
+        else:
             va = amax**2 / jmax
-            sa = 2 * amax ** 3 / jmax ** 2
-            if vmax * jmax < amax ** 2:
+            sa = 2 * amax**3 / jmax**2
+            if vmax * jmax < amax**2:
                 sv = vmax * 2 * np.sqrt(vmax / jmax)
             else:
                 sv = vmax * (vmax / amax + amax / jmax)
@@ -372,7 +390,14 @@ class GroundSlewComponent(GroundSlew):
             t24 = tj24 + tv24 + ta24
             tj5, ta5, tv5 = amax / jmax, vmax / amax, dist / vmax
             t5 = tj5 + tv5 + ta5
-            tj6, ta6 = tj5, 0.5 * (np.sqrt((4 * dist * jmax**2 + amax **3) / (amax * jmax ** 2)) - amax / jmax)
+            tj6, ta6 = (
+                tj5,
+                0.5
+                * (
+                    np.sqrt((4 * dist * jmax**2 + amax**3) / (amax * jmax**2))
+                    - amax / jmax
+                ),
+            )
             tv6 = ta6 + tj6
             t6 = tj6 + ta6 + tv6
             total_time = np.where(case1 | case3, t13, total_time)
@@ -380,33 +405,41 @@ class GroundSlewComponent(GroundSlew):
             total_time = np.where(case5, t5, total_time)
             total_time = np.where(case6, t6, total_time)
         total_time = u.Quantity(total_time, u.s)
-        total_time = np.where(total_time != 0 * u.s, total_time + settling_time, total_time)
+        total_time = np.where(
+            total_time != 0 * u.s, total_time + settling_time, total_time
+        )
         return u.Quantity(total_time, u.s)
-    
+
     @override
     def time(
         self,
-        init_pos: u.Quantity[u.physical.angle], 
-        fin_pos: u.Quantity[u.physical.angle], 
+        init_pos: u.Quantity[u.physical.angle],
+        fin_pos: u.Quantity[u.physical.angle],
         motion_range: tuple[float, float] | None = None,
     ) -> u.Quantity[u.physical.time]:
         """Calculate the time to execute an optimal slew.
-        
+
         Parameters
         ----------
         init_pos:
-            Initial position of the telescope/dome component. 
+            Initial position of the telescope/dome component.
         fin_pos:
             Final desired position of the telescope/dome component.
         motion_range:
             Range of motion of the telescope/dome component. Defaults
             to None if the component can freely rotate.
-        
+
         Returns
         -------
         slew_time:
             Time to slew between the initial and final positions.
         """
         sep = self.separation(init_pos, fin_pos, motion_range)
-        slew_time = self._movetime(sep, self.max_angular_velocity, self.max_angular_acceleration, self.max_angular_jerk, self.settling_time)
+        slew_time = self._movetime(
+            sep,
+            self.max_angular_velocity,
+            self.max_angular_acceleration,
+            self.max_angular_jerk,
+            self.settling_time,
+        )
         return slew_time
