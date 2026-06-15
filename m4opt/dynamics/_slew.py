@@ -17,14 +17,15 @@ u.def_physical_type(u.rad / u.s**3, {"angular jerk", "angular jolt"})
 
 
 @dataclass
-class BangBangTrajectory:
+class AngularMotionProfile:
     """
-    Bang-bang trajectory model.
+    Angular motion profile model.
 
-    A bang-bang trajectory consists of an
-    acceleration phase at the maximum acceleration, possibly a coasting
-    phase at the maximum angular velocity, and a deceleration phase at
-    the maximum acceleration.
+    This is a model of a `trapezoidal motion profile`__ with optional limits
+    on angular velocity, acceleration, and jerk. The time is solved using a
+    `general third-order point-to-point motion profile`__.
+
+    __ https://www.jpe-innovations.com/precision-point/third-order-point-to-point-motion-profile/
     """
 
     max_angular_velocity: u.Quantity[u.physical.angular_velocity]
@@ -148,63 +149,12 @@ class Slew(ABC):
 
 
 @dataclass
-class EigenAxisSlew(Slew, BangBangTrajectory):
+class EigenAxisSlew(Slew, AngularMotionProfile):
     """Model slew time for a spacecraft employing an eigenaxis maneuver.
 
     An eigenaxis maneuver is a rotation along the path of shortest angular
-    separation, about a single axis. Assuming that the spaceraft has a maximum
-    angular acceleration and angular rate, the fastest possible eigenaxis
-    maneuver is a "bang-bang" trajectory consisting of an acceleration phase at
-    the maximum acceleration, possibly a coasting phase at the maximum angular
-    velocity, and a deceleration phase at the maximum acceleration, as shown in
-    the figure below.
-
-    .. plot::
-        :include-source: False
-        :show-source-link: False
-
-        from matplotlib import pyplot as plt
-        import numpy as np
-
-        def cases(*args):
-            *args, else_value = args
-            while args:
-                *args, cond, if_value = args
-                else_value = np.where(cond, if_value, else_value)
-            return else_value
-
-
-        fig_width, fig_height = plt.rcParams['figure.figsize']
-        scale = 0.5
-        fig, axs = plt.subplots(
-            3, 2, sharex=True, sharey='row',
-            figsize=(2 * scale * fig_width, 3 * scale * fig_height),
-            tight_layout=True)
-
-        t = np.linspace(0, 0.6, 1000)
-        axs[0, 0].plot(t, cases(t <= 0.2, 1, t <= 0.4, -1, 0))
-        axs[1, 0].plot(t, cases(t <= 0.2, t, t <= 0.4, 0.4 - t, 0))
-        axs[2, 0].plot(t, cases(t <= 0.2, 0.5 * t**2, t <= 0.4, 0.02 + 0.2 * (t - 0.2) - 0.5 * (t - 0.2)**2, 0.04))
-        t = np.linspace(0, 1, 1000)
-        axs[1, 1].plot(t, cases(t <= 0.3, t, t <= 0.5, 0.3, t <= 0.8, 0.8 - t, 0))
-        axs[0, 1].plot(t, cases(t <= 0.3, 1, t <= 0.5, 0, t <= 0.8, -1, 0))
-        axs[2, 1].plot(t, cases(t <= 0.3, 0.5 * t**2, t <= 0.5, 0.045 + 0.3 * (t - 0.3), t <= 0.8, 0.105 + 0.3 * (t - 0.5) - 0.5 * (t - 0.5)**2, 0.15))
-        axs[2, 0].set_xlabel('time')
-        axs[2, 1].set_xlabel('time')
-        axs[0, 0].set_ylabel('acceleration')
-        axs[1, 0].set_ylabel('velocity')
-        axs[2, 0].set_ylabel('position')
-        axs[0, 0].set_title('short slew')
-        axs[0, 1].set_title('long slew')
-
-        axs[0, 0].set_yticks([-1, 0, 1])
-        axs[0, 0].set_yticklabels(['-|max|', '0', '+|max|'])
-        axs[1, 0].set_yticks([0, 0.3])
-        axs[1, 0].set_yticklabels(['0', 'max'])
-        axs[2, 0].set_yticks([0])
-        axs[2, 0].set_yticklabels(['0'])
-        axs[2, 0].set_xticks([])
-        axs[2, 1].set_xticks([])
+    separation, about a single axis. The motion profile along that axis is
+    provided by :class:`AngularMotionProfile`.
 
     Notes
     -----
