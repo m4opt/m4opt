@@ -11,12 +11,13 @@ from astropy.coordinates.matrix_utilities import rotation_matrix
 def matrix_trace(matrix):
     return np.trace(matrix, axis1=-2, axis2=-1)
 
+
 @dataclass
-class BangBangTrajectory():
-    """Bang-bang trajectory model. A bang-bang trajectory consists of an 
-    acceleration phase at the maximum acceleration, possibly a coasting 
-    phase at the maximum angular velocity, and a deceleration phase at 
-    the maximum acceleration. """
+class BangBangTrajectory:
+    """Bang-bang trajectory model. A bang-bang trajectory consists of an
+    acceleration phase at the maximum acceleration, possibly a coasting
+    phase at the maximum angular velocity, and a deceleration phase at
+    the maximum acceleration."""
 
     max_angular_velocity: u.Quantity[u.physical.angular_velocity]
     """Maximum angular rate."""
@@ -32,7 +33,15 @@ class BangBangTrajectory():
         x: u.Quantity[u.physical.angle],
     ) -> u.Quantity[u.physical.time]:
         xc = np.square(self.max_angular_velocity) / self.max_angular_acceleration
-        return np.where(x <= xc, 2 * np.sqrt(x / self.max_angular_acceleration), (x + xc) / self.max_angular_velocity) + self.settling_time
+        return (
+            np.where(
+                x <= xc,
+                2 * np.sqrt(x / self.max_angular_acceleration),
+                (x + xc) / self.max_angular_velocity,
+            )
+            + self.settling_time
+        )
+
 
 class Slew(ABC):
     """Base class for spacecraft slew time models."""
