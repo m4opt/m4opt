@@ -11,13 +11,12 @@ from astropy.coordinates.matrix_utilities import rotation_matrix
 def matrix_trace(matrix):
     return np.trace(matrix, axis1=-2, axis2=-1)
 
-
 @dataclass
-class BangBangTrajectory:
-    """Bang-bang trajectory model. A bang-bang trajectory consists of an
-    acceleration phase at the maximum acceleration, possibly a coasting
-    phase at the maximum angular velocity, and a deceleration phase at
-    the maximum acceleration."""
+class BangBangTrajectory():
+    """Bang-bang trajectory model. A bang-bang trajectory consists of an 
+    acceleration phase at the maximum acceleration, possibly a coasting 
+    phase at the maximum angular velocity, and a deceleration phase at 
+    the maximum acceleration. """
 
     max_angular_velocity: u.Quantity[u.physical.angular_velocity]
     """Maximum angular rate."""
@@ -28,18 +27,12 @@ class BangBangTrajectory:
     settling_time: u.Quantity[u.physical.time] = 0 * u.second
     """Time to settle to rest after a slew."""
 
-    @staticmethod
     def _time(
+        self,
         x: u.Quantity[u.physical.angle],
-        v: u.Quantity[u.physical.angular_velocity],
-        a: u.Quantity[u.physical.angular_acceleration],
-        s: u.Quantity[u.physical.time],
     ) -> u.Quantity[u.physical.time]:
-        xc = np.square(v) / a
-        move_time = np.where(x <= xc, 2 * np.sqrt(x / a), (x + xc) / v)
-        # don't add settling time if the telescope doesn't have to move
-        return np.where(move_time != 0 * u.s, move_time + s, move_time)
-
+        xc = np.square(self.max_angular_velocity) / self.max_angular_acceleration
+        return np.where(x <= xc, 2 * np.sqrt(x / self.max_angular_acceleration), (x + xc) / self.max_angular_velocity) + self.settling_time
 
 class Slew(ABC):
     """Base class for spacecraft slew time models."""
@@ -168,12 +161,7 @@ class EigenAxisSlew(Slew, BangBangTrajectory):
         :
             Time to slew between the two orientations.
         """
-        return self._time(
-            self.separation(center1, center2, roll1, roll2),
-            self.max_angular_velocity,
-            self.max_angular_acceleration,
-            self.settling_time,
-        )
+        return self._time(self.separation(center1, center2, roll1, roll2))
 
     @staticmethod
     def separation(
