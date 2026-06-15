@@ -14,10 +14,14 @@ def matrix_trace(matrix):
 
 @dataclass
 class BangBangTrajectory:
-    """Bang-bang trajectory model. A bang-bang trajectory consists of an
+    """
+    Bang-bang trajectory model.
+
+    A bang-bang trajectory consists of an
     acceleration phase at the maximum acceleration, possibly a coasting
     phase at the maximum angular velocity, and a deceleration phase at
-    the maximum acceleration."""
+    the maximum acceleration.
+    """
 
     max_angular_velocity: u.Quantity[u.physical.angular_velocity]
     """Maximum angular rate."""
