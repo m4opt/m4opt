@@ -116,6 +116,23 @@ class AngularMotionProfile:
             total_time = np.where(case6, t6, total_time)
             return total_time + self.settling_time
 
+    def _distance(self, t: u.Quantity[u.physical.time]) -> u.Quantity[u.physical.angle]:
+        """Calculate the distance that can be reached in a given duration."""
+        if np.isposinf(self.max_angular_jerk):
+            tt = t - self.settling_time
+            tc = 2 * self.max_angular_velocity / self.max_angular_acceleration
+            return np.where(
+                tt < 0 * u.s,
+                np.nan,
+                np.where(
+                    tt < tc,
+                    0.25 * self.max_angular_acceleration * tt**2,
+                    self.max_angular_velocity * (tt - 0.5 * tc),
+                ),
+            )
+        else:
+            raise NotImplementedError
+
 
 class Slew(ABC):
     """Base class for spacecraft slew time models."""
