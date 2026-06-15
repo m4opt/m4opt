@@ -11,6 +11,33 @@ from astropy.coordinates.matrix_utilities import rotation_matrix
 def matrix_trace(matrix):
     return np.trace(matrix, axis1=-2, axis2=-1)
 
+@dataclass
+class BangBangTrajectory():
+    """Bang-bang trajectory model. A bang-bang trajectory consists of an 
+    acceleration phase at the maximum acceleration, possibly a coasting 
+    phase at the maximum angular velocity, and a deceleration phase at 
+    the maximum acceleration. """
+
+    max_angular_velocity: u.Quantity[u.physical.angular_velocity]
+    """Maximum angular rate."""
+
+    max_angular_acceleration: u.Quantity[u.physical.angular_acceleration]
+    """Maximum angular acceleration."""
+
+    settling_time: u.Quantity[u.physical.time] = 0 * u.second
+    """Time to settle to rest after a slew."""
+
+    @staticmethod
+    def _time(
+        x: u.Quantity[u.physical.angle],
+        v: u.Quantity[u.physical.angular_velocity],
+        a: u.Quantity[u.physical.angular_acceleration],
+        s: u.Quantity[u.physical.time],
+    ) -> u.Quantity[u.physical.time]:
+        xc = np.square(v) / a
+        move_time = np.where(x <= xc, 2 * np.sqrt(x / a), (x + xc) / v)
+        #don't add settling time if the telescope doesn't have to move
+        return np.where(move_time != 0 * u.s, move_time + s, move_time)
 
 class Slew(ABC):
     """Base class for spacecraft slew time models."""
@@ -44,7 +71,7 @@ class Slew(ABC):
 
 
 @dataclass
-class EigenAxisSlew(Slew):
+class EigenAxisSlew(Slew, BangBangTrajectory):
     """Model slew time for a spacecraft employing an eigenaxis maneuver.
 
     An eigenaxis maneuver is a rotation along the path of shortest angular
@@ -112,25 +139,6 @@ class EigenAxisSlew(Slew):
     ----------
     .. footbibliography::
     """
-
-    max_angular_velocity: u.Quantity[u.physical.angular_velocity]
-    """Maximum angular rate."""
-
-    max_angular_acceleration: u.Quantity[u.physical.angular_acceleration]
-    """Maximum angular acceleration."""
-
-    settling_time: u.Quantity[u.physical.time] = 0 * u.second
-    """Time to settle to rest after a slew."""
-
-    @staticmethod
-    def _time(
-        x: u.Quantity[u.physical.angle],
-        v: u.Quantity[u.physical.angular_velocity],
-        a: u.Quantity[u.physical.angular_acceleration],
-        s: u.Quantity[u.physical.time],
-    ) -> u.Quantity[u.physical.time]:
-        xc = np.square(v) / a
-        return np.where(x <= xc, 2 * np.sqrt(x / a), (x + xc) / v) + s
 
     @override
     def time(
