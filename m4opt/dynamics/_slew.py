@@ -12,6 +12,10 @@ def matrix_trace(matrix):
     return np.trace(matrix, axis1=-2, axis2=-1)
 
 
+# FIXME: drop if https://github.com/astropy/astropy/pull/19923 is merged
+u.def_angular_unit(u.rad / u.s**3, {"angular jerk", "angular jolt"})
+
+
 @dataclass
 class BangBangTrajectory:
     """
@@ -29,6 +33,9 @@ class BangBangTrajectory:
     max_angular_acceleration: u.Quantity[u.physical.angular_acceleration]
     """Maximum angular acceleration."""
 
+    max_angular_jerk: u.Quantity[u.physical.angular_jerk] = np.inf * u.rad / u.s**3
+    """Maximum angular jerk."""
+
     settling_time: u.Quantity[u.physical.time] = 0 * u.second
     """Time to settle to rest after a slew."""
 
@@ -36,15 +43,77 @@ class BangBangTrajectory:
         self,
         x: u.Quantity[u.physical.angle],
     ) -> u.Quantity[u.physical.time]:
-        xc = np.square(self.max_angular_velocity) / self.max_angular_acceleration
-        return (
-            np.where(
-                x <= xc,
-                2 * np.sqrt(x / self.max_angular_acceleration),
-                (x + xc) / self.max_angular_velocity,
+        if np.isposinf(self.max_angular_jerk):
+            xc = np.square(self.max_angular_velocity) / self.max_angular_acceleration
+            return (
+                np.where(
+                    x <= xc,
+                    2 * np.sqrt(x / self.max_angular_acceleration),
+                    (x + xc) / self.max_angular_velocity,
+                )
+                + self.settling_time
             )
-            + self.settling_time
-        )
+        else:
+            total_time = u.Quantity(np.zeros(x.shape), u.s)
+            va = self.max_angular_acceleration**2 / self.max_angular_jerk
+            sa = 2 * self.max_angular_acceleration**3 / self.max_angular_jerk**2
+            if (
+                self.max_angular_velocity * self.max_angular_jerk
+                < self.max_angular_acceleration**2
+            ):
+                sv = (
+                    self.max_angular_velocity
+                    * 2
+                    * np.sqrt(self.max_angular_velocity / self.max_angular_jerk)
+                )
+            else:
+                sv = self.max_angular_velocity * (
+                    self.max_angular_velocity / self.max_angular_acceleration
+                    + self.max_angular_acceleration / self.max_angular_jerk
+                )
+            case1 = (self.max_angular_velocity < va) & (x > sa)
+            case2 = (self.max_angular_velocity > va) & (x < sa)
+            case3 = (self.max_angular_velocity < va) & (x < sa) & (x > sv)
+            case4 = (self.max_angular_velocity < va) & (x < sa) & (x < sv)
+            case5 = (self.max_angular_velocity > va) & (x > sa) & (x > sv)
+            case6 = (self.max_angular_velocity > va) & (x > sa) & (x < sv)
+            tj13, tv13 = (
+                np.sqrt(self.max_angular_velocity / self.max_angular_jerk),
+                x / self.max_angular_velocity,
+            )
+            ta13 = tj13
+            t13 = tj13 + tv13 + ta13
+            tj24 = np.cbrt(0.5 * x / self.max_angular_jerk)
+            tv24 = 2 * tj24
+            ta24 = tj24
+            t24 = tj24 + tv24 + ta24
+            tj5, ta5, tv5 = (
+                self.max_angular_acceleration / self.max_angular_jerk,
+                self.max_angular_velocity / self.max_angular_acceleration,
+                x / self.max_angular_velocity,
+            )
+            t5 = tj5 + tv5 + ta5
+            tj6, ta6 = (
+                tj5,
+                0.5
+                * (
+                    np.sqrt(
+                        (
+                            4 * x * self.max_angular_jerk**2
+                            + self.max_angular_acceleration**3
+                        )
+                        / (self.max_angular_acceleration * self.max_angular_jerk**2)
+                    )
+                    - self.max_angular_acceleration / self.max_angular_jerk
+                ),
+            )
+            tv6 = ta6 + tj6
+            t6 = tj6 + ta6 + tv6
+            total_time = np.where(case1 | case3, t13, total_time)
+            total_time = np.where(case2 | case4, t24, total_time)
+            total_time = np.where(case5, t5, total_time)
+            total_time = np.where(case6, t6, total_time)
+            return total_time + self.settling_time
 
 
 class Slew(ABC):
