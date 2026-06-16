@@ -92,7 +92,7 @@ def countrate(
         return (spectrum * bandpass).integrate(bandpass.waveset) / u.photon
 
     def base_countrate(spectrum):
-        @np.vectorize
+        @np.vectorize(otypes=[float])
         def base_countrate_extinction_for_Ebv(Ebv):
             return base_countrate_no_extinction(
                 spectrum * DustExtinction(Ebv)
