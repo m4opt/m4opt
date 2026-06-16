@@ -317,7 +317,11 @@ def schedule(
             n_fields = len(target_coords)
 
         # Throw away pixels that are not contained in any fields.
-        good = np.unique(np.concatenate(footprints))
+        good = (
+            np.unique(np.concatenate(footprints))
+            if len(footprints) > 0
+            else np.asarray([], dtype=np.intp)
+        )
         imap = np.empty(len(skymap_flat), dtype=np.intp)
         imap[good] = np.arange(len(good))
         skymap_flat = skymap_flat[good]
@@ -589,14 +593,19 @@ def schedule(
                     model.scal_prod_vars_all_different(pixel_vars, skymap_flat["PROB"])
                 )
 
-        with status("solving MILP model"):
-            if write_progress is not None:
-                model.add_progress_listener(recorder := ProgressDataRecorder())
+        if has_model := (
+            model.number_of_constraints + model.objective_expr.number_of_terms() > 0
+        ):
+            with status("solving MILP model"):
+                if write_progress is not None:
+                    model.add_progress_listener(recorder := ProgressDataRecorder())
 
-            if write_model is not None:
-                model.to_stream(write_model)
+                if write_model is not None:
+                    model.to_stream(write_model)
 
-            solution = model.solve()
+                solution = model.solve()
+        else:
+            solution = None
 
         with status("writing results"):
             if write_progress is not None:
@@ -670,9 +679,12 @@ def schedule(
                         "cutoff": cutoff,
                     },
                     "objective_value": objective_value,
-                    "best_bound": model.best_bound,
-                    "solution_status": model.solve_details.status,
-                    "solution_time": model.solve_details.time * u.s,
+                    "best_bound": model.best_bound if has_model else 0,
+                    "solution_status": model.solve_details.status
+                    if has_model
+                    else "infeasible, no observable fields or pixels",
+                    "solution_time": (model.solve_details.time if has_model else 0)
+                    * u.s,
                 },
             )
             table.sort("start_time")

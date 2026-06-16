@@ -89,7 +89,9 @@ class Model(_Model):
         """
         super().__init__()
 
-        self.abs: Callable[[npt.ArrayLike], npt.ArrayLike] = np.vectorize(self.abs)
+        self.abs: Callable[[npt.ArrayLike], npt.ArrayLike] = np.vectorize(
+            self.abs, otypes=[object]
+        )
 
         self.context.solver.log_output = verbose
         self.context.cplex_parameters.threads = jobs
@@ -309,7 +311,7 @@ def make_attr(op):
             np.asarray(rhs, VariableArray)
         ),
     )
-    return np.vectorize(getattr(operator, op), signature="(),()->()")
+    return np.vectorize(getattr(operator, op), signature="(),()->()", otypes=[object])
 
 
 ufunc_map = {
