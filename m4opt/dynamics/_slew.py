@@ -12,6 +12,10 @@ def matrix_trace(matrix):
     return np.trace(matrix, axis1=-2, axis2=-1)
 
 
+# FIXME: drop if https://github.com/astropy/astropy/pull/19923 is merged
+u.def_angular_unit(u.rad / u.s**3, {"angular jerk", "angular jolt"})
+
+
 @dataclass
 class BangBangTrajectory:
     """
@@ -29,7 +33,7 @@ class BangBangTrajectory:
     max_angular_acceleration: u.Quantity[u.physical.angular_acceleration]
     """Maximum angular acceleration."""
 
-    max_angular_jerk: u.Quantity | None = None
+    max_angular_jerk: u.Quantity[u.physical.angular_jerk] = np.inf * u.rad / u.s**3
     """Maximum angular jerk."""
 
     settling_time: u.Quantity[u.physical.time] = 0 * u.second
@@ -39,7 +43,7 @@ class BangBangTrajectory:
         self,
         x: u.Quantity[u.physical.angle],
     ) -> u.Quantity[u.physical.time]:
-        if self.max_angular_jerk is None:
+        if np.isposinf(self.max_angular_jerk):
             xc = np.square(self.max_angular_velocity) / self.max_angular_acceleration
             return (
                 np.where(
