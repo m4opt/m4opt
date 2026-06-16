@@ -13,7 +13,7 @@ def matrix_trace(matrix):
 
 
 # FIXME: drop if https://github.com/astropy/astropy/pull/19923 is merged
-u.def_angular_unit(u.rad / u.s**3, {"angular jerk", "angular jolt"})
+u.def_physical_type(u.rad / u.s**3, {"angular jerk", "angular jolt"})
 
 
 @dataclass
