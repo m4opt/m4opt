@@ -3,9 +3,14 @@ from typing import override
 from astropy import units as u
 from astropy.coordinates import TEME, SkyCoord
 from satellite_tle import fetch_tle_from_celestrak
-from sgp4.api import SGP4_ERRORS, Satrec
+from sgp4.api import SGP4_ERRORS, Satrec, accelerated
 
 from ._core import ObserverLocation
+
+if not accelerated:
+    raise RuntimeError(
+        "python-sgp4 was installed without the required accelerated API. Are you using a version of Python that is not yet supported by M4OPT? "
+    )
 
 
 class TleObserverLocation(ObserverLocation):
