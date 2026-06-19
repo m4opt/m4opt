@@ -21,7 +21,7 @@ class AngularMotionProfile:
     """
     Angular motion profile model.
 
-    This is a model of a `trapezoidal motion profile`__ with optional limits
+    This is a model of a general S-curve motion profile with optional limits
     on angular velocity, acceleration, and jerk. The time is solved using a
     `general third-order point-to-point motion profile`__.
 
