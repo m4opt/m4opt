@@ -48,6 +48,7 @@ classifiers = [
 test = [
     "astroplan",
     "networkx",
+    "sphinx<9",  # FIXME: https://github.com/sphinx-doc/sphinx/issues/14498
     "sphinxcontrib-bibtex",
     "pytest-astropy",
 ]
