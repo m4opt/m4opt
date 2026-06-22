@@ -15,7 +15,11 @@ from ...constraints import (
 from ...dynamics import EigenAxisSlew
 from ...observer import TleObserverLocation
 from ...synphot import Detector
-from ...synphot.background import GalacticBackground, ZodiacalBackground
+from ...synphot.background import (
+    CerenkovBackground,
+    GalacticBackground,
+    ZodiacalBackground,
+)
 from .._core import Mission
 from . import data
 
@@ -62,9 +66,11 @@ ultrasat = Mission(
                 stddev=340 * u.angstrom,
             ),
         },
-        # FIXME: Add models for Cerenkov radiation and stray light
+        # FIXME: Add model for stray light
         # Zodiacal light, Cerenkov radiation, and Stray light dominate ULTRASAT’s background noise.
         background=GalacticBackground() + ZodiacalBackground(),
+        # The geometric factor (21) accounting for baffle suppression and shielding
+        cerenkov_background=CerenkovBackground(factor=21),
         read_noise=6,
         dark_noise=12 / 300 * u.Hz,
         gain=1,
