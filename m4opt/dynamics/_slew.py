@@ -72,12 +72,12 @@ class AngularMotionProfile:
                     self.max_angular_velocity / self.max_angular_acceleration
                     + self.max_angular_acceleration / self.max_angular_jerk
                 )
-            case1 = (self.max_angular_velocity < va) & (x > sa)
-            case2 = (self.max_angular_velocity > va) & (x < sa)
-            case3 = (self.max_angular_velocity < va) & (x < sa) & (x > sv)
+            case1 = (self.max_angular_velocity < va) & (x >= sa)
+            case2 = (self.max_angular_velocity >= va) & (x < sa)
+            case3 = (self.max_angular_velocity < va) & (x < sa) & (x >= sv)
             case4 = (self.max_angular_velocity < va) & (x < sa) & (x < sv)
-            case5 = (self.max_angular_velocity > va) & (x > sa) & (x > sv)
-            case6 = (self.max_angular_velocity > va) & (x > sa) & (x < sv)
+            case5 = (self.max_angular_velocity >= va) & (x >= sa) & (x >= sv)
+            case6 = (self.max_angular_velocity >= va) & (x >= sa) & (x < sv)
             tj13, tv13 = (
                 np.sqrt(self.max_angular_velocity / self.max_angular_jerk),
                 x / self.max_angular_velocity,
@@ -118,8 +118,8 @@ class AngularMotionProfile:
 
     def _distance(self, t: u.Quantity[u.physical.time]) -> u.Quantity[u.physical.angle]:
         """Calculate the distance that can be reached in a given duration."""
+        tt = t - self.settling_time
         if np.isposinf(self.max_angular_jerk):
-            tt = t - self.settling_time
             tc = 2 * self.max_angular_velocity / self.max_angular_acceleration
             return np.where(
                 tt < 0 * u.s,
@@ -131,7 +131,44 @@ class AngularMotionProfile:
                 ),
             )
         else:
-            raise NotImplementedError
+            case134 = (
+                self.max_angular_velocity
+                < self.max_angular_acceleration**2 / self.max_angular_jerk
+            )
+            case256 = (
+                self.max_angular_velocity
+                >= self.max_angular_acceleration**2 / self.max_angular_jerk
+            )
+            aoverj = self.max_angular_acceleration / self.max_angular_jerk
+            sa = 2 * self.max_angular_acceleration**3 / (self.max_angular_jerk**2)
+            sv1 = 2 * np.sqrt(self.max_angular_velocity**3 / self.max_angular_jerk)
+            sv2 = self.max_angular_velocity * (
+                self.max_angular_velocity / self.max_angular_acceleration + aoverj
+            )
+            opt1 = tt * self.max_angular_velocity - 2 * np.sqrt(
+                self.max_angular_velocity**3 / self.max_angular_jerk
+            )
+            opt2 = tt**3 * self.max_angular_jerk / 32
+            opt3 = (
+                tt * self.max_angular_velocity
+                - aoverj * self.max_angular_velocity
+                - self.max_angular_velocity**2 / self.max_angular_acceleration
+            )
+            opt4 = (
+                0.25 * self.max_angular_acceleration * ((tt - aoverj) ** 2 - aoverj**2)
+            )
+            case1 = case134 & (opt1 >= sa)
+            case2 = case256 & (opt2 < sa)
+            case3 = case134 & (opt1 < sa) & (opt1 >= sv1)
+            case4 = case134 & (opt2 < sa) & (opt2 < sv1)
+            case5 = case256 & (opt3 >= sa) & (opt3 >= sv2)
+            case6 = case256 & (opt4 >= sa) & (opt4 < sv2)
+            dist = u.Quantity(np.zeros(t.shape), u.deg)
+            dist = np.where(case1 | case3, opt1, dist)
+            dist = np.where(case2 | case4, opt2, dist)
+            dist = np.where(case5, opt3, dist)
+            dist = np.where(case6, opt4, dist)
+            return dist
 
 
 class Slew(ABC):
