@@ -17,7 +17,7 @@ from .._slew import AngularMotionProfile
     st.floats(min_value=1e-3),
     st.floats(min_value=0, max_value=1e3),
 )
-def test_angular_motion_profile(
+def test_angular_motion_profile_no_jerk(
     distance, max_angular_velocity, max_angular_acceleration, settling_time
 ):
     max_angular_velocity *= u.rad / u.s
@@ -27,6 +27,42 @@ def test_angular_motion_profile(
     profile = AngularMotionProfile(
         max_angular_velocity=max_angular_velocity,
         max_angular_acceleration=max_angular_acceleration,
+        settling_time=settling_time,
+    )
+
+    distance_roundtrip = profile._distance(profile._time(distance * u.rad)).to_value(
+        u.rad
+    )
+    np.testing.assert_almost_equal(distance_roundtrip, distance)
+
+
+@given(
+    arrays(
+        float,
+        array_shapes(min_dims=0, min_side=0),
+        elements=st.floats(min_value=0, max_value=1e3),
+    ),
+    st.floats(min_value=1e-3, max_value=1e3),
+    st.floats(min_value=1e-3, max_value=1e3),
+    st.floats(min_value=1e-3, max_value=1e3),
+    st.floats(min_value=0, max_value=1e3),
+)
+def test_angular_motion_profile_jerk(
+    distance,
+    max_angular_velocity,
+    max_angular_acceleration,
+    max_angular_jerk,
+    settling_time,
+):
+    max_angular_velocity *= u.rad / u.s
+    max_angular_acceleration *= u.rad / u.s**2
+    max_angular_jerk *= u.rad / u.s**3
+    settling_time *= u.s
+
+    profile = AngularMotionProfile(
+        max_angular_velocity=max_angular_velocity,
+        max_angular_acceleration=max_angular_acceleration,
+        max_angular_jerk=max_angular_jerk,
         settling_time=settling_time,
     )
 
