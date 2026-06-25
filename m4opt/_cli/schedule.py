@@ -517,17 +517,29 @@ def schedule(
                     rhs = 0.5 * (
                         exptime_field_vars[slew_i] + exptime_field_vars[slew_j]
                     ) + slew_time_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
+                    model.add_constraints_(
+                        model.abs(
+                            time_field_visit_vars[slew_i, p[:, np.newaxis]]
+                            - time_field_visit_vars[slew_j, q[:, np.newaxis]]
+                        )
+                        >= rhs
+                    )
                 else:
                     rhs = (slew_time_s + exptime_min_s) * (
                         field_vars[slew_i] + field_vars[slew_j] - 1
                     )
-                model.add_constraints_(
-                    model.abs(
-                        time_field_visit_vars[slew_i, p[:, np.newaxis]]
-                        - time_field_visit_vars[slew_j, q[:, np.newaxis]]
+                    model.add_constraints_(
+                        model.abs(
+                            time_field_visit_vars[slew_i, :]
+                            - time_field_visit_vars[slew_j, :]
+                        )
+                        >= rhs
                     )
-                    >= rhs
-                )
+                    model.add_constraints_(
+                        time_field_visit_vars[slew_i, 1:]
+                        - time_field_visit_vars[slew_j, :-1]
+                        >= rhs
+                    )
 
             if adaptive_exptime:
                 with status("adding exposure time constraints"):
