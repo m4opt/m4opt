@@ -287,13 +287,13 @@ def footprint(
     ...     CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg),
     ...     PolygonSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))])
     >>> footprint(regions, target_coord)
-    <Regions([<CircleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
-        (5., -5., 1.)>, radius=3.0 deg)>, <PolygonSkyRegion(vertices=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+    <Regions([
+      <CircleSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+        (5., -5., 1.)>, radius=3.0 deg)>,
+      <PolygonSkyRegion(vertices=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
         [(2.99236656, -4.99694639, 1.), (7.00763344, -4.99694639, 1.),
-         (5.        , -3.        , 1.)]>)>])>
-
-    Not all region types are supported:
-
+         (5.        , -3.        , 1.)]>)>
+    ])>
     >>> region = EllipseSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 5 * u.deg, 2 * u.deg)
     >>> footprint(region, target_coord)
     Traceback (most recent call last):
