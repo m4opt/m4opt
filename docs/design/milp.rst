@@ -95,10 +95,10 @@ Constraints
     :label: fixed-exptime-constraint-no-overlap
 
     \begin{eqnarray}
-    \forall j \neq j,\; k :\quad \left|t_{jk} - t_{j^\prime k}\right|  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right) \\
-    \forall j \neq j,\; k > 1:\quad t_{jk} - t_{j^\prime , k - 1}  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
+    \forall j^\prime \neq j,\; k :\quad \left|t_{jk} - t_{j^\prime k}\right|  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right) \\
+    \forall j^\prime \neq j,\; k > 1 :\quad t_{jk} - t_{j^\prime , k - 1}  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
     \end{eqnarray}
-    
+
 **Field of regard.** An observation of a reference field can only occur while the coordinates of the reference field are within the field of regard.
 
 For fields that have one observable segment (:math:`{n_M}_j = 1`), this constraint is simply an inequality:
