@@ -94,7 +94,7 @@ Constraints
 .. math::
     :label: fixed-exptime-constraint-no-overlap
 
-    \forall j^\prime \neq j,\; k :\quad \left|t_{jk} - t_{j^\prime k}\right|  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right) 
+    \forall j^\prime \neq j,\; k :\quad \left|t_{jk} - t_{j^\prime k}\right|  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
 
     \forall j^\prime \neq j,\; k > 1 :\quad t_{jk} - t_{j^\prime , k - 1}  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
 
@@ -112,7 +112,7 @@ For fields that have more than one observable segment (:math:`{n_M}_j > 1`), we 
 .. math::
     :label: fixed-exptime-constraint-for-many
 
-    \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2, 
+    \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2,
 
     \sum_m s_{jkm} &\geq& 1
 
