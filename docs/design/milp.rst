@@ -207,10 +207,8 @@ For fields that have more than one observable segment:
 .. math::
     :label: variable-exptime-constraint-for-many
 
-    \begin{eqnarray}
     \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + e_j / 2 \leq t_{jk} \leq \omega_{jm} - e_j / 2, \\
     \sum_m s_{jkm} &\geq& 1
-    \end{eqnarray}
 
 Additional cuts
 """""""""""""""
@@ -220,10 +218,8 @@ Additional cuts
 .. math::
     :label: variable-exptime-cut-total-time
 
-    \begin{eqnarray}
     \sum_{j \in J} r_j &\leq& \frac{\delta - \beta}{\epsilon_\mathrm{min} n_K} \\
     \sum_{j \in J} e_j &\leq& \frac{\delta - \beta}{n_K}
-    \end{eqnarray}
 
 Objective
 """""""""
