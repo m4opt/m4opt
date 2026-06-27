@@ -5,7 +5,7 @@ authors = [{name = "M4OPT Developers", email = "leo.singer@ligo.org"}]
 license = "BSD-3-Clause"
 description = "Multi-Mission Multi-Messenger Observation Planning Toolkit"
 readme = "README.rst"
-requires-python = ">=3.12, <3.14"  # FIXME: https://github.com/brandon-rhodes/python-sgp4/issues/163, https://github.com/brandon-rhodes/python-sgp4/issues/164
+requires-python = ">=3.12, <3.15"
 dependencies = [
     "aep8 >= 1.0.0",
     "antiprism-python",
@@ -39,6 +39,7 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Astronomy",
     "Typing :: Typed",
 ]
