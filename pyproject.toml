@@ -28,7 +28,7 @@ dependencies = [
     "spiceypy",
     "sympy",
     "synphot",
-    "typer >= 0.26.0",
+    "typer >= 0.26.0, < 0.26.8",  # https://github.com/sphinx-contrib/typer/issues/68
     "xdg-base-dirs",
 ]
 classifiers = [
