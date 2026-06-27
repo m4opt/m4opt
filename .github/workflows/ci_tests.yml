@@ -44,6 +44,16 @@ jobs:
             python: '3.12'
             toxenv: py312-test-alldeps-cov
 
+          - name: Python 3.13 with all optional dependencies and coverage checking
+            os: ubuntu-latest
+            python: '3.13'
+            toxenv: py313-test-alldeps-cov
+
+          - name: Python 3.14 with all optional dependencies and coverage checking
+            os: ubuntu-latest
+            python: '3.14'
+            toxenv: py314-test-alldeps-cov
+
           # - name: OS X - Python 3.12 with all optional dependencies
           #   os: macos-latest
           #   python: '3.12'
