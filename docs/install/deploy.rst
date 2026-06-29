@@ -77,10 +77,14 @@ CPLEX's memory usage grows as it explores potential solutions. By default, there
 
 Make sure that you reserve at least 8 GiB, and preferably 16 GiB or more, for running |M4OPT|. Set the ``--memory`` command-line option for the `m4opt schedule <../guide/cli.html#m4opt-prime>`_ command to at least 4 GiB less than the maximum amount of memory that you want it to use.
 
+.. _`sgp4-fallback`:
+
 SGP4 Fallback
-~~~~~~~~~~~~~
+^^^^^^^^^^^^^
 
 We use the `SGP4`_ package performs orbit propagation for TLEs. The SGP4 package has a binary implementation and a fallback pure Python implementation. If you install M4OPT on a supported version of Python on a supported platform, then the SGP4 package will be installed from the Python Package Index with the prebuilt binary implementation included. However, if you install M4OPT on an unsupported version of Python or an unsupported platform, then the binary implementation may be missing and SGP4 will fall back to the pure Python implementation. The pure Python implementation is less well-tested (see, for example, `brandon-rhodes/python-sgp4#164`_).
+
+.. rubric:: Mitigation
 
 We have mitigated this by checking at run time that the binary implementation is active when SGP4 is imported.
 
