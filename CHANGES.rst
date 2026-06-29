@@ -2,6 +2,16 @@
 Changes
 *******
 
+2.7.0 (unreleased)
+==================
+
+- Raise a RuntimeError if the SGP4 package was installed without its
+  well-tested binary implementation.
+
+- Add support for jerk-limited slews.
+
+- Fix some corner cases in the scheduler when no fields are observable.
+
 2.6.0 (2026-04-05)
 ==================
 
