@@ -2,7 +2,7 @@
 Changes
 *******
 
-2.7.0 (unreleased)
+2.7.0 (2026-06-29)
 ==================
 
 - Raise a RuntimeError if the SGP4 package was installed without its
