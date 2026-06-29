@@ -3,13 +3,12 @@
 Installation
 ============
 
+.. important::
+    M4OPT currently supports Python 3.12, 3.13, or 3.14.
+
 The recommended way to install |M4OPT| is using :doc:`pip:index`::
 
     $ pip install m4opt
-
-.. important::
-    Currently only Python 3.11 is supported due to temporary issues with
-    CPLEX versions.
 
 .. rubric:: Optional: Third-Party Solvers
 
