@@ -1,5 +1,6 @@
 from typing import override
 
+import numpy as np
 from astropy.coordinates import EarthLocation
 
 from ._core import ObserverLocation
@@ -16,5 +17,5 @@ class EarthFixedObserverLocation(ObserverLocation, EarthLocation):
     """
 
     @override
-    def __call__(self, _):
-        return self
+    def __call__(self, time):
+        return np.broadcast_to(self, time.shape, subok=True)
