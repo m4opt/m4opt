@@ -1,4 +1,3 @@
-from regions import Regions
 from itertools import accumulate, chain
 from pathlib import Path
 from typing import Annotated, Iterable, cast
@@ -24,6 +23,7 @@ from matplotlib.colors import ListedColormap, to_rgb
 from matplotlib.patches import Patch
 from matplotlib.transforms import BlendedAffine2D
 from matplotlib.typing import ColorType
+from regions import Regions
 
 from .. import missions
 from ..fov import footprint, footprint_healpix
@@ -273,9 +273,7 @@ def animate(
                         alpha=footprint_alpha,
                     )
                     for subregion in (
-                        region.regions
-                        if isinstance(region, Regions)
-                        else [region]
+                        region.regions if isinstance(region, Regions) else [region]
                     )
                     for vertices in cut_prime_meridian(
                         np.column_stack(
@@ -300,9 +298,7 @@ def animate(
                             alpha=footprint_alpha,
                         )
                         for subregion in (
-                            region.regions
-                            if isinstance(region, Regions)
-                            else [region]
+                            region.regions if isinstance(region, Regions) else [region]
                         )
                     ]
                     for region in footprint_regions
