@@ -303,6 +303,8 @@ def animate(
                     ]
                     for region in footprint_regions
                 ]
+                for patch in chain.from_iterable(footprint_patches_zoom):
+                    ax_map_zoom.add_patch(patch)
 
             ivisit = np.arange(visits)
             table["area"] = np.empty((len(table), visits)) * hpx.pixel_area.to(u.deg**2)
