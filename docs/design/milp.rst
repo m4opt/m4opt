@@ -109,6 +109,7 @@ For fields that have more than one observable segment (:math:`{n_M}_j > 1`), we 
 
 .. math::
     :label: fixed-exptime-constraint-for-many
+    :no-wrap:
 
     \begin{eqnarray}
     \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2, \\
@@ -203,6 +204,7 @@ For fields that have more than one observable segment:
 
 .. math::
     :label: variable-exptime-constraint-for-many
+    :no-wrap:
 
     \begin{eqnarray}
     \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + e_j / 2 \leq t_{jk} \leq \omega_{jm} - e_j / 2, \\
@@ -216,6 +218,7 @@ Additional cuts
 
 .. math::
     :label: variable-exptime-cut-total-time
+    :no-wrap:
 
     \begin{eqnarray}
     \sum_{j \in J} r_j &\leq& \frac{\delta - \beta}{\epsilon_\mathrm{min} n_K} \\
@@ -243,6 +246,7 @@ We calculate the mean :math:`m` and standard deviation :math:`s` from :math:`\mu
 
 .. math::
     :label: log-distance-parameters
+    :no-wrap:
 
     \begin{eqnarray}
     \mu_{\ln r} &=& \ln m - \frac{1}{2} \ln \left(1 + \frac{s^2}{m^2}\right) \\
@@ -253,6 +257,7 @@ The logarithm of the distance then has the distribution :math:`\ln r \sim \mathc
 
 .. math::
     :label: appmag-parameters
+    :no-wrap:
 
     \begin{eqnarray}
     \mu_x &=& \mu_X + \left(\frac{5}{\ln 10}\right) \mu_{\ln r} + 25 \\
