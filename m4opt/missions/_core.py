@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from astropy.coordinates import SkyCoord
 from regions import Region, Regions
 
+from .._plugin import hookspec
 from ..constraints import Constraint
 from ..dynamics import Slew
 from ..observer import ObserverLocation
@@ -55,3 +56,8 @@ class Mission:
 
     detector: Detector | None = None
     """Detector model."""
+
+
+@hookspec
+def register_mission() -> Mission:
+    pass

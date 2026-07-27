@@ -7,10 +7,12 @@ from astropy.time import Time
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from ....missions import ultrasat
+from .... import missions
 from ....tests.hypothesis import earth_locations, obstimes, skycoords
 from ..._extrinsic import observing
 from .._dust import DustExtinction, dust_map, reddening_law
+
+ultrasat = missions.get("ultrasat")
 
 
 @settings(deadline=None)
