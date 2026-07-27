@@ -55,7 +55,7 @@ class TleObserverLocation(ObserverLocation):
       ...
     RuntimeError: mrt is less than 1.0 which indicates the satellite has decayed
 
-    """  # noqa: E501
+    """
 
     def __init__(self, line1: str, line2: str):
         """Create a TLE from the text of its two lines."""

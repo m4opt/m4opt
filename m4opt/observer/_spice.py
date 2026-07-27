@@ -42,7 +42,7 @@ class SpiceObserverLocation(ObserverLocation):
     <EarthLocation (259589.01504305, 267775.69181568, -6003.44398346) km>
     >>> orbit(t0 + np.arange(4) * u.hour).shape
     (4,)
-    """  # noqa: E501
+    """
 
     def __init__(self, target: str, *kernels: str):
         for kernel in kernels:

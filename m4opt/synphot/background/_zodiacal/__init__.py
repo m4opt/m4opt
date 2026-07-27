@@ -196,7 +196,7 @@ class ZodiacalBackground:
 
         ax.grid()
 
-     """  # noqa: E501
+     """
 
     def __new__(cls):
         return cls.high() * SpectralElement(ZodiacalBackgroundScaleFactor())
