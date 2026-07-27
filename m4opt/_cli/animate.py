@@ -1,6 +1,7 @@
+from collections.abc import Iterable
 from itertools import accumulate, chain
 from pathlib import Path
-from typing import Annotated, Iterable, cast
+from typing import Annotated, cast
 
 import numpy as np
 import synphot

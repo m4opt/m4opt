@@ -5,11 +5,11 @@ from astropy.time import Time
 from hypothesis import strategies as st
 
 __all__ = (
+    "earth_locations",
+    "earth_locations_at_geocentric_radius",
     "obstimes",
     "radecs",
     "skycoords",
-    "earth_locations",
-    "earth_locations_at_geocentric_radius",
 )
 
 obstimes = st.floats(60310, 60676).map(lambda mjd: Time(mjd, format="mjd"))

@@ -9,4 +9,4 @@ this package is more organized.
 from ._roll import nominal_roll
 from ._slew import AngularMotionProfile, EigenAxisSlew, Slew
 
-__all__ = ("nominal_roll", "AngularMotionProfile", "EigenAxisSlew", "Slew")
+__all__ = ("AngularMotionProfile", "EigenAxisSlew", "Slew", "nominal_roll")

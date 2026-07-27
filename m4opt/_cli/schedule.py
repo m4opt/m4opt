@@ -63,7 +63,7 @@ def invert_footprints_to_regions(footprints, n_pixels):
         region_to_fields_map[footprint] for footprint in pixels_to_fields_map
     ]
     region_to_fields_map = [
-        np.asarray(fields, dtype=np.intp) for fields in region_to_fields_map.keys()
+        np.asarray(fields, dtype=np.intp) for fields in region_to_fields_map
     ]
     return pixel_to_region_map, region_to_fields_map
 

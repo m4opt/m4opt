@@ -1,5 +1,5 @@
 from math import gcd
-from typing import Literal, Tuple
+from typing import Literal
 
 import numpy as np
 from anti_lib_progs.geodesic import Vec, get_poly, grid_to_points, make_grid
@@ -76,8 +76,8 @@ def for_subdivision(
     # Adapted from
     # https://github.com/antiprism/antiprism_python/blob/master/anti_lib_progs/geodesic.py
     verts: list[Vec] = []
-    edges: dict[Tuple[int, int], int] = {}
-    faces: list[Tuple[int, int]] = []
+    edges: dict[tuple[int, int], int] = {}
+    faces: list[tuple[int, int]] = []
     get_poly(base[0], verts, edges, faces)
 
     reps = gcd(b, c)
