@@ -20,6 +20,7 @@ dependencies = [
     "networkx",
     "numpy >= 2.5.0",  # https://github.com/numpy/numpy/pull/30870
     "regions",
+    "pluggy",
     "pymetis",
     "satellitetle",
     "scipy",
@@ -43,6 +44,11 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Astronomy",
     "Typing :: Typed",
 ]
+
+[project.entry-points."m4opt"]
+rubin = "m4opt.missions._rubin"
+ultrasat = "m4opt.missions._ultrasat"
+ztf = "m4opt.missions._ztf"
 
 [project.optional-dependencies]
 test = [
