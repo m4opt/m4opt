@@ -9,6 +9,7 @@ from ._positional import (
     AltitudeConstraint,
     AzimuthConstraint,
     DeclinationConstraint,
+    HelioeclipticLongitudeConstraint,
     HourAngleConstraint,
     RightAscensionConstraint,
 )
@@ -23,6 +24,7 @@ __all__ = (
     "DeclinationConstraint",
     "EarthLimbConstraint",
     "GalacticLatitudeConstraint",
+    "HelioeclipticLongitudeConstraint",
     "HourAngleConstraint",
     "LogicalAndConstraint",
     "LogicalNotConstraint",
