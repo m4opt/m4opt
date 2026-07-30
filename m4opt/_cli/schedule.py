@@ -1,4 +1,3 @@
-#Ground Slew + ECSV Fix
 import shlex
 import sys
 from typing import Annotated
