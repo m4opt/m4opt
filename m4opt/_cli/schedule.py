@@ -1,3 +1,4 @@
+#Ground Slew + ECSV Fix
 import shlex
 import sys
 from typing import Annotated
@@ -6,7 +7,7 @@ import numpy as np
 import synphot
 import typer
 from astropy import units as u
-from astropy.coordinates import ICRS, Distance, SkyCoord
+from astropy.coordinates import ICRS, Distance, EarthLocation, SkyCoord
 from astropy.table import QTable, vstack
 from astropy.time import Time
 from astropy_healpix import HEALPix
@@ -18,7 +19,7 @@ from ligo.skymap.io import read_sky_map
 from scipy import stats
 
 from .. import __version__, missions
-from ..dynamics import nominal_roll
+from ..dynamics import Slew, GroundSlew, nominal_roll
 from ..fov import footprint_healpix
 from ..milp import Model
 from ..observer import EarthFixedObserverLocation
@@ -63,7 +64,7 @@ def invert_footprints_to_regions(footprints, n_pixels):
         region_to_fields_map[footprint] for footprint in pixels_to_fields_map
     ]
     region_to_fields_map = [
-        np.asarray(fields, dtype=np.intp) for fields in region_to_fields_map.keys()
+        np.asarray(fields, dtype=np.intp) for fields in region_to_fields_map
     ]
     return pixel_to_region_map, region_to_fields_map
 
@@ -431,12 +432,19 @@ def schedule(
 
     with status("calculating slew times"):
         slew_i, slew_j = np.triu_indices(n_fields, 1)
-        slew_time_s = mission.slew.time(
-            target_coords[slew_i],
-            target_coords[slew_j],
-            rolls[slew_i],
-            rolls[slew_j],
-        ).to_value(u.s)
+        if isinstance(mission.slew, Slew):
+            slew_time_s = mission.slew.time(
+                target_coords[slew_i],
+                target_coords[slew_j],
+                rolls[slew_i],
+                rolls[slew_j],
+            ).to_value(u.s)
+        elif isinstance(mission.slew, GroundSlew):
+            slew_time_s = mission.slew.time(
+                target_coords[slew_i],
+                target_coords[slew_j],
+                event_time,
+            ).to_value(u.s)
 
     with Model(
         timelimit=timelimit, jobs=jobs, memory=memory, lowercutoff=cutoff
@@ -696,20 +704,30 @@ def schedule(
                 name="observer_location",
             )
             table["observer_location"].info.description = "Position of the spacecraft"
+            if isinstance(mission.observer_location, EarthFixedObserverLocation):
+                table["observer_location"].__class__ = EarthLocation
 
             # Add slew segments to table.
             if len(table) > 0:
                 nrows = len(table) - 1
+                if isinstance(mission.slew, Slew):
+                    slew_durations = mission.slew.time(
+                        table["target_coord"][:-1],
+                        table["target_coord"][1:],
+                        table["roll"][:-1],
+                        table["roll"][1:],
+                    )
+                elif isinstance(mission.slew, GroundSlew):
+                    slew_durations = mission.slew.time(
+                        table["target_coord"][:-1],
+                        table["target_coord"][1:],
+                        event_time,
+                    )
                 slew_table = QTable(
                     {
                         "action": np.full(nrows, "slew"),
                         "start_time": (table["start_time"] + table["duration"])[:-1],
-                        "duration": mission.slew.time(
-                            table["target_coord"][:-1],
-                            table["target_coord"][1:],
-                            table["roll"][:-1],
-                            table["roll"][1:],
-                        ),
+                        "duration": slew_durations,
                     }
                 )
                 table = vstack(
@@ -735,3 +753,4 @@ def schedule(
             ).to(u.s)
 
             table.write(schedule, format="ascii.ecsv", overwrite=True)
+            
