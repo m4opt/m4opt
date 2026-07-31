@@ -74,7 +74,7 @@ rst_epilog += r"""
 # This does not *have* to match the package name, but typically does
 project = project_metadata["name"]
 author = project_metadata["authors"][0]["name"]
-copyright = f"{datetime.datetime.now().year}, {author}"
+copyright = f"{datetime.datetime.now(datetime.UTC).year}, {author}"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -280,7 +280,7 @@ bibtex_default_style = "short_alpha"
 class CustomHyperlinkAvailabilityChecker(linkcheck.HyperlinkAvailabilityChecker):
     """Ignore 403 errors from certain servers."""
 
-    allow_403 = ["https://doi.org/"]
+    allow_403 = ("https://doi.org/",)
 
     def check(self, hyperlinks):
         for result in super().check(hyperlinks):
