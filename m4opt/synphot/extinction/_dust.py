@@ -7,6 +7,12 @@ from astropy.modeling import Model, Parameter
 from astropy.utils.data import download_file
 from dust_extinction.parameter_averages import G23
 
+try:
+    frozendict  # noqa: B018
+except NameError:
+    # FIXME: remove once we depend on Python >= 3.15
+    from frozendict import frozendict
+
 with warnings.catch_warnings():
     # Suppress configuration file warnings from the dustmaps package.
     # We are not using the configuration file.
@@ -73,9 +79,9 @@ def DustExtinction(Ebv: float | None = None):
 class DustExtinctionBase(Model):
     n_inputs = 1
     n_outputs = 1
-    input_units = {"x": BaseSpectrum._internal_wave_unit}
-    return_units = {"y": u.dimensionless_unscaled}
-    input_units_equivalencies = {"x": u.spectral()}
+    input_units = frozendict(x=BaseSpectrum._internal_wave_unit)
+    return_units = frozendict(y=u.dimensionless_unscaled)
+    input_units_equivalencies = frozendict(x=u.spectral())
 
     # argh, why!! synphot.BaseSpectrum passes unitless quantities to the underlying model.
     _input_units_allow_dimensionless = True

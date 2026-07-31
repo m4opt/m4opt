@@ -151,9 +151,9 @@ def animate(
                     for ax, transform in zip(ax_maps, transforms)
                 ]
                 for kwargs in [
-                    dict(marker=earth, mec="black"),
-                    dict(marker=sun, mec="black"),
-                    dict(marker=moon(-115), mfc="black", mec="none"),
+                    {"marker": earth, "mec": "black"},
+                    {"marker": sun, "mec": "black"},
+                    {"marker": moon(-115), "mfc": "black", "mec": "none"},
                 ]
             ]
             fig.legend(
