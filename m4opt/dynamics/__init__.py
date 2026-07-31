@@ -9,10 +9,13 @@ this package is more organized.
 from ._roll import nominal_roll
 from ._slew import (
     AngularMotionProfile,
+    AltAzSlew,
     EigenAxisSlew,
-    GroundComponentSlew,
+    EquatorialSlew,
     GroundSlew,
+    MixedCoordSlew,
     Slew,
+    SlewComponent,
 )
 
 __all__ = (
