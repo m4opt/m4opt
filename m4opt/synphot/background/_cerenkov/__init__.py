@@ -228,7 +228,7 @@ class CerenkovBackground:
 
         # Above the maximum energy tabulated by AE8/AP8 (about 7 MeV for
         # electrons), aep8 returns non-finite values rather than zero.
-        Fe = u.Quantity(np.nan_to_num(Fe.value, nan=0.0, posinf=0.0), Fe.unit)
+        Fe = u.Quantity(np.nan_to_num(Fe.value, nan=0.0), Fe.unit)
 
         # Zero flux: return zero spectrum
         if np.all(Fe.value == 0):
