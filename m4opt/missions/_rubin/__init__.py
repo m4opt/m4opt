@@ -14,7 +14,7 @@ from ...constraints import (
     AtNightConstraint,
     MoonSeparationConstraint,
 )
-from ...dynamics import GroundSlew, SlewComponent
+from ...dynamics import AltAzSlew, SlewComponent
 from ...observer import EarthFixedObserverLocation
 from ...synphot import Detector, bandpass_from_svo
 from ...synphot.background import SkyBackground, ZodiacalBackground
