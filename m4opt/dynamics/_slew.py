@@ -4,7 +4,13 @@ from typing import override
 
 import numpy as np
 from astropy import units as u
-from astropy.coordinates import AltAz, Angle, EarthLocation, SkyCoord
+from astropy.coordinates import (
+    GCRS,
+    AltAz,
+    Angle,
+    EarthLocation,
+    SkyCoord,
+)
 from astropy.coordinates.matrix_utilities import rotation_matrix
 from astropy.time import Time
 
@@ -306,7 +312,7 @@ class EigenAxisSlew(Slew, AngularMotionProfile):
 
 
 @dataclass
-class GroundComponentSlew(AngularMotionProfile):
+class SlewComponent(AngularMotionProfile):
     """Model slew time of a component of a ground-based telescope.
 
     Ground-based telescopes can have multiple components with varying
@@ -314,6 +320,8 @@ class GroundComponentSlew(AngularMotionProfile):
     dome along each axis and telescope mount in each axis. This model
     assumes free/unlimited rotation.
     """
+
+    frame: GCRS | AltAz | None = None
 
     def separation(
         self,
@@ -373,29 +381,26 @@ class GroundSlew:
     telescope is AltAz, a location must be specified.
     """
 
-    comp1: GroundComponentSlew
-    comp2: GroundComponentSlew
-    comp3: GroundComponentSlew | None = None
-    comp4: GroundComponentSlew | None = None
+    location: EarthLocation
+    """Location of the observatory."""
+
+    comp1: SlewComponent
+    comp2: SlewComponent
+    comp3: SlewComponent | None = None
+    comp4: SlewComponent | None = None
     """Components of the telescope separated by part and axis (e.g. mount 
     in altitude, mount in azimuth, dome in altitude, and dome in azimuth 
     may make up the four components). Only two are required. Odd 
     components must be along the RA or Alt axes while even components 
     must be along the Dec or Az axes."""
 
-    coord_sys_is_equatorial: bool = True
-    """If the telescope works in equatorial or altaz coordinates. Defaults
-    to equatorial coordinates. Units do not have to match the skymap's."""
 
-    location: EarthLocation | None = None
-    """Location of the observatory. Required if the telescope works in 
-    altaz coordinates."""
-
+class AltAzSlew(GroundSlew):
     def time(
         self,
         coord1: SkyCoord,
         coord2: SkyCoord,
-        time_obs: Time | None = None,
+        time_obs: Time,
     ) -> u.Quantity[u.physical.time]:
         """
         Determine the time to slew between two positions based
@@ -404,12 +409,11 @@ class GroundSlew:
         Parameters
         ----------
         coord1:
-            Initial coordinates (equatorial or AltAz).
+            Initial coordinates.
         coord2:
-            Final coordinates (equatorial or AltAz).
+            Final coordinates.
         time_obs:
-            Time of observation. Required if any components
-            are in AltAz and not in equatorial coordinates.
+            Time of observation.
 
         Returns
         -------
@@ -417,31 +421,120 @@ class GroundSlew:
             Time to slew between the two orientations based
             on the maximum slew time across all components.
         """
-        if not self.coord_sys_is_equatorial and (
-            (self.location is None) or (time_obs is None)
-        ):
-            raise ValueError(
-                "If the telescope is AltAz, a location and observation time must be specified."
-            )
-        if self.coord_sys_is_equatorial:
-            coord1 = coord1.transform_to("icrs")
-            coord2 = coord2.transform_to("icrs")
-            time1 = self.comp1.time(coord1.ra, coord2.ra)
-            time2 = self.comp2.time(coord1.dec, coord2.dec)
-            time3 = self.comp3.time(coord1.ra, coord2.ra) if self.comp3 else (0 * u.s)
-            time4 = self.comp4.time(coord1.dec, coord2.dec) if self.comp4 else (0 * u.s)
-        else:
-            coord1 = coord1.transform_to(
-                AltAz(obstime=time_obs, location=self.location)
-            )
-            coord2 = coord2.transform_to(
-                AltAz(obstime=time_obs, location=self.location)
-            )
-            time1 = self.comp1.time(coord1.alt, coord2.alt)
-            time2 = self.comp2.time(coord1.az, coord2.az)
-            time3 = self.comp3.time(coord1.alt, coord2.alt) if self.comp3 else (0 * u.s)
-            time4 = self.comp4.time(coord1.az, coord2.az) if self.comp4 else (0 * u.s)
-        slew_time1 = np.maximum(time1, time2)
-        slew_time2 = np.maximum(time3, time4)
-        slew_time = np.maximum(slew_time1, slew_time2)
+        altaz_frame = AltAz(obstime=time_obs, location=self.location)
+        altaz_coord1 = coord1.transform_to(altaz_frame)
+        altaz_coord2 = coord2.transform_to(altaz_frame)
+        time1 = self.comp1.time(altaz_coord1.alt, altaz_coord2.alt)
+        time2 = self.comp2.time(altaz_coord1.az, altaz_coord2.az)
+        time3 = (
+            self.comp3.time(altaz_coord1.alt, altaz_coord2.alt)
+            if self.comp3
+            else (0 * u.s)
+        )
+        time4 = (
+            self.comp4.time(altaz_coord1.az, altaz_coord2.az)
+            if self.comp4
+            else (0 * u.s)
+        )
+        slew_time = np.maximum(np.maximum(time1, time2), np.maximum(time3, time4))
+        return slew_time
+
+
+class EquatorialSlew(GroundSlew):
+    def time(
+        self,
+        coord1: SkyCoord,
+        coord2: SkyCoord,
+        time_obs: Time,
+    ) -> u.Quantity[u.physical.time]:
+        """
+        Determine the time to slew between two positions based
+        on the maximum of each component's slew time.
+
+        Parameters
+        ----------
+        coord1:
+            Initial coordinates.
+        coord2:
+            Final coordinates.
+        time_obs:
+            Time of observation.
+
+        Returns
+        -------
+        slew_time:
+            Time to slew between the two orientations based
+            on the maximum slew time across all components.
+        """
+        obsgeoloc, obsgeovel = self.location.get_gcrs_posvel(time_obs)
+        gcrs_frame = GCRS(obsgeoloc=obsgeoloc, obsgeovel=obsgeovel)
+        gcrs_coord1 = coord1.transform_to(gcrs_frame)
+        gcrs_coord2 = coord2.transform_to(gcrs_frame)
+        time1 = self.comp1.time(gcrs_coord1.ra, gcrs_coord2.ra)
+        time2 = self.comp2.time(gcrs_coord1.dec, gcrs_coord2.dec)
+        time3 = (
+            self.comp3.time(gcrs_coord1.ra, gcrs_coord2.ra) if self.comp3 else (0 * u.s)
+        )
+        time4 = (
+            self.comp4.time(gcrs_coord1.dec, gcrs_coord2.dec)
+            if self.comp4
+            else (0 * u.s)
+        )
+        slew_time = np.maximum(np.maximum(time1, time2), np.maximum(time3, time4))
+        return slew_time
+
+
+class MixedCoordSlew(GroundSlew):
+    def time(
+        self,
+        coord1: SkyCoord,
+        coord2: SkyCoord,
+        time_obs: Time,
+    ) -> u.Quantity[u.physical.time]:
+        """
+        Determine the time to slew between two positions based
+        on the maximum of each component's slew time.
+
+        Parameters
+        ----------
+        coord1:
+            Initial coordinates.
+        coord2:
+            Final coordinates.
+        time_obs:
+            Time of observation.
+
+        Returns
+        -------
+        slew_time:
+            Time to slew between the two orientations based
+            on the maximum slew time across all components.
+        """
+        # GCRS Coordinates
+        obsgeoloc, obsgeovel = self.location.get_gcrs_posvel(time_obs)
+        gcrs_frame = GCRS(obsgeoloc=obsgeoloc, obsgeovel=obsgeovel)
+        gcrs_coord1 = coord1.transform_to(gcrs_frame)
+        gcrs_coord2 = coord2.transform_to(gcrs_frame)
+        # AltAz Coordinates
+        altaz_frame = AltAz(obstime=time_obs, location=self.location)
+        altaz_coord1 = coord1.transform_to(altaz_frame)
+        altaz_coord2 = coord2.transform_to(altaz_frame)
+        times = []
+        components = [self.comp1, self.comp2, self.comp3, self.comp4]
+        for i, comp in enumerate(components):
+            time = 0 * u.s
+            if comp and comp.frame is AltAz:
+                if (i == 0) or (i == 2):
+                    time = comp.time(altaz_coord1.alt, altaz_coord2.alt)
+                if (i == 1) or (i == 3):
+                    time = comp.time(altaz_coord1.az, altaz_coord2.az)
+            if comp and comp.frame is GCRS:
+                if (i == 0) or (i == 2):
+                    time = comp.time(gcrs_coord1.ra, gcrs_coord2.ra)
+                if (i == 1) or (i == 3):
+                    time = comp.time(gcrs_coord1.dec, gcrs_coord2.dec)
+            times.append(time)
+        slew_time = np.maximum(
+            np.maximum(times[0], times[1]), np.maximum(times[2], times[3])
+        )
         return slew_time
