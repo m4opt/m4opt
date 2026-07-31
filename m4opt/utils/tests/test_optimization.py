@@ -47,7 +47,7 @@ def test_partition_graph():
 
 def test_partition_graph_color():
     n = 5
-    kwargs = dict(n=n, seed=42)
+    kwargs = {"n": n, "seed": 42}
     graph = nx.convert_node_labels_to_integers(nx.triangular_lattice_graph(10, 20))
     adjacency = nx.to_numpy_array(graph)
 

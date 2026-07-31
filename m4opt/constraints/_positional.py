@@ -3,15 +3,18 @@
 from abc import abstractmethod
 from typing import override
 
+import numpy as np
 from astropy import units as u
 from astropy.coordinates import (
     ICRS,
     AltAz,
     Angle,
     EarthLocation,
+    GeocentricTrueEcliptic,
     HADec,
     SkyCoord,
     UnitSphericalRepresentation,
+    get_sun,
 )
 from astropy.time import Time
 
@@ -63,6 +66,14 @@ class HADecConstraint(AngleConstraint):
     @override
     def _frame(self, observer_location, obstime):
         return HADec(obstime=obstime, location=observer_location)
+
+
+class GeocentricTrueEclipticConstraint(AngleConstraint):
+    """Constrain an angle in the :class:`~astropy.coordinates.GeocentricTrueEclipticConstraint` frame."""
+
+    @override
+    def _frame(self, observer_location, obstime):
+        return GeocentricTrueEcliptic(obstime=obstime)
 
 
 class ICRSConstraint(AngleConstraint):
@@ -158,3 +169,30 @@ class HourAngleConstraint(LongitudeConstraint, HADecConstraint):
     --------
     RightAscensionConstraint
     """
+
+
+class HelioeclipticLongitudeConstraint(GeocentricTrueEclipticConstraint):
+    """Constraint the helioecliptic longitude of the target.
+
+    This places a constraint on the absolute value, between 0° and 180°, of the
+    ecliptic longitude of the target minus the ecliptic longitude of the sun.
+
+    Warnings
+    --------
+    This model should only be used for observers near Earth --- in Earth orbit,
+    as Hubble is, or on the Earth, or even on the Moon or in cislunar space. It
+    should NOT be used for observers in orbits around other planets, or in
+    distant solar orbits, or at Earth-Sun Lagrange points.
+    """
+
+    @override
+    def _get_angle(self, observer_location, target_coord, obstime):
+        frame = self._frame(observer_location, obstime)
+        sun = get_sun(obstime)
+        lon = (
+            target_coord.transform_to(frame)
+            .represent_as(UnitSphericalRepresentation)
+            .lon
+        )
+        lon0 = sun.transform_to(frame).represent_as(UnitSphericalRepresentation).lon
+        return np.abs((lon - lon0).wrap_at(180 * u.deg))

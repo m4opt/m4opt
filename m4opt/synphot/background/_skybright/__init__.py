@@ -20,7 +20,7 @@ def read_kpno_sky_data(key):
     try:
         filename = kpno_sky_tables[key]
     except KeyError:
-        raise ValueError("option must be one of {0}".format(kpno_sky_tables.keys()))
+        raise ValueError(f"option must be one of {kpno_sky_tables.keys()}")
 
     with resources.files(data).joinpath(filename).open("rb") as f:
         x, y = np.loadtxt(f).T

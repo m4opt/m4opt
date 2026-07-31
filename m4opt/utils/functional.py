@@ -13,7 +13,7 @@ first = itemgetter(0)
 second = itemgetter(1)
 
 
-def groupby_unsorted(
+def groupby_unsorted[Item, Key](
     iterable: Iterable[Item], key: Callable[[Item], Key]
 ) -> Iterable[tuple[Key, Iterable[Item]]]:
     """Group items like :obj:`itertools.groupby`, but without requiring the input to be sorted."""

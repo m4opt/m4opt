@@ -79,7 +79,7 @@ rubin = Mission(
         & AtNightConstraint.twilight_astronomical()
         & MoonSeparationConstraint(30 * u.deg)
     ),
-    observer_location=EarthFixedObserverLocation.of_site("LSST"),
+    observer_location=EarthFixedObserverLocation(EarthLocation.of_site("LSST")),
     # Sky grid optimized for LSST’s large field of view.
     skygrid=skygrid.geodesic(3.5 * u.deg**2, class_="III", base="icosahedron"),
     slew=GroundSlew(

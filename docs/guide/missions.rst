@@ -44,9 +44,10 @@ Mission Profiles (`m4opt.missions`)
             regions = [regions]
         fovs.append([region.to_pixel(wcs) for region in regions])
 
-    widths = 2.1 * np.asarray(
+    widths = 2 * np.asarray(
         [max(np.abs(region.vertices.xy).max() for region in regions) for regions in fovs]
     )
+    widths += 0.05 * widths.max()
     widths = np.column_stack((widths, widths))
     xy, dims = pack_boxes(widths)
 

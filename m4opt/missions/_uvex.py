@@ -2,7 +2,7 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import Angle, SkyCoord, get_body
 from astropy.time import Time
-from regions import RectangleSkyRegion
+from regions import RectangleSkyRegion, Regions
 from synphot import Gaussian1D, SpectralElement
 
 from .. import skygrid
@@ -12,15 +12,39 @@ from ..constraints import (
     SunSeparationConstraint,
 )
 from ..dynamics import EigenAxisSlew, nominal_roll
+from ..fov import footprint
 from ..observer import TleObserverLocation
 from ..synphot import Detector
 from ..synphot.background import GalacticBackground, ZodiacalBackground
 from ._core import Mission
 
+_chip_length = 40.96 * u.mm
+"""Linear extent of one imager chip in length units"""
+
+_chip_angle = 4219 * u.arcsec
+"""Linear extent of one imager chip in angular units"""
+
+_chip_gap_length = np.asarray([2.5, 4]) * u.mm
+"""Linear extents of chip gaps in length units"""
+
+_chip_offset = [-1, 0, 1] * (
+    _chip_angle + _chip_gap_length[:, np.newaxis] * _chip_angle / _chip_length
+)
+"""Offses of chip centers in angular units"""
+
 uvex = Mission(
     name="uvex",
-    fov=RectangleSkyRegion(
-        center=SkyCoord(0 * u.deg, 0 * u.deg), width=3.5 * u.deg, height=3.5 * u.deg
+    fov=Regions(
+        footprint(
+            RectangleSkyRegion(
+                center=SkyCoord(0 * u.deg, 0 * u.deg),
+                width=_chip_angle,
+                height=_chip_angle,
+            ),
+            SkyCoord(*np.meshgrid(*_chip_offset)),
+        )
+        .ravel()
+        .tolist()
     ),
     constraints=(
         EarthLimbConstraint(25 * u.deg)
@@ -76,6 +100,11 @@ uvex.__doc__ = r"""UVEX, the UltraViolet EXplorer.
 map the transient sky in the ultraviolet, expected to launch in 2030. UVEX has
 a long-slit spectrograph and a 3.5° square field of view camera with two UV
 filters.
+
+The imager consists of a 3x3 chip mosaic. The chip and chip gap dimensions are
+from H. P. Earnshaw (private communication). The telescope boresight is
+physically offset from the center of the imager by 0.5°, but this model
+currently does not include that offset.
 
 Note that the imaging mode exposure time calculator is a toy model based on
 the publicly available description of the mission from the UVEX science paper

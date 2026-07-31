@@ -108,7 +108,9 @@ def test_cplex_operators(tp, rhs_shape, expr):
     """Test adding constraints by broadcasting variables."""
     m = Model()
     add_vars = getattr(m, f"{tp}_vars")
-    constraint = eval(expr, None, dict(m=m, x=add_vars((3, 2)), y=add_vars(rhs_shape)))
+    constraint = eval(
+        expr, None, {"m": m, "x": add_vars((3, 2)), "y": add_vars(rhs_shape)}
+    )
     assert isinstance(constraint, VariableArray)
     m.add_constraints_(constraint)
 
