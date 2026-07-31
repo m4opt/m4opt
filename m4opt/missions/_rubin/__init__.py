@@ -14,7 +14,7 @@ from ...constraints import (
     AtNightConstraint,
     MoonSeparationConstraint,
 )
-from ...dynamics import SlewComponent, GroundSlew
+from ...dynamics import GroundSlew, SlewComponent
 from ...observer import EarthFixedObserverLocation
 from ...synphot import Detector, bandpass_from_svo
 from ...synphot.background import SkyBackground, ZodiacalBackground
@@ -82,7 +82,7 @@ rubin = Mission(
     observer_location=EarthFixedObserverLocation(EarthLocation.of_site("LSST")),
     # Sky grid optimized for LSST’s large field of view.
     skygrid=skygrid.geodesic(3.5 * u.deg**2, class_="III", base="icosahedron"),
-    slew= AltAzSlew(
+    slew=AltAzSlew(
         comp1=mount_alt,
         comp2=mount_az,
         comp3=dome_alt,
