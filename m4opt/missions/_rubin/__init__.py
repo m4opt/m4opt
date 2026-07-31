@@ -3,7 +3,7 @@ from importlib import resources
 import numpy as np
 import yaml
 from astropy import units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import EarthLocation, SkyCoord
 from astropy.table import Table
 from regions import RectangleSkyRegion, Regions
 
@@ -51,7 +51,7 @@ rubin = Mission(
         & AtNightConstraint.twilight_astronomical()
         & MoonSeparationConstraint(30 * u.deg)
     ),
-    observer_location=EarthFixedObserverLocation.of_site("LSST"),
+    observer_location=EarthFixedObserverLocation(EarthLocation.of_site("LSST")),
     # Sky grid optimized for LSST’s large field of view.
     skygrid=skygrid.geodesic(3.5 * u.deg**2, class_="III", base="icosahedron"),
     # FIXME: The Telescope Mount Assembly is faster than the dome for long slews.

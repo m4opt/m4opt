@@ -2,7 +2,7 @@ from importlib import resources
 
 import numpy as np
 from astropy import units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import EarthLocation, SkyCoord
 from astropy.table import Table
 from regions import PolygonSkyRegion, Regions
 
@@ -98,7 +98,7 @@ ztf = Mission(
         )
         & DeclinationConstraint(-90 * u.deg, 87.5 * u.deg)
     ),
-    observer_location=EarthFixedObserverLocation.of_site("Palomar"),
+    observer_location=EarthFixedObserverLocation(EarthLocation.of_site("Palomar")),
     skygrid=_read_skygrid(),
     # From Section 4.2:
     #
