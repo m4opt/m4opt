@@ -2,6 +2,12 @@
 Changes
 *******
 
+2.8.1 (2026-07-31)
+==================
+
+- Adjust UVEX sky grid for new FOV model. The old grid contained 5412 fields
+  while the new grid contains 4962 fields.
+
 2.8.0 (2026-07-31)
 ==================
 
