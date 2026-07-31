@@ -19,10 +19,13 @@ from ._slew import (
 )
 
 __all__ = (
+    "AltAzSlew",
     "AngularMotionProfile",
     "EigenAxisSlew",
-    "GroundComponentSlew",
+    "EquatorialSlew",
     "GroundSlew",
+    "MixedCoordSlew",
     "Slew",
+    "SlewComponent",
     "nominal_roll",
 )
