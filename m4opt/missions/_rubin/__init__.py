@@ -46,24 +46,24 @@ def _make_fov():
 rubin_loc = EarthLocation(
     lat=-30.244633 * u.deg, lon=-70.749417 * u.deg, height=2647 * u.m
 )
-mount_alt = GroundComponentSlew(
+mount_alt = SlewComponent(
     max_angular_velocity=3.5 * u.deg / u.s,
     max_angular_acceleration=3.5 * u.deg / u.s**2,
     max_angular_jerk=14.0 * u.deg / u.s**3,
     settling_time=3 * u.s,
 )
-mount_az = GroundComponentSlew(
+mount_az = SlewComponent(
     max_angular_velocity=7 * u.deg / u.s,
     max_angular_acceleration=7 * u.deg / u.s**2,
     max_angular_jerk=28 * u.deg / u.s**3,
     settling_time=3 * u.s,
 )
-dome_alt = GroundComponentSlew(
+dome_alt = SlewComponent(
     max_angular_velocity=1.75 * u.deg / u.s,
     max_angular_acceleration=0.75 * u.deg / u.s**2,
     max_angular_jerk=3 * u.deg / u.s**3,
 )
-dome_az = GroundComponentSlew(
+dome_az = SlewComponent(
     max_angular_velocity=1.5 * u.deg / u.s,
     max_angular_acceleration=0.875 * u.deg / u.s**2,
     max_angular_jerk=3.5 * u.deg / u.s**3,
@@ -82,12 +82,11 @@ rubin = Mission(
     observer_location=EarthFixedObserverLocation(EarthLocation.of_site("LSST")),
     # Sky grid optimized for LSST’s large field of view.
     skygrid=skygrid.geodesic(3.5 * u.deg**2, class_="III", base="icosahedron"),
-    slew=GroundSlew(
-        mount_alt,
-        mount_az,
-        dome_alt,
-        dome_az,
-        coord_sys_is_equatorial=False,
+    slew= AltAzSlew(
+        comp1=mount_alt,
+        comp2=mount_az,
+        comp3=dome_alt,
+        comp4=dome_az,
         location=rubin_loc,
     ),
     # Parameters from SMTN-002: https://smtn-002.lsst.io/
