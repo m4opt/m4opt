@@ -2,6 +2,18 @@
 Changes
 *******
 
+2.8.0 (2026-07-31)
+==================
+
+- Add chip gaps for UVEX.
+
+- Add Cerenkov background for ULTRASAT.
+
+- ``m4opt.observer.EarthFixedObserverLocation`` is no longer a subclass of
+  ``astropy.coordinates.EarthLocation``.
+
+- Implement a helioecliptic longitude constraint.
+
 2.7.0 (2026-06-29)
 ==================
 
