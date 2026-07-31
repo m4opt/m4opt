@@ -7,6 +7,25 @@ this package is more organized.
 """
 
 from ._roll import nominal_roll
-from ._slew import AngularMotionProfile, EigenAxisSlew, Slew
+from ._slew import (
+    AltAzSlew,
+    AngularMotionProfile,
+    EigenAxisSlew,
+    EquatorialSlew,
+    GroundSlew,
+    MixedCoordSlew,
+    Slew,
+    SlewComponent,
+)
 
-__all__ = ("AngularMotionProfile", "EigenAxisSlew", "Slew", "nominal_roll")
+__all__ = (
+    "AltAzSlew",
+    "AngularMotionProfile",
+    "EigenAxisSlew",
+    "EquatorialSlew",
+    "GroundSlew",
+    "MixedCoordSlew",
+    "Slew",
+    "SlewComponent",
+    "nominal_roll",
+)
