@@ -24,6 +24,7 @@ from matplotlib.colors import ListedColormap, to_rgb
 from matplotlib.patches import Patch
 from matplotlib.transforms import BlendedAffine2D
 from matplotlib.typing import ColorType
+from regions import Regions
 
 from .. import missions
 from ..fov import footprint, footprint_healpix
@@ -272,9 +273,12 @@ def animate(
                         facecolor=footprint_color,
                         alpha=footprint_alpha,
                     )
+                    for subregion in (
+                        region.regions if isinstance(region, Regions) else [region]
+                    )
                     for vertices in cut_prime_meridian(
                         np.column_stack(
-                            (region.vertices.ra.rad, region.vertices.dec.rad)
+                            (subregion.vertices.ra.rad, subregion.vertices.dec.rad)
                         )
                     )
                 ]
@@ -284,18 +288,23 @@ def animate(
                 ax_map.add_patch(patch)
             if inset_center is not None:
                 footprint_patches_zoom = [
-                    plt.Polygon(
-                        np.column_stack(
-                            (region.vertices.ra.deg, region.vertices.dec.deg)
-                        ),
-                        transform=transforms[1],
-                        visible=False,
-                        facecolor=footprint_color,
-                        alpha=footprint_alpha,
-                    )
+                    [
+                        plt.Polygon(
+                            np.column_stack(
+                                (subregion.vertices.ra.deg, subregion.vertices.dec.deg)
+                            ),
+                            transform=transforms[1],
+                            visible=False,
+                            facecolor=footprint_color,
+                            alpha=footprint_alpha,
+                        )
+                        for subregion in (
+                            region.regions if isinstance(region, Regions) else [region]
+                        )
+                    ]
                     for region in footprint_regions
                 ]
-                for patch in footprint_patches_zoom:
+                for patch in chain.from_iterable(footprint_patches_zoom):
                     ax_map_zoom.add_patch(patch)
 
             ivisit = np.arange(visits)
@@ -414,12 +423,13 @@ def animate(
                             patch.set_visible(visible)
                             blit.append(patch)
                 if inset_center is not None:
-                    for patch, visible in zip(
+                    for patches, visible in zip(
                         footprint_patches_zoom, table["start_time"] <= time
                     ):
-                        if visible != patch.get_visible():
-                            patch.set_visible(visible)
-                            blit.append(patch)
+                        for patch in patches:
+                            if visible != patch.get_visible():
+                                patch.set_visible(visible)
+                                blit.append(patch)
 
                 nonlocal field_of_regard_artist
                 if field_of_regard_artist is not None:
