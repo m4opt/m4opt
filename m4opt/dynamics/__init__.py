@@ -16,10 +16,10 @@ from ._slew import (
 )
 
 __all__ = (
-    "nominal_roll",
     "AngularMotionProfile",
     "EigenAxisSlew",
-    "Slew",
     "GroundComponentSlew",
     "GroundSlew",
+    "Slew",
+    "nominal_roll",
 )

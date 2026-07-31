@@ -18,7 +18,7 @@ from ligo.skymap.io import read_sky_map
 from scipy import stats
 
 from .. import __version__, missions
-from ..dynamics import Slew, GroundSlew, nominal_roll
+from ..dynamics import GroundSlew, Slew, nominal_roll
 from ..fov import footprint_healpix
 from ..milp import Model
 from ..observer import EarthFixedObserverLocation
@@ -750,4 +750,3 @@ def schedule(
             ).to(u.s)
 
             table.write(schedule, format="ascii.ecsv", overwrite=True)
-            
