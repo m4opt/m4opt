@@ -71,7 +71,7 @@ class TleObserverLocation(ObserverLocation):
         Look up the latest TLE for the Fermi Gamma-Ray Space Telescope.
 
         >>> from m4opt.observer import TleObserverLocation
-        >>> tle = TleObserverLocation.from_id(33053)
+        >>> tle = TleObserverLocation.from_id(33053)  # doctest: +SKIP
         """
         *_, line1, line2 = fetch_tle_from_celestrak(norad_id)
         return cls(line1, line2)
