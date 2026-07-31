@@ -215,23 +215,20 @@ class CerenkovBackground:
             Reference Cerenkov emission spectrum.
         """
         # Build radiation belt flux table.
-        # TODO: open issue at https://github.com/m4opt/aep8 to vectorize
-        # aep8.flux over energy so this loop is unnecessary.
         emin, emax = energy
         ee = np.geomspace(emin, emax, num=nbins)
-        Fe = u.Quantity(
-            [
-                aep8_flux(
-                    _REFERENCE_LOCATION,
-                    _REFERENCE_OBSTIME,
-                    e,
-                    kind="integral",
-                    solar=solar,
-                    particle=particle,
-                )
-                for e in ee
-            ]
+        Fe = aep8_flux(
+            _REFERENCE_LOCATION,
+            _REFERENCE_OBSTIME,
+            ee,
+            kind="integral",
+            solar=solar,
+            particle=particle,
         )
+
+        # Above the maximum energy tabulated by AE8/AP8 (about 7 MeV for
+        # electrons), aep8 returns non-finite values rather than zero.
+        Fe = u.Quantity(np.nan_to_num(Fe.value, nan=0.0, posinf=0.0), Fe.unit)
 
         # Zero flux: return zero spectrum
         if np.all(Fe.value == 0):

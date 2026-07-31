@@ -35,7 +35,7 @@ def test_refraction_index():
 def test_electron_energy_loss_positive():
     """Energy loss is positive for all energies and materials."""
     for material in ["sio2", "sio2_suprasil_2a", "sapphire"]:
-        Ek, dEdX = get_electron_energy_loss(material)
+        _, dEdX = get_electron_energy_loss(material)
         assert np.all(dEdX.value > 0), f"dEdX not positive for {material}"
 
 
@@ -54,6 +54,13 @@ def test_cerenkov_reference_regression():
     np.testing.assert_almost_equal(
         spec(12000 * u.AA).value, 5.062175552605670e-10, decimal=15
     )
+
+
+def test_cerenkov_energy_above_ae8_range():
+    """Energies beyond the AE8 tabulation, where aep8 returns non-finite flux."""
+    spec = CerenkovBackground.reference(factor=21, energy=(0.05 * u.MeV, 20 * u.MeV))
+    val = spec(2600 * u.AA).value
+    assert np.isfinite(val) and val > 0
 
 
 def test_cerenkov_uv_brighter():
