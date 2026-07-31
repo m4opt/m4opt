@@ -5,7 +5,6 @@ from astropy.time import Time
 from regions import RectangleSkyRegion, Regions
 from synphot import Gaussian1D, SpectralElement
 
-from .. import skygrid
 from ..constraints import (
     EarthLimbConstraint,
     MoonSeparationConstraint,
@@ -14,6 +13,7 @@ from ..constraints import (
 from ..dynamics import EigenAxisSlew, nominal_roll
 from ..fov import footprint
 from ..observer import TleObserverLocation
+from ..skygrid._geodesic import for_subdivision
 from ..synphot import Detector
 from ..synphot.background import GalacticBackground, ZodiacalBackground
 from ._core import Mission
@@ -86,7 +86,7 @@ uvex = Mission(
     # Sky grid optimized for full coverage of the sky by circles circumscribed
     # within the square field of view (so that each field is fully covered
     # at all roll angles).
-    skygrid=skygrid.geodesic(7.7 * u.deg**2, class_="III", base="icosahedron"),
+    skygrid=for_subdivision(20, 4, base="icosahedron"),
     # Made up slew model.
     slew=EigenAxisSlew(
         max_angular_velocity=0.6 * u.deg / u.s,
