@@ -1,6 +1,17 @@
 """Utilities for working with Numpy arrays."""
 
 import numpy as np
+from numpy import typing as npt
+
+from ._numpy import count_intersect1d as _count_intersect1d
+
+__all__ = (
+    "atmost_1d",
+    "clump_nonzero",
+    "clump_nonzero_inclusive",
+    "count_intersect1d",
+    "full_indices",
+)
 
 
 def atmost_1d(a):
@@ -82,6 +93,37 @@ def clump_nonzero_inclusive(a):
     for intervals in result:
         intervals[:, 1] -= 1
     return result
+
+
+def count_intersect1d(a: npt.ArrayLike, b: npt.ArrayLike) -> int:
+    """Calculate the cardinality of the intersection of `a` and `b`.
+
+    This is equivalent to, but much faster than, ``np.intersect1d(a, b).size``.
+
+    Parameters
+    ----------
+    a
+        A sorted 1D array of type :obj:`numpy.intp`.
+    b
+        A sorted 1D array of type :obj:`numpy.intp`.
+
+    Returns
+    -------
+    :
+        The number of elements that are in both `a` and `b`.
+
+    Warnings
+    --------
+    The arrays `a` and `b` must be sorted. If they are not, then the behavior
+    of this function is undefined.
+
+    Examples
+    --------
+    >>> from m4opt.utils.numpy import count_intersect1d
+    >>> count_intersect1d([0, 1], [1, 2, 3])
+    1
+    """
+    return _count_intersect1d(a, b)
 
 
 def full_indices(n):
