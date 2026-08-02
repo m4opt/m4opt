@@ -70,8 +70,6 @@ Homepage = "https://m4opt.readthedocs.io/"
 [project.scripts]
 m4opt = "m4opt._cli:app"
 
-[tool.setuptools.packages.find]
-
 [tool.setuptools.package-data]
 "*" = [
     "py.typed",
@@ -103,9 +101,9 @@ doctest_optionflags = [
 
 [tool.coverage.run]
 omit = [
-    "m4opt/*setup_package*",
-    "m4opt/extern/*",
-    "m4opt/_version*",
+    "src/m4opt/*setup_package*",
+    "src/m4opt/extern/*",
+    "src/m4opt/_version*",
     "*/m4opt/*setup_package*",
     "*/m4opt/extern/*",
     "*/m4opt/_version*",
@@ -131,7 +129,7 @@ requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "m4opt/_version.py"
+write_to = "src/m4opt/_version.py"
 
 [tool.mypy]
 exclude = ["^docs/"]

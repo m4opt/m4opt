@@ -10,8 +10,8 @@ __pycache__
 *.c
 
 # Other generated files
-*/_version.py
-*/cython_version.py
+src/*/_version.py
+src/*/cython_version.py
 htmlcov
 .coverage
 .coverage.*
