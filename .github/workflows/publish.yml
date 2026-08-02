@@ -17,8 +17,7 @@ on:
 
 jobs:
 
-  build:
-    name: Build
+  sdist:
     permissions: {}
     runs-on: ubuntu-latest
 
@@ -32,17 +31,36 @@ jobs:
       - name: Install Python dependencies
         run: pip install build
 
-      - name: Build sdist and wheel
-        run: python -m build
+      - name: Build sdist
+        run: python -m build --sdist
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
+          name: sdist
           path: dist/*
+
+  wheel:
+    permissions: {}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-22.04-arm, macos-15-intel, macos-14]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@4726cd35bb13f7bde50cf2761f2499ac7b3aa32c  # v4.1.1
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: ${{ matrix.os }}
+          path: wheelhouse/*
 
   publish:
     name: Publish to PyPI
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [sdist, wheel]
     permissions:
       id-token: write
     if: github.event_name == 'release'
