@@ -48,6 +48,7 @@ classifiers = [
 [project.optional-dependencies]
 test = [
     "astroplan",
+    "hypothesis",
     "networkx",
     "sphinx",
     "sphinxcontrib-bibtex",
