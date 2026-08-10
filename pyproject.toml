@@ -129,7 +129,7 @@ exclude_also = [
 requires = [
     # "extension-helpers>=1.3,<2",
     # FIXME: https://github.com/astropy/extension-helpers/pull/155
-    "extension-helpers @ git+https://github.com/lpsinger/extension-helpers.git@compiler-dot-c-src-layout-packages",
+    "extension-helpers @ git+https://github.com/astropy/extension-helpers.git@cae66a0c1a798c3e33ad93b24ac907f14e2818fc",
     "numpy>=2",
     "setuptools>=64",
     "setuptools_scm>=8",
