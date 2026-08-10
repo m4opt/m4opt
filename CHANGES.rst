@@ -2,6 +2,12 @@
 Changes
 *******
 
+2.9.0 (2026-08-09)
+==================
+
+- Add ``count_intersect1d`` utility function for calculating cadence
+  distributions accounting for field overlaps.
+
 2.8.1 (2026-07-31)
 ==================
 
