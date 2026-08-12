@@ -53,6 +53,7 @@ test = [
     "sphinx",
     "sphinxcontrib-bibtex",
     "pytest-astropy",
+    "pytest-benchmark",
 ]
 docs = [
     "pysiaf",
