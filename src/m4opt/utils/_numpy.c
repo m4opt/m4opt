@@ -75,14 +75,14 @@ static PyMethodDef methods[] = {
 };
 
 static PyModuleDef moduledef = {
-  PyModuleDef_HEAD_INIT,
-  "_numpy",
-  NULL, 0, methods
+    PyModuleDef_HEAD_INIT,
+    "_numpy",
+    NULL, 0, methods
 };
 
 PyMODINIT_FUNC
 PyInit__numpy(void)
 {
-  import_array();
-  return PyModuleDef_Init(&moduledef);
+    import_array();
+    return PyModuleDef_Init(&moduledef);
 }
