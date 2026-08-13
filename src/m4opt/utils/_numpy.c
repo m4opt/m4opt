@@ -1,52 +1,102 @@
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
-static npy_intp find_floor(const npy_intp *a, npy_intp x, npy_intp n) {
-    npy_intp base = 0;
-    while (n > 0) {
-        npy_intp mid = base + n / 2;
-        if (x < a[mid]) {
-            n /= 2;
+/*
+ * count_intersect1d is based on the one-sided lower_bound strategy used by
+ * LLVM/libc++ for std::set_intersection with forward iterators.
+ *
+ * Basic approach:
+ * 1) For a current value from one sorted array, search the other array using
+ *    a one-sided (galloping/exponential) lower_bound.
+ * 2) Swap roles and do the symmetric step from the other array.
+ * 3) If both cursors land on the same value, count one intersection element
+ *    and advance both pointers.
+ *
+ * This pure-C implementation was created with assistance from AI:
+ * OpenAI ChatGPT gpt-5.3-codex, via Continue.
+ */
+
+static const npy_intp *lower_bound_bisecting(
+    const npy_intp *first,
+    npy_intp value,
+    size_t len)
+{
+    while (len != 0) {
+        const size_t half = len >> 1;
+        const npy_intp *mid = first + half;
+        if (*mid < value) {
+            first = mid + 1;
+            len -= half + 1;
         } else {
-            base = mid + 1;
-            n -= n / 2 + 1;
+            len = half;
         }
     }
-    return base - 1;
+    return first;
 }
 
-#define SWAP(tp, a, b) do { \
-    tp temp = a; \
-    a = b; \
-    b = temp; \
-} while (0);
+/*
+ * One-sided lower_bound (aka meta binary search):
+ * - grow a probe distance exponentially to bracket the target region,
+ * - then run a short binary search inside that region.
+ */
+static const npy_intp *lower_bound_onesided(
+    const npy_intp *first,
+    const npy_intp *last,
+    npy_intp value)
+{
+    if (first == last || !(*first < value))
+        return first;
 
-static npy_intp count_intersect1d(const npy_intp *a, const npy_intp *b, size_t n_a, size_t n_b) {
-    const npy_intp *p = a, *q = b, *p_end = a + n_a, *q_end = b + n_b;
-    npy_intp result = 0;
-    while (1) {
-        // Ensure that we are iterating over the shorter of the two arrays
-        size_t n_p = p_end - p, n_q = q_end - q;
-        if (n_p > n_q) {
-            SWAP(const npy_intp *, p, q);
-            SWAP(const npy_intp *, p_end, q_end);
-            SWAP(size_t, n_p, n_q);
+    size_t step = 1;
+    while (first != last) {
+        const size_t remaining = (size_t)(last - first);
+        if (step >= remaining)
+            return lower_bound_bisecting(first, value, remaining);
+
+        const npy_intp *it = first + step;
+        if (!(*it < value)) {
+            if (step == 1)
+                return it;
+            return lower_bound_bisecting(first, value, step);
         }
-        if (p == p_end)
-        {
-            // No more elements, done
-            return result;
-        }
-        npy_intp hit = find_floor(q, *p, n_q);
-        if (hit >= 0) {
-            q += hit;
-            if (*p == *q) {
-                result++;
-                q++;
-            }
-        }
-        p++;
+
+        first = it;
+        if (step > (remaining >> 1))
+            step = remaining;
+        else
+            step <<= 1;
     }
+
+    return first;
+}
+
+static npy_intp count_intersect1d(
+    const npy_intp *a,
+    const npy_intp *b,
+    size_t n_a,
+    size_t n_b)
+{
+    const npy_intp *first1 = a, *last1 = a + n_a;
+    const npy_intp *first2 = b, *last2 = b + n_b;
+    npy_intp result = 0;
+
+    while (first1 != last1 && first2 != last2) {
+        first1 = lower_bound_onesided(first1, last1, *first2);
+        if (first1 == last1)
+            break;
+
+        first2 = lower_bound_onesided(first2, last2, *first1);
+        if (first2 == last2)
+            break;
+
+        if (*first1 == *first2) {
+            ++result;
+            ++first1;
+            ++first2;
+        }
+    }
+
+    return result;
 }
 
 static PyObject *py_count_intersect1d(PyObject *NPY_UNUSED(self), PyObject *const *args, Py_ssize_t nargs) {
