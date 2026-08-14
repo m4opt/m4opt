@@ -3,7 +3,7 @@ import pytest
 from hypothesis import given
 from hypothesis.extra import numpy as xp
 
-from .._numpy import count_intersect1d
+from ..numpy import count_intersect1d
 
 sets1d = xp.arrays(
     dtype=np.intp,
