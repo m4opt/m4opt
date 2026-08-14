@@ -114,8 +114,8 @@ def count_intersect1d(a: npt.ArrayLike, b: npt.ArrayLike) -> int:
 
     Warnings
     --------
-    The arrays `a` and `b` must be sorted. If they are not, then the behavior
-    of this function is undefined.
+    The elements of arrays `a` and `b` must be sorted and unique. If they are
+    not, then the behavior of this function is undefined.
 
     Examples
     --------
