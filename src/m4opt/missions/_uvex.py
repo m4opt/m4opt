@@ -191,6 +191,28 @@ Examples
         for label, bandpass in uvex.detector.bandpasses.items():
             ax.plot(wavelength, bandpass(wavelength), label=label)
         ax.legend()
+
+.. plot::
+    :include-source: False
+    :caption: UVEX slew time model.
+
+    import numpy as np
+    from astropy import units as u
+    from astropy.coordinates import SkyCoord
+    from matplotlib import pyplot as plt
+
+    from m4opt.missions import uvex
+
+    angle = np.arange(0, 181) * u.deg
+    coords = SkyCoord(angle, 0 * u.deg)
+    time = uvex.slew.time(coords[0], coords) - uvex.slew.settling_time
+    ax = plt.axes()
+    ax.plot(angle, time)
+    ax.set_xlim(0, 180)
+    ax.set_ylim(0)
+    ax.grid()
+    ax.set_xlabel("Slew angle (deg)")
+    ax.set_ylabel(f"Slew time (s), excluding settling ({uvex.slew.settling_time})")
 """
 
 
