@@ -24,7 +24,7 @@ _chip_length = 40.96 * u.mm
 _chip_angle = 4219 * u.arcsec
 """Linear extent of one imager chip in angular units"""
 
-_chip_gap_length = np.asarray([2.5, 4]) * u.mm
+_chip_gap_length = np.asarray([4.05, 2.55]) * u.mm
 """Linear extents of chip gaps in length units"""
 
 _chip_offset = [-1, 0, 1] * (
