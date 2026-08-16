@@ -2,6 +2,22 @@
 Changes
 *******
 
+2.10.0 (2026-08-13)
+===================
+
+- Speed up ``count_intersect1d`` by 4-5x.
+
+2.9.1 (2026-08-09)
+==================
+
+- Fix an issue with publishing abi3 wheels.
+
+2.9.0 (2026-08-09)
+==================
+
+- Add ``count_intersect1d`` utility function for calculating cadence
+  distributions accounting for field overlaps.
+
 2.8.1 (2026-07-31)
 ==================
 
