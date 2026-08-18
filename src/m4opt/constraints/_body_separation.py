@@ -53,10 +53,22 @@ class SunSeparationConstraint(BodySeparationConstraint):
         """
         Constrain the minimum separation from the Sun.
 
+        This is the solar elongation :math:`ε` of Leinert et al. (1998), Fig. 2
+        :footcite:`1998A&AS..127....1L`.
+
         Parameters
         ----------
         min
             Minimum angular separation from the Sun.
+
+        See Also
+        --------
+        m4opt.constraints.EclipticLatitudeConstraint
+        m4opt.constraints.HelioeclipticLongitudeConstraint
+
+        References
+        ----------
+        .. footbibliography::
 
         Examples
         --------

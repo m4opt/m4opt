@@ -2,6 +2,11 @@
 Changes
 *******
 
+2.12.0 (unreleased)
+===================
+
+- Add ``EclipticLatitudeConstraint``.
+
 2.11.0 (2026-08-18)
 ===================
 
