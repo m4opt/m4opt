@@ -295,20 +295,20 @@ def solve_tsp(distances: np.ndarray, **kwargs) -> tuple[np.ndarray, float]:
     n = len(distances)
     assert n >= 2
     with Model(**kwargs) as m:
-        x = m.binary_vars((n, n))
+        # Diagonal ements of x must be zero
+        x = m.binary_vars((n, n), ub=1 - np.eye(n))
         y = m.integer_vars(n - 1, lb=1, ub=n - 1)
-        m.add_constraints_(
-            [
-                m.sum_vars_all_different([x[i, j] for i in range(n) if i != j]) == 1
-                for j in range(n)
-            ]
-        )
-        m.add_constraints_(
-            [
-                m.sum_vars_all_different([x[i, j] for j in range(n) if i != j]) == 1
-                for i in range(n)
-            ]
-        )
+
+        # Exactly one edge is taken into and out of each node.
+        m.add_constraints_([m.sum_vars_all_different(row) == 1 for row in x])
+        m.add_constraints_([m.sum_vars_all_different(col) == 1 for col in x.T])
+
+        # Eliminate 2-cycles for N > 2: if i -> j is selected then j -> i cannot be.
+        if n > 2:
+            m.add_constraints_(
+                [x[i, j] + x[j, i] <= 1 for i in range(n) for j in range(i)]
+            )
+
         m.add_constraints_(
             [
                 y[i] - y[j] + 1 <= (n - 1) * (1 - x[i + 1, j + 1])
@@ -317,16 +317,7 @@ def solve_tsp(distances: np.ndarray, **kwargs) -> tuple[np.ndarray, float]:
                 if i != j
             ]
         )
-        m.minimize(
-            m.sum(
-                [
-                    distances[i, j] * x[i, j]
-                    for i in range(n)
-                    for j in range(n)
-                    if i != j
-                ]
-            )
-        )
+        m.minimize(m.scal_prod_vars_all_different(x.ravel(), distances.ravel()))
         solution = m.solve()
 
     sequence = np.rint(solution.get_values(y)).astype(np.intp)
