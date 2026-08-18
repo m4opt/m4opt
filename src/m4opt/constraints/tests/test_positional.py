@@ -13,6 +13,7 @@ from .._positional import (
     AltitudeConstraint,
     AzimuthConstraint,
     DeclinationConstraint,
+    EclipticLatitudeConstraint,
     HelioeclipticLongitudeConstraint,
     HourAngleConstraint,
     RightAscensionConstraint,
@@ -77,3 +78,8 @@ def test_positional(observer_location, target_coord, obstime, lon_bounds, lat_bo
     assert (lon_lo <= lon) & (lon <= lon_hi) == HelioeclipticLongitudeConstraint(
         *lon_bounds
     )(*args)
+
+    lat = frame.lat
+    assert (lat_lo <= lat) & (lat <= lat_hi) == EclipticLatitudeConstraint(*lat_bounds)(
+        *args
+    )
