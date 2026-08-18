@@ -87,7 +87,7 @@ class LogicalNotConstraint(Constraint):
     >>> target = SkyCoord.from_name("NGC 4993")
     >>> location = EarthLocation.of_site("Rubin Observatory")
     >>> constraint(location, target, time)
-    True
+    np.False_
     """
 
     def __init__(self, operand: Constraint):
@@ -95,4 +95,4 @@ class LogicalNotConstraint(Constraint):
 
     @override
     def __call__(self, *args):
-        return np.logical_not(super().__call__(*args))
+        return np.logical_not(self._operand(*args))
