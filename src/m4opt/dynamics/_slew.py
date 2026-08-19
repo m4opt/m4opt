@@ -200,6 +200,7 @@ class Slew(ABC):
         :
             Time to slew between the two orientations.
         """
+        raise NotImplementedError
 
 
 @dataclass

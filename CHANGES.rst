@@ -2,6 +2,21 @@
 Changes
 *******
 
+2.12.0 (unreleased)
+===================
+
+- Add ``EclipticLatitudeConstraint``.
+
+- Fix ``LogicalNotConstraint``, which ignored its operand and always
+  evaluated to a scalar ``True``.
+
+2.11.0 (2026-08-18)
+===================
+
+- Speed up ``solve_tsp`` by adding extra cuts.
+
+- Update the UVEX chip gaps.
+
 2.10.0 (2026-08-13)
 ===================
 

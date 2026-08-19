@@ -5,18 +5,18 @@ from astropy.time import Time
 from regions import RectangleSkyRegion, Regions
 from synphot import Gaussian1D, SpectralElement
 
-from ..constraints import (
+from ...constraints import (
     EarthLimbConstraint,
     MoonSeparationConstraint,
     SunSeparationConstraint,
 )
-from ..dynamics import EigenAxisSlew, nominal_roll
-from ..fov import footprint
-from ..observer import TleObserverLocation
-from ..skygrid._geodesic import for_subdivision
-from ..synphot import Detector
-from ..synphot.background import GalacticBackground, ZodiacalBackground
-from ._core import Mission
+from ...dynamics import EigenAxisSlew, nominal_roll
+from ...fov import footprint
+from ...observer import TleObserverLocation
+from ...skygrid._geodesic import for_subdivision
+from ...synphot import Detector
+from ...synphot.background import GalacticBackground, ZodiacalBackground
+from .._core import Mission
 
 _chip_length = 40.96 * u.mm
 """Linear extent of one imager chip in length units"""
@@ -24,7 +24,7 @@ _chip_length = 40.96 * u.mm
 _chip_angle = 4219 * u.arcsec
 """Linear extent of one imager chip in angular units"""
 
-_chip_gap_length = np.asarray([2.5, 4]) * u.mm
+_chip_gap_length = np.asarray([4.05, 2.55]) * u.mm
 """Linear extents of chip gaps in length units"""
 
 _chip_offset = [-1, 0, 1] * (

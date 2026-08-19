@@ -35,6 +35,7 @@ class AngleConstraint(Constraint):
     @abstractmethod
     def _frame(self, observer_location: EarthLocation, obstime: Time):
         """Frame for this constraint"""
+        raise NotImplementedError
 
     def _get_angle(
         self, observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
@@ -171,11 +172,41 @@ class HourAngleConstraint(LongitudeConstraint, HADecConstraint):
     """
 
 
+class EclipticLatitudeConstraint(LatitudeConstraint, GeocentricTrueEclipticConstraint):
+    """Constrain the ecliptic latitude of the target.
+
+    This is the angle :math:`β` of Leinert et al. (1998), Fig. 2
+    :footcite:`1998A&AS..127....1L`.
+
+    Notes
+    -----
+    If the maximum angle is less than the minimum angle, then they are swapped.
+
+    See Also
+    --------
+    HelioeclipticLongitudeConstraint, SunSeparationConstraint
+
+    References
+    ----------
+    .. footbibliography::
+    """
+
+
 class HelioeclipticLongitudeConstraint(GeocentricTrueEclipticConstraint):
-    """Constraint the helioecliptic longitude of the target.
+    """Constrain the helioecliptic longitude of the target.
 
     This places a constraint on the absolute value, between 0° and 180°, of the
     ecliptic longitude of the target minus the ecliptic longitude of the sun.
+    This is the angle :math:`|λ - λ_⊙|` of Leinert et al. (1998), Fig. 2
+    :footcite:`1998A&AS..127....1L`.
+
+    See Also
+    --------
+    EclipticLatitudeConstraint, SunSeparationConstraint
+
+    References
+    ----------
+    .. footbibliography::
 
     Warnings
     --------

@@ -45,7 +45,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 test = [
     "astroplan",
     "hypothesis",
