@@ -35,6 +35,7 @@ class AngleConstraint(Constraint):
     @abstractmethod
     def _frame(self, observer_location: EarthLocation, obstime: Time):
         """Frame for this constraint"""
+        raise NotImplementedError
 
     def _get_angle(
         self, observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time

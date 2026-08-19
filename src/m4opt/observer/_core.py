@@ -21,3 +21,4 @@ class ObserverLocation(ABC):
         :
             The Earth-relative coordinates of the satellite.
         """
+        raise NotImplementedError
