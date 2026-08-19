@@ -68,3 +68,6 @@ pip-wheel-metadata/
 
 # Mac OSX
 .DS_Store
+
+# Claude Code
+CLAUDE.md
