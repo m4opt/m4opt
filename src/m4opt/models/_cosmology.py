@@ -105,9 +105,8 @@ def resolve_cosmological_distances(
 
     As a shortcut, ``redshift`` and ``luminosity_distance`` may be given *together*,
     as an already-consistent pair (e.g. a per-event redshift and a luminosity
-    distance already interpolated off a cached grid --
-    see :attr:`~uvex_transients.transients.base.ExtragalacticTransient.luminosity_distance_grid`
-    -- rather than looked up fresh here). In that case ``angular_diameter_distance``/
+    distance already interpolated off a cached grid, rather than looked up fresh
+    here). In that case ``angular_diameter_distance``/
     ``proper_distance`` are derived from the two directly (:math:`D_A = D_L/(1+z)^2`,
     :math:`D_C = D_L/(1+z)`), with no cosmology lookup at all -- ``cosmology`` is
     ignored in this branch. This is what lets a `SpectralModel.flux`/`flux_band`

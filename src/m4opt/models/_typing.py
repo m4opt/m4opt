@@ -60,6 +60,11 @@ CGSParameterValue: type = FloatValue
 # Constructor override: replacement Parameter or fixed constant value.
 OverrideValue: type = Union["Parameter", Quantity, float, int]
 
+# A concrete scalar used as a Parameter's `scale`, or to pin it via `fix()`.
+# Unlike `ParameterValue`, this excludes bare arrays -- a scale or fixed
+# value must be a single scalar.
+ScalarPhysicalValue: type = Quantity | float | int
+
 
 # =========================================================================== #
 # COMMON CONTAINERS                                                           #
