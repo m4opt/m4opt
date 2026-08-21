@@ -1,6 +1,10 @@
 from ._airmass import AirmassConstraint
 from ._atnight import AtNightConstraint
-from ._body_separation import MoonSeparationConstraint, SunSeparationConstraint
+from ._body_separation import (
+    AntiSolarSeparationConstraint,
+    MoonSeparationConstraint,
+    SunSeparationConstraint,
+)
 from ._core import Constraint
 from ._earth_limb import EarthLimbConstraint
 from ._galactic import GalacticLatitudeConstraint
@@ -19,6 +23,7 @@ from ._radiation import RadiationBeltConstraint
 __all__ = (
     "AirmassConstraint",
     "AltitudeConstraint",
+    "AntiSolarSeparationConstraint",
     "AtNightConstraint",
     "AzimuthConstraint",
     "Constraint",
