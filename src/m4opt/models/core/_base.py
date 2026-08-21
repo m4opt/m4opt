@@ -47,6 +47,7 @@ from astropy.modeling import Model
 from astropy.units import Quantity
 from scipy.integrate import quad_vec
 from synphot import SourceSpectrum
+from synphot import units as synphot_units
 
 from .._cosmology import resolve_cosmological_distances
 from .._typing import (
@@ -67,6 +68,8 @@ from .._utils import (
     _SPEC_FLUX_UNIT,
     _SPEC_LUM_UNIT,
     AB_MAG_ZERO_POINT,
+    H_CGS,
+    hz_per_unit,
     model_class_from_kernel,
     to_cgs_value,
 )
@@ -890,8 +893,8 @@ class SpectralModel(_ModelBase):
     - :meth:`_eval` for evaluating
       :math:`\log L_\nu(\nu, t)` in unit-stripped cgs coordinates.
 
-    Every other public method -- including :meth:`generate_spectrum_model`
-    and :meth:`generate_spectrum`, which build synthetic spectra -- is
+    Every other public method -- including :meth:`as_astropy_model`
+    and :meth:`as_source_spectrum`, which build synthetic spectra -- is
     derived automatically from :meth:`_eval` and requires no per-subclass
     override.
 
@@ -1324,69 +1327,252 @@ class SpectralModel(_ModelBase):
     # which are not immediately compatible with the machinery of the SpectralModel class. These
     # methods allow a user to provide a set of parameters and generate spectra objects.
     @classmethod
-    def generate_spectrum_model(cls, **parameters: CGSParameterValue) -> Model:
+    def as_astropy_model(
+        cls,
+        x_type: str = "lambda",
+        y_type: str = "lambda",
+        *,
+        y_kind: str = "energy",
+        wave_unit: str | u.UnitBase = u.AA,
+        freq_unit: str | u.UnitBase = u.Hz,
+        redshift: PhysicalInput | None = None,
+        luminosity_distance: Quantity | None = None,
+        angular_diameter_distance: Quantity | None = None,
+        proper_distance: Quantity | None = None,
+        cosmology: FLRW | None = None,
+        **parameters: ParameterValue,
+    ) -> Model:
         r"""
-        Build an :class:`~astropy.modeling.Model` mapping :math:`(\nu, t)` to :math:`L_\nu(\nu, t)`, for this parameter set.
+        Build an :class:`~astropy.modeling.Model` of this :class:`SpectralModel` for a given parameter set.
 
-        Unlike a :class:`~synphot.SourceSpectrum` built at one fixed time,
-        this model stays a function of both frequency and time -- and
-        ``parameters`` may themselves carry leading batch axes (e.g.
-        posterior samples, many sky-map pixels). Evaluating the returned
-        model broadcasts everything via plain NumPy broadcasting inside
-        :meth:`eval_cgs`; no per-subclass override is needed, since this
-        method only depends on :meth:`_eval` through :meth:`eval_cgs`.
+        This method is the single entry point for converting a :class:`SpectralModel` into
+        a model compatible with :mod:`synphot` / :mod:`astropy.modeling` / :mod:`m4opt.synphot`.
+        Several parameters can be modified to specify exactly what type of spectral model to
+        generate:
+
+        - ``x_type``: May be either ``"lambda"`` or ``"nu"`` to control what input the
+          model expects.
+        - ``y_type``: May be either ``"lambda"`` or ``"nu"``. If ``"lambda"``, then :math:`F_\lambda` is
+          generated, otherwise :math:`F_\nu` is generated.
+        - ``y_kind``: May be either ``"energy"`` or ``"photon"``. If ``"energy"``, then the output is
+          an energy-flux density (:math:`F_\nu`/:math:`F_\lambda`). If ``"photon"``, then the output is
+          a photon count flux density.
+
+        Additionally, any of a number of cosmological parameters may be specified to provide the distance
+        from the source. If any of these are provided, the model will generate a flux density. Otherwise
+        a luminosity density is produced.
 
         Parameters
         ----------
+        x_type
+            ``"lambda"`` (the default) if the model's first input is a
+            wavelength, or ``"nu"`` if it is a frequency.
+        y_type
+            ``"lambda"`` (the default) if the output is expressed per unit
+            wavelength, or ``"nu"`` if per unit frequency.
+        y_kind
+            ``"energy"`` (the default) for an energy-flux density, or
+            ``"photon"`` for a photon-count-flux density (dividing by the
+            photon energy :math:`h\nu`).
+        wave_unit
+            The wavelength unit used wherever ``x_type``/``y_type`` is
+            ``"lambda"``.
+        freq_unit
+            The frequency unit used wherever ``x_type``/``y_type`` is
+            ``"nu"``.
+        redshift, luminosity_distance, angular_diameter_distance, proper_distance, cosmology
+            If any of ``redshift``/``luminosity_distance``/
+            ``angular_diameter_distance``/``proper_distance`` is given,
+            exactly one of them must be given; the rest (and
+            ``cosmology``) are as in :meth:`flux_log`, and the output is
+            the observed, diluted flux. If none of the four is given, the
+            output is the rest-frame luminosity and ``cosmology`` is
+            ignored.
         **parameters
-            This model's parameter values, in cgs units (see
-            :meth:`eval_log_cgs`). May carry leading batch axes.
+            This model's parameter values, either
+            :class:`~astropy.units.Quantity` or already unit-stripped cgs
+            values (see :meth:`eval_log_cgs`). May carry leading batch
+            axes.
 
         Returns
         -------
         ~astropy.modeling.Model
-            Callable as ``model(nu, t)``, with ``nu``/``t`` either bare cgs
-            numbers or :class:`~astropy.units.Quantity` (frequency/time
-            units respectively). Returns :math:`L_\nu`, unit-attached only
-            when at least one of ``nu``/``t`` was itself a ``Quantity``
-            (this is a property of :meth:`astropy.modeling.Model.__call__`,
-            not something this method controls).
-        """
+            Callable as ``model(x, t)``, with ``x``/``t`` either bare
+            numbers (``x`` in ``wave_unit``/``freq_unit``, ``t`` in
+            seconds) or :class:`~astropy.units.Quantity`. Unit-attached
+            only when at least one of ``x``/``t`` was itself a
+            ``Quantity`` (a property of
+            :meth:`astropy.modeling.Model.__call__`, not something this
+            method controls).
 
-        def evaluate(nu: FloatArray, t: FloatArray) -> FloatResult:
-            return cls.eval_cgs(nu, t, **parameters)
+        Raises
+        ------
+        ValueError
+            If ``x_type``/``y_type`` is not ``"lambda"``/``"nu"``, if
+            ``y_kind`` is not ``"energy"``/``"photon"``, or if
+            ``wave_unit``/``freq_unit`` is not a wavelength/frequency unit.
+        """
+        # Resolve and validate the x_type, y_type and y_kind parameters.
+        if x_type not in ("nu", "lambda"):
+            raise ValueError(f"x_type must be 'nu' or 'lambda', got {x_type!r}.")
+        if y_type not in ("nu", "lambda"):
+            raise ValueError(f"y_type must be 'nu' or 'lambda', got {y_type!r}.")
+        if y_kind not in ("energy", "photon"):
+            raise ValueError(f"y_kind must be 'energy' or 'photon', got {y_kind!r}.")
+
+        x_is_wavelength = x_type == "lambda"
+        y_is_wavelength = y_type == "lambda"
+
+        x_unit = u.Unit(wave_unit if x_is_wavelength else freq_unit)
+        y_unit = u.Unit(wave_unit if y_is_wavelength else freq_unit)
+
+        x_coefficient = hz_per_unit(x_unit, is_wavelength=x_is_wavelength)
+        y_coefficient = hz_per_unit(y_unit, is_wavelength=y_is_wavelength)
+
+        # Determine if we are generating a flux density or luminosity. This is determined
+        # by the specification / lack of the redshift or other cosmological parameters.
+        _is_luminosity = (
+            redshift is None
+            and luminosity_distance is None
+            and angular_diameter_distance is None
+            and proper_distance is None
+        )
+
+        # Convert ALL of the provided parameters to their CGS value so that we
+        # do not need to do on-the-fly unit conversions in performance critical
+        # call sequences.
+        cgs_parameters: dict[str, CGSParameterValue] = {
+            name: to_cgs_value(value) for name, value in parameters.items()
+        }
+
+        # Determine the "native" evaluation function. This is the F_nu(nu) in units of
+        # erg / cm^2 / Hz / s if we are computing a flux, or a luminosity L_nu(nu) in
+        # erg / Hz / s if we are computing a luminosity.
+        #
+        # Once this has been generated, we can modify it to generate the correct units
+        # and other properties.
+        if not _is_luminosity:
+            # Resolve the cosmological distances and extract them.
+            distances = resolve_cosmological_distances(
+                redshift=redshift,
+                luminosity_distance=luminosity_distance,
+                angular_diameter_distance=angular_diameter_distance,
+                proper_distance=proper_distance,
+                cosmology=cosmology,
+            )
+            redshift_cgs = np.asarray(distances["redshift"], dtype=np.float64)
+            luminosity_distance_cgs = distances["luminosity_distance"].cgs.value
+            _denominator_unit = u.s**-1 * u.cm**-2
+
+            # Construct the native evaluation function.
+            def _eval_native(nu_hz: FloatArray, t: FloatArray) -> FloatResult:
+                return cls.flux_cgs(
+                    nu_hz, t, redshift_cgs, luminosity_distance_cgs, **cgs_parameters
+                )
+        else:
+            # We are not producing a flux. We can just generate the function.
+            _denominator_unit = u.s**-1
+
+            def _eval_native(nu_hz: FloatArray, t: FloatArray) -> FloatResult:
+                return cls.eval_cgs(nu_hz, t, **cgs_parameters)
+
+        # Generate the modifications to the function to coerce x to nu.
+        if x_is_wavelength:
+
+            def _x_to_nu(x: FloatArray) -> FloatArray:
+                return x_coefficient / x
+        else:
+
+            def _x_to_nu(x: FloatArray) -> FloatArray:
+                return x_coefficient * x
+
+        # Generate the modification to the function to coerce F_nu to y.
+        if y_is_wavelength:
+
+            def _to_dlambda(nu_hz: FloatArray, y: FloatArray) -> FloatArray:
+                return y * (nu_hz**2 / y_coefficient)
+        else:
+
+            def _to_dlambda(nu_hz: FloatArray, y: FloatArray) -> FloatArray:
+                return y * y_coefficient
+
+        if y_kind == "energy":
+            _numerator_unit = u.erg
+
+            def _to_output_flux(nu_hz: FloatArray, y: FloatArray) -> FloatArray:
+                return y
+        else:
+            _numerator_unit = u.photon
+
+            def _to_output_flux(nu_hz: FloatArray, y: FloatArray) -> FloatArray:
+                return y / (H_CGS * nu_hz)
+
+        # Generate the final evaluator.
+        def _evaluate(x: FloatArray, t: FloatArray) -> FloatResult:
+            nu_hz = _x_to_nu(x)
+            y = _eval_native(nu_hz, t)
+            y = _to_dlambda(nu_hz, y)
+            y = _to_output_flux(nu_hz, y)
+            return y
+
+        output_unit = _numerator_unit / y_unit * _denominator_unit
 
         model_class = model_class_from_kernel(
-            "_DynamicSpectrumModel",
-            inputs={"nu": u.Hz, "t": u.s},
-            outputs={"L_nu": _SPEC_LUM_UNIT},
-            evaluate=evaluate,
+            "_SpectralAstropyModel",
+            inputs={("wave" if x_is_wavelength else "nu"): x_unit, "t": u.s},
+            outputs={"y": output_unit},
+            evaluate=_evaluate,
         )
         return model_class()
 
     @classmethod
-    def generate_spectrum(
-        cls, t: PhysicalInput, **parameters: ParameterValue
+    def as_source_spectrum(
+        cls,
+        t: PhysicalInput,
+        *,
+        redshift: PhysicalInput | None = None,
+        luminosity_distance: Quantity | None = None,
+        angular_diameter_distance: Quantity | None = None,
+        proper_distance: Quantity | None = None,
+        cosmology: FLRW | None = None,
+        **parameters: ParameterValue,
     ) -> SourceSpectrum:
         r"""
-        Build a :class:`~synphot.SourceSpectrum` giving :math:`L_\nu(\nu, t)` at one fixed time :math:`t`.
+        Build a :class:`~synphot.SourceSpectrum` giving the observed flux at one fixed time :math:`t`.
 
-        Unlike :meth:`generate_spectrum_model`, ``t`` is fixed here rather
-        than left as a model input, so the result is a function of
-        frequency alone -- the shape :mod:`synphot` (and hence
-        :class:`~m4opt.synphot.Detector`) requires. ``t`` and
-        ``parameters`` may still carry arbitrary leading batch axes (e.g.
-        one time/parameter set per sky-map pixel); those broadcast through
-        :meth:`eval_cgs` exactly as in :meth:`generate_spectrum_model`, so
-        batching many events costs no more than evaluating one.
+        A thin wrapper around :meth:`as_astropy_model`: fixes ``t`` (so the
+        result is a function of wavelength alone, the shape :mod:`synphot`
+        requires), and fixes ``x_type``/``y_type``/``y_kind`` to
+        wavelength-in/photon-out, in Angstrom -- because
+        :class:`~synphot.SourceSpectrum` always samples its wrapped model
+        in *wavelength* space, and always treats the model's raw return
+        value as already being expressed in :mod:`synphot`'s internal
+        :data:`~synphot.units.PHOTLAM` (*photon*-count flux density per
+        unit wavelength, not the energy-flux :math:`F_\lambda` one might
+        expect) -- :meth:`~synphot.SourceSpectrum.__call__` does not
+        consult a wrapped model's declared output units to convert.
+
+        Requires an observed (diluted) flux -- at least one of
+        ``redshift``/the distance keywords -- since a
+        :class:`~synphot.SourceSpectrum` is meant to be a real per-area
+        flux for :class:`~m4opt.synphot.Detector` to consume, not a
+        rest-frame luminosity. This does not apply any foreground
+        attenuation (e.g. Milky Way dust) -- multiply the returned
+        :class:`~synphot.SourceSpectrum` by a separate extinction spectral
+        element for that, as :class:`~m4opt.synphot.extinction.DustExtinction`
+        does.
 
         Parameters
         ----------
         t
-            Time since explosion, either a :class:`~astropy.units.Quantity`
-            with time units or an already unit-stripped cgs (seconds)
-            value. May carry leading batch axes, broadcastable against
-            ``parameters``.
+            Observed time since explosion, either a
+            :class:`~astropy.units.Quantity` with time units or an already
+            unit-stripped cgs (seconds) value. May carry leading batch
+            axes, broadcastable against ``parameters``.
+        redshift, luminosity_distance, angular_diameter_distance, proper_distance, cosmology
+            Exactly one of ``redshift`` or the three distance keywords must
+            be given; the rest are derived from it using ``cosmology``. See
+            :meth:`as_astropy_model`.
         **parameters
             This model's parameter values, either
             :class:`~astropy.units.Quantity` or already unit-stripped cgs
@@ -1396,20 +1582,49 @@ class SpectralModel(_ModelBase):
         Returns
         -------
         ~synphot.SourceSpectrum
-            Callable as ``spectrum(nu)``, returning :math:`L_\nu(\nu, t)`.
-        """
-        t_cgs = to_cgs_value(t)
-        cgs_parameters: dict[str, CGSParameterValue] = {
-            name: to_cgs_value(value) for name, value in parameters.items()
-        }
+            Callable as ``spectrum(wave)``, returning the observed flux
+            density at ``t``.
 
-        def evaluate(nu: FloatArray) -> FloatResult:
-            return cls.eval_cgs(nu, t_cgs, **cgs_parameters)
+        Raises
+        ------
+        ValueError
+            If none of ``redshift``/``luminosity_distance``/
+            ``angular_diameter_distance``/``proper_distance`` is given.
+        """
+        if (
+            redshift is None
+            and luminosity_distance is None
+            and angular_diameter_distance is None
+            and proper_distance is None
+        ):
+            raise ValueError(
+                "as_source_spectrum requires an observed flux -- pass "
+                "`redshift=` or one of the distance keywords accepted by "
+                "as_astropy_model. A SourceSpectrum must be a real per-area "
+                "flux, not a rest-frame luminosity."
+            )
+
+        model = cls.as_astropy_model(
+            x_type="lambda",
+            y_type="lambda",
+            y_kind="photon",
+            wave_unit=u.AA,
+            redshift=redshift,
+            luminosity_distance=luminosity_distance,
+            angular_diameter_distance=angular_diameter_distance,
+            proper_distance=proper_distance,
+            cosmology=cosmology,
+            **parameters,
+        )
+        t_cgs = to_cgs_value(t)
+
+        def evaluate(wave: FloatArray) -> FloatResult:
+            return model(wave, t_cgs)
 
         model_class = model_class_from_kernel(
-            "_FixedTimeSpectrumModel",
-            inputs={"nu": u.Hz},
-            outputs={"L_nu": _SPEC_LUM_UNIT},
+            "_FixedTimeSourceSpectrumModel",
+            inputs={"wave": u.AA},
+            outputs={"y": synphot_units.PHOTLAM},
             evaluate=evaluate,
         )
         return SourceSpectrum(model_class())
@@ -1444,7 +1659,7 @@ class SpectralModel(_ModelBase):
         :math:`\ell(\nu)` is `log_attenuation`, an observed-frame effect
         (e.g. Milky Way foreground dust) applied here rather than inside
         :meth:`_eval`, so it does not also leak into
-        :meth:`_eval_bolometric`/:meth:`generate_spectrum`'s normalization.
+        :meth:`_eval_bolometric`/:meth:`as_astropy_model`'s (undiluted) normalization.
 
         Parameters
         ----------

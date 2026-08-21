@@ -14,6 +14,7 @@ units.
 from collections.abc import Callable
 
 import numpy as np
+from astropy import constants as const
 from astropy import units as u
 from astropy.modeling import Model
 from numpy.typing import DTypeLike, NDArray
@@ -38,6 +39,9 @@ _SED_SHAPE_UNIT: u.Unit = u.Hz**-1
 # ------------------------------------------ #
 AB_MAG_ZERO_POINT: float = 3631e-23
 """float: The CGS zero-point flux in the AB mag system."""
+
+H_CGS: float = const.h.cgs.value
+"""float: The Planck constant, in erg s."""
 
 # ------------------------------------------ #
 # Unit Coercion Functions                    #
@@ -188,6 +192,52 @@ def ensure_in_units(
     return np.asarray(value, dtype=np.float64)
 
 
+def hz_per_unit(unit: UnitLike, *, is_wavelength: bool) -> float:
+    r"""
+    The coefficient converting a bare number in ``unit`` to a frequency in Hz.
+
+    Resolved once, up front -- not on every element of every model
+    evaluation -- so that letting a model's spectral axis be expressed in
+    an arbitrary (self-consistent) unit costs one extra multiply or divide
+    per evaluation, not a :class:`~astropy.units.Quantity` conversion in
+    the hot loop.
+
+    Parameters
+    ----------
+    unit : str or ~astropy.units.UnitBase
+        A wavelength unit if ``is_wavelength``, otherwise a frequency unit.
+    is_wavelength : bool
+        Whether ``unit`` is a wavelength unit (``True``) or a frequency
+        unit (``False``).
+
+    Returns
+    -------
+    float
+        If ``is_wavelength`` is ``False``, :math:`\nu_\mathrm{Hz} =
+        \mathrm{coefficient} \times x`; if ``True``, :math:`\nu_\mathrm{Hz}
+        = \mathrm{coefficient} / x` (frequency is inversely, not linearly,
+        related to wavelength). Either way, this is that coefficient.
+
+    Raises
+    ------
+    ValueError
+        If ``unit`` is not a wavelength/frequency unit matching
+        ``is_wavelength``.
+
+    Examples
+    --------
+    >>> hz_per_unit(u.THz, is_wavelength=False)
+    1000000000000.0
+    """
+    resolved = u.Unit(unit)
+    expected_type = "length" if is_wavelength else "frequency"
+    if resolved.physical_type != expected_type:
+        kind = "wavelength" if is_wavelength else "frequency"
+        raise ValueError(f"{unit!r} is not a {kind} unit.")
+
+    return resolved.to(u.Hz, equivalencies=u.spectral())
+
+
 # ------------------------------------------ #
 # Astropy Model Construction                 #
 # ------------------------------------------ #
@@ -240,6 +290,35 @@ def model_class_from_kernel(
     if len(outputs) != 1:
         raise NotImplementedError("Only single-output models are currently supported.")
     (output_name,) = outputs
+    input_units = tuple(inputs.values())
+
+    def _strip_units(*values: FloatArray) -> FloatResult:
+        # `Model.__call__` converts a Quantity input to the declared unit
+        # but -- unlike a bare-number call -- does *not* strip it down to a
+        # plain array before handing it to `evaluate`; without this, a
+        # Quantity would silently ride along through `evaluate`'s kernel
+        # arithmetic, corrupting whatever unit `_process_output_units`
+        # later tries to attach to the result. Bare-number calls pass
+        # through `to_value` untouched (it's a no-op for non-Quantities).
+        return evaluate(
+            *(
+                value.to_value(unit) if isinstance(value, u.Quantity) else value
+                for value, unit in zip(values, input_units)
+            )
+        )
+
+    def _prepare_outputs(self, broadcasted_shapes, *outputs, **kwargs):
+        # `evaluate` already returns whatever shape its bound batch state
+        # (broadcast against the call's `x`/`t`) actually produces --
+        # unlike a normal Parameter-based model, astropy's shape inference
+        # here only sees the *declared* inputs, not any batch axes bound
+        # into `evaluate` via closure. Its default `prepare_outputs` tries
+        # to reshape/`.item()` the result to match that (possibly smaller)
+        # declared-input shape, which is unnecessary when it happens to
+        # match and outright crashes (an unguarded `output.item()`) for a
+        # scalar call against batched state. Passing outputs through
+        # unchanged sidesteps that entirely.
+        return outputs
 
     return type(
         name,
@@ -255,6 +334,7 @@ def model_class_from_kernel(
             # them to be interpreted in `inputs`' declared units; mirror
             # `astropy.modeling.physical_models.BlackBody`.
             "_input_units_allow_dimensionless": True,
-            "evaluate": staticmethod(evaluate),
+            "evaluate": staticmethod(_strip_units),
+            "prepare_outputs": _prepare_outputs,
         },
     )
