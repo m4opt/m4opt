@@ -4,6 +4,7 @@ Cosmological utility functions.
 """
 
 import numpy as np
+from astropy import units as u
 from astropy.cosmology import Planck18, z_at_value
 from astropy.units import Quantity
 
@@ -117,13 +118,16 @@ def resolve_cosmological_distances(
     --------
     Resolve distances from redshift
 
-    >>> resolve_cosmological_distances(redshift=0.5)
+    >>> distances = resolve_cosmological_distances(redshift=0.5)
+    >>> distances["luminosity_distance"]
+    <Quantity 2919.62495218 Mpc>
 
     Resolve redshift from luminosity distance
 
-    >>> resolve_cosmological_distances(
-    ...     luminosity_distance=3 * u.Gpc
-    ... )
+    >>> import astropy.units as u
+    >>> distances = resolve_cosmological_distances(luminosity_distance=3 * u.Gpc)
+    >>> distances["redshift"]
+    <Quantity 0.51147033 redshift>
     """
     cosmo = get_cosmology(cosmology)
 
@@ -215,7 +219,7 @@ def redshift_to_age(z, cosmology=None):
     Examples
     --------
     >>> redshift_to_age(1.0)
-    <Quantity ... Gyr>
+    <Quantity 5.8513433 Gyr>
     """
     cosmo = get_cosmology(cosmology)
     return cosmo.age(z)
@@ -251,7 +255,7 @@ def redshift_to_lookback_time(z, cosmology=None):
     Examples
     --------
     >>> redshift_to_lookback_time(0.5)
-    <Quantity ... Gyr>
+    <Quantity 5.19623953 Gyr>
     """
     cosmo = get_cosmology(cosmology)
     return cosmo.lookback_time(z)
@@ -284,7 +288,7 @@ def age_to_redshift(age, cosmology=None):
     --------
     >>> import astropy.units as u
     >>> age_to_redshift(5 * u.Gyr)
-    1.2
+    <Quantity 1.23764714 redshift>
     """
     cosmo = get_cosmology(cosmology)
     return z_at_value(cosmo.age, age)
@@ -325,11 +329,11 @@ def angular_to_physical(theta, redshift=None, cosmology=None):
     --------
     >>> import astropy.units as u
     >>> angular_to_physical(1 * u.arcsec, redshift=1.0)
-    <Quantity ... kpc>
+    <Quantity 8.23125024 kpc>
     """
     distances = resolve_cosmological_distances(redshift=redshift, cosmology=cosmology)
     DA = distances["angular_diameter_distance"]
-    return theta * DA
+    return (theta * DA).to(u.kpc, equivalencies=u.dimensionless_angles())
 
 
 def physical_to_angular(size, redshift=None, cosmology=None):
@@ -367,8 +371,8 @@ def physical_to_angular(size, redshift=None, cosmology=None):
     --------
     >>> import astropy.units as u
     >>> physical_to_angular(10 * u.kpc, redshift=0.5)
-    <Quantity ... arcsec>
+    <Quantity 1.58957339 arcsec>
     """
     distances = resolve_cosmological_distances(redshift=redshift, cosmology=cosmology)
     DA = distances["angular_diameter_distance"]
-    return size / DA
+    return (size / DA).to(u.arcsec, equivalencies=u.dimensionless_angles())
