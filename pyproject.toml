@@ -83,7 +83,7 @@ m4opt = "m4opt._cli:app"
 
 [tool.pytest.ini_options]
 testpaths = [
-    "m4opt",
+    "src/m4opt",
     "docs",
 ]
 norecursedirs = [
