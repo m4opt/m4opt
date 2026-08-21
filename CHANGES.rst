@@ -5,6 +5,16 @@ Changes
 2.12.0 (unreleased)
 ===================
 
+- Add the ``m4opt.models`` subpackage, providing spectral modeling
+  infrastructure for generating synthetic photometry of transients:
+  composable ``Spectrum``/``Lightcurve``/``SpectralModel`` abstractions with
+  parameters and priors (``m4opt.models.core``), basic spectral shapes
+  (``BlackbodySpectrum``, ``PowerLawSpectrum``, ``BrokenPowerLawSpectrum``),
+  a library of generic lightcurve shapes (e.g. ``FREDLightcurve``,
+  ``BazinLightcurve``, ``VillarLightcurve``), and composite SED models for
+  supernovae (``VillarCoolingBlackbodySED``) and tidal disruption events
+  (``VanVelzenTDESED``).
+
 - Add ``EclipticLatitudeConstraint``.
 
 - Fix ``LogicalNotConstraint``, which ignored its operand and always
