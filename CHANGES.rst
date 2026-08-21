@@ -7,6 +7,9 @@ Changes
 
 - Add ``EclipticLatitudeConstraint``.
 
+- Add ``AntiSolarSeparationConstraint`` to keep targets away from the
+  anti-solar point, where the nominal spacecraft roll angle is undefined.
+
 - Fix ``LogicalNotConstraint``, which ignored its operand and always
   evaluated to a scalar ``True``.
 
