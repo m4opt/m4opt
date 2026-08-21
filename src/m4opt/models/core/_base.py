@@ -10,14 +10,9 @@ a redshifted and distance-diluted flux, a throughput-weighted band flux, AB
 magnitudes, and a :class:`~synphot.SourceSpectrum` ready to feed into a
 detector simulation.
 
-To define a new model, subclass :class:`SpectralModel` and implement two
-methods:
-
-- :meth:`~SpectralModel._eval`, the natural-log spectral luminosity in cgs
-  units, and
-- :meth:`~SpectralModel._generate_spectrum`, which builds a
-  :class:`~synphot.SourceSpectrum` normalized to a given bolometric
-  luminosity.
+To define a new model, subclass :class:`SpectralModel` and implement
+:meth:`~SpectralModel._eval`, the natural-log spectral luminosity in cgs
+units.
 
 Every other quantity (fluxes, magnitudes, band-integrated fluxes, bolometric
 luminosity) is derived automatically. All of these public methods come in a
@@ -51,6 +46,7 @@ from astropy.cosmology import FLRW
 from astropy.modeling import Model
 from astropy.units import Quantity
 from scipy.integrate import quad_vec
+from synphot import SourceSpectrum
 
 from .._cosmology import resolve_cosmological_distances
 from .._typing import (
@@ -890,10 +886,14 @@ class SpectralModel(_ModelBase):
 
     - :attr:`_DEFAULT_PARAMETERS` for declaring model parameters;
     - :attr:`_DOMAIN` for the frequency range used by the default bolometric
-      integration;
+      integration; and
     - :meth:`_eval` for evaluating
-      :math:`\log L_\nu(\nu, t)` in unit-stripped cgs coordinates; and
-    - :meth:`_generate_spectrum` for producing a normalized synthetic spectrum.
+      :math:`\log L_\nu(\nu, t)` in unit-stripped cgs coordinates.
+
+    Every other public method -- including :meth:`generate_spectrum_model`
+    and :meth:`generate_spectrum`, which build synthetic spectra -- is
+    derived automatically from :meth:`_eval` and requires no per-subclass
+    override.
 
     Most user-facing quantities are available in parallel interfaces:
 
@@ -1363,6 +1363,56 @@ class SpectralModel(_ModelBase):
             evaluate=evaluate,
         )
         return model_class()
+
+    @classmethod
+    def generate_spectrum(
+        cls, t: PhysicalInput, **parameters: ParameterValue
+    ) -> SourceSpectrum:
+        r"""
+        Build a :class:`~synphot.SourceSpectrum` giving :math:`L_\nu(\nu, t)` at one fixed time :math:`t`.
+
+        Unlike :meth:`generate_spectrum_model`, ``t`` is fixed here rather
+        than left as a model input, so the result is a function of
+        frequency alone -- the shape :mod:`synphot` (and hence
+        :class:`~m4opt.synphot.Detector`) requires. ``t`` and
+        ``parameters`` may still carry arbitrary leading batch axes (e.g.
+        one time/parameter set per sky-map pixel); those broadcast through
+        :meth:`eval_cgs` exactly as in :meth:`generate_spectrum_model`, so
+        batching many events costs no more than evaluating one.
+
+        Parameters
+        ----------
+        t
+            Time since explosion, either a :class:`~astropy.units.Quantity`
+            with time units or an already unit-stripped cgs (seconds)
+            value. May carry leading batch axes, broadcastable against
+            ``parameters``.
+        **parameters
+            This model's parameter values, either
+            :class:`~astropy.units.Quantity` or already unit-stripped cgs
+            values (see :meth:`eval_log_cgs`). May carry leading batch
+            axes.
+
+        Returns
+        -------
+        ~synphot.SourceSpectrum
+            Callable as ``spectrum(nu)``, returning :math:`L_\nu(\nu, t)`.
+        """
+        t_cgs = to_cgs_value(t)
+        cgs_parameters: dict[str, CGSParameterValue] = {
+            name: to_cgs_value(value) for name, value in parameters.items()
+        }
+
+        def evaluate(nu: FloatArray) -> FloatResult:
+            return cls.eval_cgs(nu, t_cgs, **cgs_parameters)
+
+        model_class = model_class_from_kernel(
+            "_FixedTimeSpectrumModel",
+            inputs={"nu": u.Hz},
+            outputs={"L_nu": _SPEC_LUM_UNIT},
+            evaluate=evaluate,
+        )
+        return SourceSpectrum(model_class())
 
     # -------------------------------------- #
     # Observed Flux Density: F_nu(nu, t)      #
