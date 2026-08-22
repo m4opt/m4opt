@@ -8,6 +8,7 @@ User Guide
    constraints
    dynamics
    fov
+   models
    synphot
    observer
    skygrid

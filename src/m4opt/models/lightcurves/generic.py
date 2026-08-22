@@ -979,7 +979,7 @@ class PlateauPowerLawLightcurve(Lightcurve):
 
 class VillarLightcurve(Lightcurve):
     r"""
-    A parametric supernova-like light curve, following :footcite:t:`2019ApJ...884...83V`.
+    A parametric supernova-like light curve.
 
     .. math::
 
@@ -1033,6 +1033,10 @@ class VillarLightcurve(Lightcurve):
        * - ``tau_fall``
          - :math:`\tau_\mathrm{fall}`
          - Exponential decline timescale, after the plateau.
+
+    See Also
+    --------
+    m4opt.models.supernovae.VillarCoolingBlackbodySED
 
     References
     ----------

@@ -16,7 +16,7 @@ __all__ = ["VillarCoolingBlackbodySED"]
 
 class VillarCoolingBlackbodySED(SpectralModel):
     r"""
-    Supernova light curve with an evolving blackbody photosphere, following :footcite:t:`2019ApJ...884...83V`.
+    Supernova light curve with an evolving blackbody photosphere.
 
     This model combines the phenomenological bolometric light curve of
     :class:`~m4opt.models.lightcurves.generic.VillarLightcurve` (the
