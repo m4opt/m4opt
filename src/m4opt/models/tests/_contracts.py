@@ -548,15 +548,33 @@ class SpectralModelContract(ModelContract):
     # ----------------------------------- #
     # Synthetic Spectrum Generation       #
     # ----------------------------------- #
-    def test_generate_spectrum_model_matches_eval(self):
+    def test_as_astropy_model_matches_eval(self):
         cgs_params = self._scalar_cgs_params()
-        model = self.model_class.generate_spectrum_model(**cgs_params)
         nu0 = to_cgs_value(self.nu_grid[0])
         t0 = to_cgs_value(self.t_grid[0])
-        np.testing.assert_allclose(
-            model(nu0, t0),
-            self.model_class.eval_cgs(nu0, t0, **cgs_params),
+        expected = self.model_class.eval_cgs(nu0, t0, **cgs_params)
+
+        model_nu = self.model_class.as_astropy_model(
+            x_type="nu", y_type="nu", freq_unit=u.Hz, **cgs_params
         )
+        np.testing.assert_allclose(model_nu(nu0, t0), expected)
+
+        wave0 = (nu0 * u.Hz).to_value(u.AA, equivalencies=u.spectral())
+        model_wave = self.model_class.as_astropy_model(
+            x_type="lambda", y_type="nu", wave_unit=u.AA, freq_unit=u.Hz, **cgs_params
+        )
+        np.testing.assert_allclose(model_wave(wave0, t0), expected, rtol=1e-6)
+
+    def test_as_astropy_model_rejects_inconsistent_units(self):
+        cgs_params = self._scalar_cgs_params()
+        with pytest.raises(ValueError):
+            self.model_class.as_astropy_model(x_type="nu", freq_unit=u.AA, **cgs_params)
+        with pytest.raises(ValueError):
+            self.model_class.as_astropy_model(
+                x_type="lambda", wave_unit=u.Hz, **cgs_params
+            )
+        with pytest.raises(ValueError):
+            self.model_class.as_astropy_model(x_type="bogus", **cgs_params)
 
     # ----------------------------------- #
     # Observed Flux / Magnitude           #
@@ -607,6 +625,52 @@ class SpectralModelContract(ModelContract):
         mag_band = self.model_class.mag_band(self.nu_grid, throughput, t0, **common)
         assert np.isfinite(flux_band.cgs.value)
         assert np.isfinite(mag_band.value)
+
+    def test_as_source_spectrum_matches_flux(self):
+        params = self._sampled_params()
+        t0 = self.t_grid[0]
+        nu0 = self.nu_grid[0]
+        common = dict(
+            redshift=self.redshift,
+            luminosity_distance=self.luminosity_distance,
+            **params,
+        )
+        spectrum = self.model_class.as_source_spectrum(t0, **common)
+        expected = self.model_class.flux(nu0, t0, **common)
+        actual = spectrum(nu0, flux_unit=expected.unit)
+        np.testing.assert_allclose(actual.value, expected.value, rtol=1e-6)
+
+    def test_as_astropy_model_matches_flux(self):
+        cgs_params = self._scalar_cgs_params()
+        nu0 = to_cgs_value(self.nu_grid[0])
+        t0 = to_cgs_value(self.t_grid[0])
+        redshift_cgs = np.asarray(self.redshift, dtype=np.float64)
+        luminosity_distance_cgs = to_cgs_value(self.luminosity_distance)
+        expected = self.model_class.flux_cgs(
+            nu0, t0, redshift_cgs, luminosity_distance_cgs, **cgs_params
+        )
+
+        model_nu = self.model_class.as_astropy_model(
+            x_type="nu",
+            y_type="nu",
+            freq_unit=u.Hz,
+            redshift=self.redshift,
+            luminosity_distance=self.luminosity_distance,
+            **cgs_params,
+        )
+        np.testing.assert_allclose(model_nu(nu0, t0), expected)
+
+        wave0 = (nu0 * u.Hz).to_value(u.AA, equivalencies=u.spectral())
+        model_wave = self.model_class.as_astropy_model(
+            x_type="lambda",
+            y_type="nu",
+            wave_unit=u.AA,
+            freq_unit=u.Hz,
+            redshift=self.redshift,
+            luminosity_distance=self.luminosity_distance,
+            **cgs_params,
+        )
+        np.testing.assert_allclose(model_wave(wave0, t0), expected, rtol=1e-6)
 
     # ----------------------------------- #
     # Simulation                          #
