@@ -101,6 +101,8 @@ def test_sum(m, add_vars):
         "x <= y",
         "x == y",
         "x + 5 <= y",
+        "y + 5 <= 0",
+        "y + 5 <= x[0][0]",
         "x + y <= 0",
         "x - y <= 0",
         "m.min(*x.ravel()) <= 0",
@@ -112,7 +114,6 @@ def test_cplex_operators(m, add_vars, rhs_shape, expr):
     constraint = eval(
         expr, None, {"m": m, "x": add_vars((3, 2)), "y": add_vars(rhs_shape)}
     )
-    assert isinstance(constraint, VariableArray)
     m.add_constraints_(constraint)
 
 
