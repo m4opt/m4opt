@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from astropy import units as u
 
-from ..milp import Model, VariableArray
+from ..milp import _VARIABLE_TYPES, Model, VariableArray
 
 problem_size_limits = pytest.mark.parametrize(
     "num_vars", [pytest.param(1000, id="small"), pytest.param(10000, id="big")]
@@ -63,9 +63,7 @@ def test_best_bound():
     assert m.best_bound == m.solve_details.best_bound == m.objective_value == 1
 
 
-@pytest.mark.parametrize(
-    "tp", ["binary", "continuous", "integer", "semicontinuous", "semiinteger"]
-)
+@pytest.mark.parametrize("tp", _VARIABLE_TYPES)
 def test_cplex_add_var_array(tp):
     """Test convenience functions for adding arrays of decision variables."""
     m = Model()
@@ -84,9 +82,7 @@ def test_cplex_add_var_array(tp):
     assert getattr(m, f"number_of_{tp}_variables") == 49
 
 
-@pytest.mark.parametrize(
-    "tp", ["binary", "continuous", "integer", "semicontinuous", "semiinteger"]
-)
+@pytest.mark.parametrize("tp", _VARIABLE_TYPES)
 @pytest.mark.parametrize(
     "rhs_shape",
     ((), 2, (3, 2)),
@@ -115,9 +111,7 @@ def test_cplex_operators(tp, rhs_shape, expr):
     m.add_constraints_(constraint)
 
 
-@pytest.mark.parametrize(
-    "tp", ["binary", "continuous", "integer", "semicontinuous", "semiinteger"]
-)
+@pytest.mark.parametrize("tp", _VARIABLE_TYPES)
 @pytest.mark.parametrize(
     "rhs_shape",
     ((), 2, (3, 2)),

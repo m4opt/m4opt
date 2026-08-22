@@ -384,5 +384,6 @@ def add_var_array_method(cls, tp):
     setattr(cls, f"{tp}_vars", func)
 
 
-for tp in ["binary", "continuous", "integer", "semicontinuous", "semiinteger"]:
+_VARIABLE_TYPES = ("binary", "continuous", "integer", "semicontinuous", "semiinteger")
+for tp in _VARIABLE_TYPES:
     add_var_array_method(Model, tp)
