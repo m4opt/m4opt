@@ -85,6 +85,14 @@ def test_cplex_add_var_array(m, add_vars):
     assert m.number_of_variables == 49
 
 
+@pytest.mark.xfail(reason="Does not yet pass")
+def test_sum(m, add_vars):
+    """Test Numpy sum method on decision variables."""
+    x = add_vars(3)
+    assert x.sum().equals(m.sum(x))
+    assert np.sum(x).equals(m.sum(x))
+
+
 @pytest.mark.parametrize("rhs_shape", ((), 2, (3, 2)))
 @pytest.mark.parametrize(
     "expr",
