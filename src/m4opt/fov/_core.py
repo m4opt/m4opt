@@ -64,7 +64,10 @@ def ArrayOfRegions(first, *rest):
 def concat_healpix(shape, *args):
     regions = np.empty(shape, dtype=object)
     for i in np.ndindex(regions.shape):
-        regions[i] = np.unique(np.concatenate([arg[i] for arg in args]))
+        if len(args) > 0:
+            regions[i] = np.unique(np.concatenate([arg[i] for arg in args]))
+        else:
+            regions[i] = np.asarray([], dtype=np.intp)
     return regions
 
 
@@ -159,9 +162,14 @@ def centered_wcs(region: PolygonSkyRegion) -> WCS:
 def footprint_inner(region: Region | Regions, frame: SkyOffsetFrame):
     match region:
         case Regions():
-            return ArrayOfRegions(
-                *(footprint_inner(subregion, frame) for subregion in region.regions)
-            )
+            if len(region.regions) == 0:
+                result = np.empty(frame.shape, dtype=object)
+                result.fill(Regions([]))
+            else:
+                result = ArrayOfRegions(
+                    *(footprint_inner(subregion, frame) for subregion in region.regions)
+                )
+            return result
         case CircleSkyRegion():
             return ArrayOfCircleSkyRegion(
                 skycoord_to_offset(region.center, frame), region.radius
@@ -294,6 +302,15 @@ def footprint(
         [(2.99236656, -4.99694639, 1.), (7.00763344, -4.99694639, 1.),
          (5.        , -3.        , 1.)]>)>
     ])>
+
+    As are empty compound regions:
+
+    >>> regions = Regions([])
+    >>> footprint(regions, target_coord)
+    <Regions([])>
+
+    Not all region types are supported:
+
     >>> region = EllipseSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 5 * u.deg, 2 * u.deg)
     >>> footprint(region, target_coord)
     Traceback (most recent call last):
@@ -472,6 +489,12 @@ def footprint_healpix(
     ...     PolygonSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))])
     >>> footprint_healpix(hpx, regions, target_coord)
     array([6337, 6465, 6466, 6593, 6594, 6721, 6722, 6849, 6850])
+
+    As are empty compound regions:
+
+    >>> regions = Regions([])
+    >>> footprint_healpix(hpx, regions, target_coord)
+    array([], dtype=int64)
 
     Not all region types are supported:
 

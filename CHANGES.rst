@@ -13,6 +13,8 @@ Changes
 - Fix ``LogicalNotConstraint``, which ignored its operand and always
   evaluated to a scalar ``True``.
 
+- Fix ``footprint`` and ``footprint_healpix`` for empty compound ``Regions``.
+
 2.11.0 (2026-08-18)
 ===================
 

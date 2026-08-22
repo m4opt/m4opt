@@ -7,6 +7,7 @@ from io import BufferedWriter
 from pathlib import Path
 from shutil import copyfileobj
 from tempfile import NamedTemporaryFile, gettempdir
+from types import GeneratorType
 from unittest.mock import patch
 
 import cplex
@@ -20,6 +21,13 @@ from .utils.console import status
 from .utils.numpy import atmost_1d
 
 __all__ = ("Model", "SolveSolution")
+
+
+def _prep_1d(a):
+    if isinstance(a, GeneratorType):
+        return a
+    else:
+        return np.ravel(a)
 
 
 class LowerCutoffCallback:
@@ -163,7 +171,7 @@ class Model(_Model):
         >>> xmax = np.random.normal(size=x.shape)
         >>> m.add_constraints_(x >= xmax)
         """
-        return super().add_constraints_(atmost_1d(cts), names)
+        return super().add_constraints_(_prep_1d(cts), names)
 
     def add_indicators(self, binary_vars, cts, true_values=1, names=None):
         """Add any number of indicator constraints to the model.
@@ -184,14 +192,14 @@ class Model(_Model):
         >>> _ = m.add_indicators(y, x >= xmax)
         """
         return super().add_indicators(
-            atmost_1d(binary_vars), atmost_1d(cts), atmost_1d(true_values), names
+            _prep_1d(binary_vars), _prep_1d(cts), atmost_1d(true_values), names
         )
 
     def add_indicator_constraints(self, indcts):
-        return super().add_indicator_constraints(atmost_1d(indcts))
+        return super().add_indicator_constraints(_prep_1d(indcts))
 
     def add_indicator_constraints_(self, indcts):
-        return super().add_indicator_constraints_(atmost_1d(indcts))
+        return super().add_indicator_constraints_(_prep_1d(indcts))
 
     def solve(self, **kwargs) -> "SolveSolution":
         with patch("docplex.mp.solution.SolveSolution", SolveSolution):
@@ -295,12 +303,12 @@ class VariableArray(np.ndarray):
                 )
                 .view(self.__class__)
             )
-        elif method != "__call__":
-            return NotImplemented
-        else:
-            return ufunc_map[ufunc](
+        elif method == "__call__":
+            return getattr(ufunc_map[ufunc], method)(
                 *(input.view(self.__class__) for input in inputs)
             ).view(self.__class__)
+        else:
+            return NotImplemented
 
 
 def make_attr(op):
@@ -384,5 +392,6 @@ def add_var_array_method(cls, tp):
     setattr(cls, f"{tp}_vars", func)
 
 
-for tp in ["binary", "continuous", "integer", "semicontinuous", "semiinteger"]:
+_VARIABLE_TYPES = ("binary", "continuous", "integer", "semicontinuous", "semiinteger")
+for tp in _VARIABLE_TYPES:
     add_var_array_method(Model, tp)
