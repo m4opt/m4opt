@@ -11,14 +11,14 @@ class BodySeparationConstraint(Constraint):
         self._body = body
         self.min = min
 
+    def _separation(self, observer_location, target_coord, obstime):
+        return get_body(
+            self._body, time=obstime, location=observer_location
+        ).separation(target_coord, origin_mismatch="ignore")
+
     @override
     def __call__(self, observer_location, target_coord, obstime):
-        return (
-            get_body(self._body, time=obstime, location=observer_location).separation(
-                target_coord, origin_mismatch="ignore"
-            )
-            >= self.min
-        )
+        return self._separation(observer_location, target_coord, obstime) >= self.min
 
 
 class MoonSeparationConstraint(BodySeparationConstraint):
@@ -88,7 +88,7 @@ class SunSeparationConstraint(BodySeparationConstraint):
         super().__init__(min, "sun")
 
 
-class AntiSolarSeparationConstraint(Constraint):
+class AntiSolarSeparationConstraint(BodySeparationConstraint):
     def __init__(self, min: u.Quantity[u.physical.angle]):
         """
         Constrain the minimum separation from the anti-solar point.
@@ -123,13 +123,10 @@ class AntiSolarSeparationConstraint(Constraint):
         >>> constraint(location, target, time)
         np.True_
         """
-        self.min = min
+        super().__init__(min, "sun")
 
     @override
-    def __call__(self, observer_location, target_coord, obstime):
-        return (
-            180 * u.deg
-            - get_body("sun", time=obstime, location=observer_location).separation(
-                target_coord, origin_mismatch="ignore"
-            )
-        ) >= self.min
+    def _separation(self, observer_location, target_coord, obstime):
+        return 180 * u.deg - super()._separation(
+            observer_location, target_coord, obstime
+        )
