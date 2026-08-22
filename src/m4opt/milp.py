@@ -295,8 +295,8 @@ class VariableArray(np.ndarray):
                 )
                 .view(self.__class__)
             )
-        elif method in {"__call__", "reduce"}:
-            return ufunc_map[ufunc](
+        elif method == "__call__":
+            return getattr(ufunc_map[ufunc], method)(
                 *(input.view(self.__class__) for input in inputs)
             ).view(self.__class__)
         else:
