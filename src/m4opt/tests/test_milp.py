@@ -85,10 +85,7 @@ def test_cplex_add_var_array(m, add_vars):
     assert m.number_of_variables == 49
 
 
-@pytest.mark.parametrize(
-    "rhs_shape",
-    ((), 2, (3, 2)),
-)
+@pytest.mark.parametrize("rhs_shape", ((), 2, (3, 2)))
 @pytest.mark.parametrize(
     "expr",
     (
@@ -111,10 +108,7 @@ def test_cplex_operators(m, add_vars, rhs_shape, expr):
     m.add_constraints_(constraint)
 
 
-@pytest.mark.parametrize(
-    "rhs_shape",
-    ((), 2, (3, 2)),
-)
+@pytest.mark.parametrize("rhs_shape", ((), 2, (3, 2)))
 def test_cplex_broadcast_indicator(m, add_vars, rhs_shape):
     """Test adding indicator constraints by broadcasting variables."""
     x = m.binary_vars((3, 2))
