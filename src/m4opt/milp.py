@@ -295,12 +295,12 @@ class VariableArray(np.ndarray):
                 )
                 .view(self.__class__)
             )
-        elif method != "__call__":
-            return NotImplemented
-        else:
+        elif method in {"__call__", "reduce"}:
             return ufunc_map[ufunc](
                 *(input.view(self.__class__) for input in inputs)
             ).view(self.__class__)
+        else:
+            return NotImplemented
 
 
 def make_attr(op):
