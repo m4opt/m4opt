@@ -109,8 +109,11 @@ class PowerLawSpectrum(Spectrum):
     # ----------------------------------- #
     # Shape: S(nu)                        #
     # ----------------------------------- #
+    # Narrowing `**parameters` to this model's own named parameters (rather
+    # than matching the base class's generic `**parameters` exactly) is the
+    # intended pattern for every `_eval` override -- see `Spectrum._eval`.
     @classmethod
-    def _eval(
+    def _eval(  # type: ignore[override]
         cls,
         nu: FloatArray,
         *,
@@ -234,8 +237,11 @@ class BrokenPowerLawSpectrum(Spectrum):
     # ----------------------------------- #
     # Shape: S(nu)                        #
     # ----------------------------------- #
+    # Narrowing `**parameters` to this model's own named parameters (rather
+    # than matching the base class's generic `**parameters` exactly) is the
+    # intended pattern for every `_eval` override -- see `Spectrum._eval`.
     @classmethod
-    def _eval(
+    def _eval(  # type: ignore[override]
         cls,
         nu: FloatArray,
         *,

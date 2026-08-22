@@ -185,7 +185,11 @@ class _ModelBase(Mapping[str, Parameter], ABC):
             :class:`~astropy.units.Quantity`, ``float``, or ``int``) fixes
             that parameter to it; passing a
             :class:`~m4opt.models.core._parameters.Parameter` replaces the
-            default parameter entirely (e.g. to use a different prior).
+            default parameter entirely (e.g. to use a different prior). In
+            the latter case, the *same* ``Parameter`` instance is stored
+            (not copied) -- passing one object to two model instances links
+            them, so that fixing or sampling the parameter through either
+            model affects both.
 
         Raises
         ------
@@ -763,7 +767,9 @@ class Spectrum(_ModelBase):
         def integrand(nu: float) -> FloatArray:
             return np.exp(cls._eval(np.asarray(nu, dtype=np.float64), **param_grids))
 
-        integral, _ = quad_vec(integrand, to_cgs_value(lo), to_cgs_value(hi))
+        integral, _ = quad_vec(
+            integrand, float(to_cgs_value(lo)), float(to_cgs_value(hi))
+        )
 
         return np.log(integral)
 
@@ -1113,10 +1119,10 @@ class SpectralModel(_ModelBase):
         numpy.ndarray
             The natural log of :math:`L_\mathrm{bol}(t)`, in erg/s.
         """
-        t_grid, *param_grids = np.broadcast_arrays(
+        t_grid, *param_arrays = np.broadcast_arrays(
             np.asarray(t, dtype=np.float64), *parameters.values()
         )
-        param_grids = dict(zip(parameters, param_grids))
+        param_grids = dict(zip(parameters, param_arrays))
 
         lo, hi = cls._DOMAIN
 
@@ -1125,7 +1131,9 @@ class SpectralModel(_ModelBase):
                 cls._eval(np.asarray(nu, dtype=np.float64), t_grid, **param_grids)
             )
 
-        integral, _ = quad_vec(integrand, to_cgs_value(lo), to_cgs_value(hi))
+        integral, _ = quad_vec(
+            integrand, float(to_cgs_value(lo)), float(to_cgs_value(hi))
+        )
 
         return np.log(integral)
 
@@ -1489,22 +1497,22 @@ class SpectralModel(_ModelBase):
         # Generate the modification to the function to coerce F_nu to y.
         if y_is_wavelength:
 
-            def _to_dlambda(nu_hz: FloatArray, y: FloatArray) -> FloatArray:
-                return y * (nu_hz**2 / y_coefficient)
+            def _to_dlambda(nu_hz: FloatArray, y: FloatResult) -> FloatArray:
+                return np.asarray(y * (nu_hz**2 / y_coefficient))
         else:
 
-            def _to_dlambda(nu_hz: FloatArray, y: FloatArray) -> FloatArray:
-                return y * y_coefficient
+            def _to_dlambda(nu_hz: FloatArray, y: FloatResult) -> FloatArray:
+                return np.asarray(y * y_coefficient)
 
         if y_kind == "energy":
             _numerator_unit = u.erg
 
-            def _to_output_flux(nu_hz: FloatArray, y: FloatArray) -> FloatArray:
-                return y
+            def _to_output_flux(nu_hz: FloatArray, y: FloatResult) -> FloatArray:
+                return np.asarray(y)
         else:
             _numerator_unit = u.photon
 
-            def _to_output_flux(nu_hz: FloatArray, y: FloatArray) -> FloatArray:
+            def _to_output_flux(nu_hz: FloatArray, y: FloatResult) -> FloatArray:
                 return y / (H_CGS * nu_hz)
 
         # Generate the final evaluator.
@@ -2650,6 +2658,8 @@ class ComposedSpectralModel(SpectralModel):
         """
         lightcurve_parameters, _ = cls._split_parameters(parameters)
 
+        # `_split_parameters` already raises if either class is unset.
+        assert cls._LIGHTCURVE_CLASS is not None
         return cls._LIGHTCURVE_CLASS._eval(t, **lightcurve_parameters)
 
     # -------------------------------------- #
@@ -2669,6 +2679,8 @@ class ComposedSpectralModel(SpectralModel):
         """
         _, spectrum_parameters = cls._split_parameters(parameters)
 
+        # `_split_parameters` already raises if either class is unset.
+        assert cls._SPECTRUM_CLASS is not None
         return cls._SPECTRUM_CLASS._eval(
             nu, **spectrum_parameters
         ) - cls._SPECTRUM_CLASS._eval_normalization(**spectrum_parameters)

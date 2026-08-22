@@ -5,7 +5,7 @@ Numerical helpers shared by the spectral shape models in :mod:`m4opt.models.spec
 import numpy as np
 from astropy import constants as const
 
-from m4opt.models._typing import FloatArray
+from m4opt.models._typing import FloatArray, NumericalInput
 
 # ------------------------------------------ #
 # Physical Constants (cgs)                   #
@@ -48,10 +48,10 @@ def log_expm1(x: FloatArray) -> FloatArray:
 
 
 def powerlaw_shape_integral_cgs(
-    spectral_index: FloatArray,
-    reference_frequency: FloatArray,
-    frequency_min: FloatArray,
-    frequency_max: FloatArray,
+    spectral_index: NumericalInput,
+    reference_frequency: NumericalInput,
+    frequency_min: NumericalInput,
+    frequency_max: NumericalInput,
 ) -> FloatArray:
     r"""
     Integral of an unnormalized power-law shape over a finite frequency range.
@@ -89,8 +89,9 @@ def powerlaw_shape_integral_cgs(
         The dimensionless integral, broadcast over the input arrays.
     """
     alpha = np.asarray(spectral_index, dtype=np.float64)
-    x_min = np.asarray(frequency_min, dtype=np.float64) / reference_frequency
-    x_max = np.asarray(frequency_max, dtype=np.float64) / reference_frequency
+    nu_0 = np.asarray(reference_frequency, dtype=np.float64)
+    x_min = np.asarray(frequency_min, dtype=np.float64) / nu_0
+    x_max = np.asarray(frequency_max, dtype=np.float64) / nu_0
     exponent = alpha + 1.0
 
     with np.errstate(divide="ignore", invalid="ignore"):

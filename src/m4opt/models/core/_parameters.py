@@ -225,11 +225,19 @@ class Parameter:
         numpy.ndarray
             The corresponding latent value(s).
         """
-        y = ensure_numpy_array(x / self.scale)
+        # `x` may arrive as a plain list/tuple (valid `array_like`), which does
+        # not itself support `/`; normalize to an ndarray first unless it is a
+        # Quantity, whose division already handles the (possibly-Quantity)
+        # `scale` directly.
+        x_arr: Quantity | FloatArray = (
+            x if isinstance(x, Quantity) else np.asarray(x, dtype=np.float64)
+        )
+        y = ensure_numpy_array(x_arr / self.scale)
 
+        assert callable(self.transform)
         return self.transform(y)
 
-    def transform_latent_to_physical(self, z: FloatArray) -> PhysicalInput:
+    def transform_latent_to_physical(self, z: FloatArray) -> Quantity | FloatArray:
         r"""
         Convert a latent value :math:`z` back to the physical value :math:`x = T^{-1}(z) \cdot x_0`.
 
@@ -244,6 +252,7 @@ class Parameter:
             The corresponding physical value(s), carrying :attr:`scale`'s units if
             :attr:`scale` is itself a :class:`~astropy.units.Quantity`.
         """
+        assert callable(self.inverse_transform)
         y = self.inverse_transform(np.asarray(z, dtype=np.float64))
 
         return y * self.scale

@@ -282,7 +282,7 @@ class Prior(ABC):
         """
         return np.exp(self.logpdf(x))
 
-    def cdf(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
+    def cdf(self, x: NDArray[np.float64]) -> NDArray[np.float64] | float:
         """
         Evaluate the cumulative distribution function.
 
@@ -427,12 +427,31 @@ class Prior(ABC):
         numpy.ndarray
             One-dimensional array containing exactly ``size`` samples.
         """
-        if self._sampler is None:
-            object.__setattr__(
-                self, "_sampler", NumericalInversePolynomial(_LogPDFDistribution(self))
+        sampler = self._sampler
+        if sampler is None:
+            # scipy-stubs' `_PINVDist` protocol requires `pdf`/`cdf`/a `support`
+            # attribute, but scipy itself (see `NumericalInversePolynomial`'s
+            # docstring) also accepts a `logpdf` method plus a `support()`
+            # method -- which is what `_LogPDFDistribution` provides.
+            sampler = NumericalInversePolynomial(
+                _LogPDFDistribution(self)  # type: ignore[arg-type]
             )
+            object.__setattr__(self, "_sampler", sampler)
 
-        return self._sampler.rvs(size=size, random_state=rng)
+        # scipy-stubs' `size`-and-`random_state` overload of `rvs` only
+        # covers the scalar (`size=None`) case, even though scipy itself
+        # (see `NumericalInversePolynomial`'s docstring) accepts both
+        # together for any `size`. Splitting this into a `set_random_state`
+        # call followed by a separate `rvs(size=size)` would be racy if
+        # `self` (and so this cached `_sampler`) is ever shared/sampled
+        # concurrently -- keep it as one atomic call.
+        # `NumericalInversePolynomial` samples a continuous distribution, so
+        # this is always float64 in practice; the stub's return type is
+        # widened to cover discrete `Method` subclasses too.
+        return np.asarray(
+            sampler.rvs(size=size, random_state=rng),  # type: ignore[call-overload]
+            dtype=np.float64,
+        )
 
     @staticmethod
     def _validate_size(size: int) -> int:

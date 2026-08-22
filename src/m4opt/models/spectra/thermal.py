@@ -68,8 +68,13 @@ class BlackbodySpectrum(Spectrum):
     # ----------------------------------- #
     # Shape: S(nu)                        #
     # ----------------------------------- #
+    # Narrowing `**parameters` to this model's own named parameters (rather
+    # than matching the base class's generic `**parameters` exactly) is the
+    # intended pattern for every `_eval` override -- see `Spectrum._eval`.
     @classmethod
-    def _eval(cls, nu: FloatArray, *, temperature: CGSParameterValue) -> FloatArray:
+    def _eval(  # type: ignore[override]
+        cls, nu: FloatArray, *, temperature: CGSParameterValue
+    ) -> FloatArray:
         x = H_CGS * nu / (K_B_CGS * temperature)
         log_B_nu = np.log(2.0 * H_CGS / C_CGS**2) + 3.0 * np.log(nu) - log_expm1(x)
 

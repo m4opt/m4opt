@@ -1084,8 +1084,11 @@ class VillarLightcurve(Lightcurve):
         ),
     }
 
+    # Narrowing `**parameters` to this model's own named parameters (rather
+    # than matching the base class's generic `**parameters` exactly) is the
+    # intended pattern for every `_eval` override -- see `Lightcurve._eval`.
     @classmethod
-    def _eval(
+    def _eval(  # type: ignore[override]
         cls,
         t: NDArray[np.float64],
         *,

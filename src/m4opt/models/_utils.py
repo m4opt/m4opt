@@ -312,13 +312,16 @@ def model_class_from_kernel(
         # (broadcast against the call's `x`/`t`) actually produces --
         # unlike a normal Parameter-based model, astropy's shape inference
         # here only sees the *declared* inputs, not any batch axes bound
-        # into `evaluate` via closure. Its default `prepare_outputs` tries
-        # to reshape/`.item()` the result to match that (possibly smaller)
-        # declared-input shape, which is unnecessary when it happens to
-        # match and outright crashes (an unguarded `output.item()`) for a
-        # scalar call against batched state. Passing outputs through
-        # unchanged sidesteps that entirely.
-        return outputs
+        # into `evaluate` via closure. The default `prepare_outputs` still
+        # applies correctly for the common case (an ordinary, non-batched
+        # call, where it turns a size-1 array into a proper scalar); it
+        # only needs to be skipped when the closure-bound batch shape isn't
+        # visible in the declared inputs' broadcast shape, which makes its
+        # unguarded `output.item()`/`.reshape()` raise.
+        try:
+            return self._prepare_outputs_single_model(outputs, broadcasted_shapes)
+        except ValueError:
+            return outputs
 
     return type(
         name,

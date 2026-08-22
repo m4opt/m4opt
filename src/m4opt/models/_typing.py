@@ -2,7 +2,7 @@
 Common type aliases for :mod:`m4opt.models`.
 """
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, TypeAlias, Union
 
 import numpy as np
 from astropy.units import Quantity, UnitBase
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 # UNITS                                                                       #
 # =========================================================================== #
 
-UnitLike: type = str | UnitBase | None
+type UnitLike = str | UnitBase | None
 
 
 # =========================================================================== #
@@ -24,10 +24,10 @@ UnitLike: type = str | UnitBase | None
 # =========================================================================== #
 
 # Any unitless numerical input accepted by NumPy.
-NumericalInput: type = ArrayLike
+type NumericalInput = ArrayLike
 
 # Any numerical input that may additionally carry physical units.
-PhysicalInput: type = ArrayLike | Quantity
+type PhysicalInput = ArrayLike | Quantity
 
 
 # =========================================================================== #
@@ -35,13 +35,13 @@ PhysicalInput: type = ArrayLike | Quantity
 # =========================================================================== #
 
 # Standard floating-point NumPy array used internally.
-FloatArray: type = NDArray[np.float64]
+type FloatArray = NDArray[np.float64]
 
 # Normalized scalar-or-array value used by numerical kernels.
-FloatValue: type = float | FloatArray
+type FloatValue = float | FloatArray
 
 # Numerical result that may be scalar or array-valued.
-FloatResult: type = float | FloatArray
+type FloatResult = float | FloatArray
 
 
 # =========================================================================== #
@@ -49,34 +49,42 @@ FloatResult: type = float | FloatArray
 # =========================================================================== #
 
 # User-facing physical parameter value.
-ParameterValue: type = PhysicalInput
+type ParameterValue = PhysicalInput
 
 # Unit-stripped CGS value accepted at public coercion boundaries.
-CGSParameterInput: type = ArrayLike
+type CGSParameterInput = ArrayLike
 
 # Normalized unit-stripped CGS value used internally.
-CGSParameterValue: type = FloatValue
+type CGSParameterValue = FloatValue
 
 # Constructor override: replacement Parameter or fixed constant value.
-OverrideValue: type = Union["Parameter", Quantity, float, int]
+#
+# Deliberately a `typing.Union`, not a PEP 695 `type` alias: `Parameter` is
+# only importable under TYPE_CHECKING (avoiding a circular import), and a
+# PEP 695 alias evaluates its forward references lazily but *unquoted* --
+# `"Parameter" | Quantity` would raise TypeError if ever forced (e.g. by
+# `typing.get_type_hints`), since `Parameter` doesn't exist at runtime.
+# `typing.Union` stores the quoted name as a `ForwardRef` instead, which
+# tolerates never being resolved.
+OverrideValue: TypeAlias = Union["Parameter", Quantity, float, int]  # noqa: UP040
 
 # A concrete scalar used as a Parameter's `scale`, or to pin it via `fix()`.
 # Unlike `ParameterValue`, this excludes bare arrays -- a scale or fixed
 # value must be a single scalar.
-ScalarPhysicalValue: type = Quantity | float | int
+type ScalarPhysicalValue = Quantity | float | int
 
 
 # =========================================================================== #
 # COMMON CONTAINERS                                                           #
 # =========================================================================== #
 
-ParameterSamples: type = dict[str, Quantity | FloatArray]
-ParameterValues: type = dict[str, ParameterValue]
-CGSParameterValues: type = dict[str, CGSParameterValue]
+type ParameterSamples = dict[str, Quantity | FloatArray]
+type ParameterValues = dict[str, ParameterValue]
+type CGSParameterValues = dict[str, CGSParameterValue]
 
 
 # =========================================================================== #
 # RANDOM NUMBER GENERATION                                                     #
 # =========================================================================== #
 
-RNGInput: type = np.random.Generator | int | None
+type RNGInput = np.random.Generator | int | None
