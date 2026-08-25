@@ -23,8 +23,8 @@ constructing the model, to be specified at a later point in your code, or to be
 specified implicitly by the scheduler. To do that, simply construct the model
 components directly, without any target coordinate or time. For example::
 
-    from m4opt.synphot.background import Airglow, ZodiacalBackground
-    model = Airglow() + ZodiacalBackground()
+    from m4opt.synphot.background import GalacticBackground, ZodiacalBackground
+    model = GalacticBackground() + ZodiacalBackground()
 
 Then, when you need to evaluate the model for a _specific_ target and time, you
 can specify their values within a code block using a ``with:`` statement::
