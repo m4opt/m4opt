@@ -9,6 +9,5 @@ on the MIP implementation.
 .. toctree::
    :maxdepth: 1
 
-   dorado
    sedmachine
    ztf
