@@ -15,6 +15,8 @@ Changes
 
 - Fix ``footprint`` and ``footprint_healpix`` for empty compound ``Regions``.
 
+- Add ``m4opt.utils.functional.apply`` method.
+
 2.11.0 (2026-08-18)
 ===================
 
