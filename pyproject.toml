@@ -159,3 +159,6 @@ ignore-words-list = """
 select = "cp3??t-*"
 inherit.environment = "append"
 environment.EXTENSION_HELPERS_PY_LIMITED_API = ""
+
+[tool.cibuildwheel.macos]
+before-build = "brew install libomp"
