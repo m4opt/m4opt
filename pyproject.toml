@@ -173,10 +173,8 @@ inherit.environment = "append"
 environment.MACOSX_DEPLOYMENT_TARGET = "14.0"
 
 [tool.cibuildwheel.macos]
-before-all = "brew install llvm@15 libomp"
+before-all = "brew install libomp"
 
 [tool.cibuildwheel.macos.environment]
-CC = "$(brew --prefix llvm@15)/bin/clang"
-CXX = "$(brew --prefix llvm@15)/bin/clang++"
 CPPFLAGS = "-I$(brew --prefix libomp)/include"
 LDFLAGS = "-L$(brew --prefix libomp)/lib"
