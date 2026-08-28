@@ -150,13 +150,13 @@ def count_intersect1d_combinations(
     Parameters
     ----------
     arrays
-        A list of sorted 1D array of type :obj:`numpy.intp`.
+        A list of sorted 1D arrays of type :obj:`numpy.intp`.
 
     Returns
     -------
     :
-        An array consisting of the elements that are in each pairwsise
-        combination.
+        The number of elements in common for each pairwise combination, in the
+        order produced by :func:`itertools.combinations`.
 
     Notes
     -----
