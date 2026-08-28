@@ -54,7 +54,6 @@ def test_count_intersect1d_combinations(arrays):
 
 @pytest.mark.parametrize("n", [0, 1])
 def test_count_intersect1d_combinations_too_few_args(n):
-    """Test that we don't run out of stack memory for large numbers of inputs."""
     with pytest.raises(
         ValueError,
         match=rf"count_intersect1d_combinations\(\) expects a sequence of at least 2 arrays \({n} given\)",
