@@ -3,13 +3,19 @@
 import numpy as np
 from numpy import typing as npt
 
-from ._numpy import count_intersect1d as _count_intersect1d
+from ._numpy import (
+    count_intersect1d as _count_intersect1d,
+)
+from ._numpy import (
+    count_intersect1d_combinations as _count_intersect1d_combinations,
+)
 
 __all__ = (
     "atmost_1d",
     "clump_nonzero",
     "clump_nonzero_inclusive",
     "count_intersect1d",
+    "count_intersect1d_combinations",
     "full_indices",
 )
 
@@ -124,6 +130,42 @@ def count_intersect1d(a: npt.ArrayLike, b: npt.ArrayLike) -> int:
     1
     """
     return _count_intersect1d(a, b)
+
+
+def count_intersect1d_combinations(
+    arrays: list[npt.ArrayLike],
+) -> np.ndarray[tuple[int], np.dtype[np.intp]]:
+    """Calculate the cardinalities of the intersections of all pairwise combinations.
+
+    All pairs are evaluated in parallel using OpenMP. This is equivalent to,
+    but much faster than::
+
+        from itertools import combinations
+
+        from m4opt.utils.numpy import count_intersect1d
+
+        def count_intersect1d_combinations_slow(arrays):
+            return [count_intersect1d(*args) for args in combinations(arrays, 2)]
+
+    Parameters
+    ----------
+    arrays
+        A list of sorted 1D arrays of type :obj:`numpy.intp`.
+
+    Returns
+    -------
+    :
+        The number of elements in common for each pairwise combination, in the
+        order produced by :func:`itertools.combinations`.
+
+    Notes
+    -----
+    This calculation cannot be effectively parallelized using traditional
+    Python techniques like :mod:`multiprocessing` because the inherently
+    sequential Python overhead of processing the arguments would grow as O(N^2)
+    with the number of input arrays N.
+    """
+    return _count_intersect1d_combinations(arrays)
 
 
 def full_indices(n):
