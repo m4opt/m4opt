@@ -161,4 +161,10 @@ inherit.environment = "append"
 environment.EXTENSION_HELPERS_PY_LIMITED_API = ""
 
 [tool.cibuildwheel.macos]
-before-build = "brew install libomp"
+before-all = "brew install llvm@23 libomp"
+
+[tool.cibuildwheel.macos.environment]
+CC = "$(brew --prefix llvm@23)/bin/clang"
+CXX = "$(brew --prefix llvm@23)/bin/clang++"
+CPPFLAGS = "-I$(brew --prefix libomp)/include"
+LDFLAGS = "-L$(brew --prefix libomp)/lib"
