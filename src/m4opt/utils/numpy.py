@@ -140,13 +140,12 @@ def count_intersect1d_combinations(
     All pairs are evaluated in parallel using OpenMP. This is equivalent to,
     but much faster than::
 
-        from functools import combinations
+        from itertools import combinations
 
         from m4opt.utils.numpy import count_intersect1d
-        import numpy as np
 
         def count_intersect1d_combinations_slow(arrays):
-            return [count_intersect1d(args) for args in combinations(arrays, 2)]
+            return [count_intersect1d(*args) for args in combinations(arrays, 2)]
 
     Parameters
     ----------
