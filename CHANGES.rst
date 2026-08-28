@@ -17,6 +17,14 @@ Changes
 
 - Add ``m4opt.utils.functional.apply`` method.
 
+- Add the function ``count_intersect1d_combinations`` to calculate the overlap
+  of pairwise combinations of arrays, parallelized with OpenMP.
+
+  This operation is needed to calculate per-pixel cadence distributions from
+  HEALPix observation footprints. The specialized parallel version is necessary
+  because ``count_intersect1d`` cannot be effectively parallelized using Python
+  techniques like ``multiprocessing``.
+
 2.11.0 (2026-08-18)
 ===================
 

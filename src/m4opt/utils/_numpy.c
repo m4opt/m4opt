@@ -119,8 +119,109 @@ done:
     return result;
 }
 
+static PyObject *py_count_intersect1d_combinations(PyObject *NPY_UNUSED(self), PyObject *arg) {
+    Py_ssize_t num_arrays = PySequence_Length(arg);
+    if (num_arrays < 0) return NULL;
+    if (num_arrays < 2)
+    {
+        PyErr_Format(
+            PyExc_ValueError,
+            "count_intersect1d_combinations() expects a sequence of at least 2 arrays (%zd given)",
+            (ssize_t) num_arrays
+        );
+        return NULL;
+    }
+
+    PyObject *result = NULL;
+    Py_ssize_t result_len = num_arrays * (num_arrays - 1) / 2;
+    PyObject **arrays = PyMem_Malloc(sizeof(PyObject *) * num_arrays);
+    const npy_intp **data = PyMem_Malloc(sizeof(const npy_intp *) * num_arrays);
+    npy_intp *n = PyMem_Malloc(sizeof(npy_intp) * num_arrays);
+    Py_ssize_t *is = PyMem_Malloc(sizeof(Py_ssize_t) * result_len);
+    Py_ssize_t *js = PyMem_Malloc(sizeof(Py_ssize_t) * result_len);
+    if (!(arrays && data && n))
+    {
+        PyErr_NoMemory();
+        goto free_arrays;
+    }
+
+    // Get pointers to the Numpy data for each input array.
+    // It's important to do this here rather than in the computation loop below
+    // so that the Python overhead grow like O(N) rather than O(N^2) in the
+    // number of arrays N.
+    for (Py_ssize_t i = 0; i < num_arrays; i ++) arrays[i] = NULL;
+    for (Py_ssize_t i = 0; i < num_arrays; i ++)
+    {
+        PyObject *item = PySequence_GetItem(arg, i);
+        if (!item) goto decref_objects;
+        PyObject *array = PyArray_FROMANY(item, NPY_INTP, 1, 1, NPY_ARRAY_CARRAY_RO);
+        Py_DECREF(item);
+        if (!array) goto decref_objects;
+        arrays[i] = array;
+        data[i] = (const npy_intp *) PyArray_DATA((PyArrayObject *) array);
+        n[i] = PyArray_SIZE((PyArrayObject *) array);
+    }
+
+    // Allocate output array. If there are N input arrays, then the output
+    // array size is given by the binomial coefficient:
+    //
+    //      ⎛ N ⎞
+    //      ⎜   ⎟
+    //      ⎝ 2 ⎠
+    //
+    if (!(result = PyArray_SimpleNew(1, &result_len, NPY_INTP))) goto decref_objects;
+    npy_intp *result_data = PyArray_DATA((PyArrayObject *) result);
+
+    Py_BEGIN_ALLOW_THREADS;
+    // Build lookup table from output index to input indices.
+    {
+        Py_ssize_t result_i = 0;
+        for (Py_ssize_t i = 0; i < num_arrays; i ++)
+        {
+            for (Py_ssize_t j = i + 1; j < num_arrays; j ++)
+            {
+                is[result_i] = i;
+                js[result_i] = j;
+                result_i++;
+            }
+        }
+    }
+    // The lookup tables ``is`` and ``js`` defined above allow us to correctly
+    // parallelize the following loop, which otherwise would only be correct
+    // when executed serially because of the order-dependent increment of ``k``
+    // inside the loop body. It also results in more efficient parallelism
+    // because the work per loop is more balanced.
+    //
+    //      // incorrect, inefficient
+    //      Py_ssize_t k = 0;
+    //      #pragma omp parallel for
+    //      for (Py_ssize_t i = 0; i < num_arrays; i ++)
+    //          for (Py_ssize_t j = i + 1; j < num_arrays; j ++)
+    //              result_data[k++] = count_intersect1d(data[i], data[j], n[i], n[j]);
+    //
+    #pragma omp parallel for
+    for (Py_ssize_t result_i = 0; result_i < result_len; result_i ++)
+    {
+        Py_ssize_t i = is[result_i], j = js[result_i];
+        result_data[result_i] = count_intersect1d(data[i], data[j], n[i], n[j]);
+    }
+    Py_END_ALLOW_THREADS;
+
+decref_objects:
+    for (Py_ssize_t i = 0; i < num_arrays; i++)
+        Py_XDECREF(arrays[i]);
+free_arrays:
+    PyMem_Free(arrays);
+    PyMem_Free(data);
+    PyMem_Free(n);
+    PyMem_Free(is);
+    PyMem_Free(js);
+    return result;
+}
+
 static PyMethodDef methods[] = {
     {"count_intersect1d", (PyCFunction)py_count_intersect1d, METH_FASTCALL},
+    {"count_intersect1d_combinations", (PyCFunction)py_count_intersect1d_combinations, METH_O},
     {/* Sentinel */}
 };
 
