@@ -81,6 +81,9 @@ m4opt = "m4opt._cli:app"
     "*.xml",
 ]
 
+[tool.setuptools.exclude-package-data]
+"*" = ["*.c"]
+
 [tool.pytest.ini_options]
 testpaths = [
     "src/m4opt",
