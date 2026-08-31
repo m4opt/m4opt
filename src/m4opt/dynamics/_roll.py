@@ -33,9 +33,8 @@ def nominal_roll(
     In space telescopes with this general physical plan, it is common to prefer
     or require that the roll of the telescope about the boresight places the +Y
     axis perpendicular to the direction of the sun, so that the solar array can
-    be oriented for optimal power. This is called the nominal roll angle.
-
-    (It is assumed that when roll=0, the +Z axis points to celestial north.)
+    be oriented for optimal power. This is called the nominal roll angle. It is
+    assumed that when roll=0, the +Z axis points to celestial north.
 
     Parameters
     ----------
