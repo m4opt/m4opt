@@ -31,8 +31,7 @@ jobs:
           # depend on data hosted elsewhere, which may change or go away.
           - name: Python 3.12 with remote data
             python: '3.12'
-            toxenv: py312-test
-            toxposargs: --remote-data
+            toxenv: py312-test-remotedata
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -55,4 +54,4 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install tox
     - name: Test with tox
-      run: tox -e ${{ matrix.toxenv }} -- ${{ matrix.toxposargs }}
+      run: tox -e ${{ matrix.toxenv }}
