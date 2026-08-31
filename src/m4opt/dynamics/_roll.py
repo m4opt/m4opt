@@ -14,6 +14,9 @@ def nominal_roll(
 ) -> u.Quantity[u.physical.angle]:
     """Determine the nominal roll angle for a space telescope.
 
+    This function determines the nominal roll angle for a spacecraft at a given
+    location, observing a given target at a given time.
+
     Many space telescopes have a gross physical configuration that consists of
     a telescope boresight along the +X axis, solar panels that are on the +Y
     axis (which may be free to rotate around that axis to track the sun), and a
@@ -33,9 +36,6 @@ def nominal_roll(
     be oriented for optimal power. This is called the nominal roll angle.
 
     (It is assumed that when roll=0, the +Z axis points to celestial north.)
-
-    This function determines the nominal roll angle for a spacecraft at a given
-    location, observing a given target at a given time.
 
     Parameters
     ----------
