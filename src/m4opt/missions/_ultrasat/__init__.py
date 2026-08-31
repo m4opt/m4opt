@@ -17,6 +17,7 @@ from ...observer import TleObserverLocation
 from ...synphot import Detector
 from ...synphot.background import (
     CerenkovBackground,
+    EarthshineBackground,
     GalacticBackground,
     ZodiacalBackground,
 )
@@ -68,10 +69,13 @@ ultrasat = Mission(
         # Circular aperture with a diameter of 33 cm
         area=np.pi * np.square(0.5 * 33 * u.cm),
         bandpasses={"NUV": _read_throughput()},
-        # FIXME: Add model for stray light
+        # The earthshine model is calibrated against HST in low Earth orbit, so
+        # it is renormalized here to the worst-case stray light of 12 e-/pix
+        # per 300 s in the ULTRASAT noise budget.
         background=GalacticBackground()
         + ZodiacalBackground()
-        + CerenkovBackground(factor=21),
+        + CerenkovBackground(factor=21)
+        + EarthshineBackground(factor=15),
         # The published noise budget quotes readout noise squared (6 e-/pix),
         # whereas this field is an RMS.
         read_noise=np.sqrt(6),
