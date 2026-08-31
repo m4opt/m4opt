@@ -27,12 +27,6 @@ jobs:
             python: '3.12'
             toxenv: py312-test-devdeps
 
-          # Tests marked `remote_data` are skipped by default because they
-          # depend on data hosted elsewhere, which may change or go away.
-          - name: Python 3.12 with remote data
-            python: '3.12'
-            toxenv: py312-test-remotedata
-
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
     - name: Cache Astropy data
