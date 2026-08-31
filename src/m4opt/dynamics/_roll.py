@@ -50,6 +50,18 @@ def nominal_roll(
     :
         The nominal roll angle for the observation.
 
+    Notes
+    -----
+    The roll angle is degenerate and undefined when the telescope is pointed
+    directly anti-Sun (or directly toward the Sun, for that matter). Near the
+    anti-Sun direction, the roll angle changes rapidly.
+
+    .. figure:: /_static/roll-angle-flip.svg
+        :alt: Diagram illustrating the degeneracy of the roll angle near the anti-Sun direction
+        :width: 50%
+
+        Illustration of the degeneracy of the roll angle near the anti-Sun direction.
+
     Examples
     --------
 
