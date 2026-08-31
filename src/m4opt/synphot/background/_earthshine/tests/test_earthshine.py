@@ -23,8 +23,8 @@ _SUN_RA_DEG = 281.0
 def test_earthshine_high_positive():
     """EarthshineBackground.high() returns positive flux across its wavelength range."""
     spec = EarthshineBackground.high()
-    for wave in [1500, 2600, 5000, 8000, 10000]:
-        assert spec(wave * u.AA).value > 0
+    wave = np.arange(1500, 10001) * u.AA
+    assert np.all(spec(wave).value > 0)
 
 
 def test_earthshine_high_regression():
@@ -68,7 +68,10 @@ def test_earthshine_requires_context():
         bg(5000 * u.AA)
 
 
-def test_earthshine_scale_factor_calibration_points():
+@pytest.mark.parametrize(
+    "limb_angle_deg,expected_scale", [(24, 2.0), (38, 1.0), (50, 0.5)]
+)
+def test_earthshine_scale_factor_calibration_points(limb_angle_deg, expected_scale):
     """Scale factor reproduces calibration points at 24, 38, and 50 degrees."""
     sf = EarthshineBackgroundScaleFactor()
 
@@ -76,15 +79,12 @@ def test_earthshine_scale_factor_calibration_points():
     # limb_alt = arccos(R_earth / (2*R_earth)) = 60 deg.
     # limb_angle = alt + 60 deg, so alt = limb_angle - 60 deg.
     # At the North Pole, alt = dec.
-    # Use RA near the Sun so illumination factor ~ 1.
     loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
 
-    for limb_angle_deg, expected_scale in [(24, 2.0), (38, 1.0), (50, 0.5)]:
-        alt_deg = limb_angle_deg - 60
-        coord = SkyCoord(_SUN_RA_DEG * u.deg, alt_deg * u.deg)
-        scale = sf.at(loc, coord, _TEST_OBSTIME)
-        illumination = _limb_illumination(loc, coord, _TEST_OBSTIME)
-        np.testing.assert_allclose(scale / illumination, expected_scale, rtol=0.15)
+    coord = SkyCoord(_SUN_RA_DEG * u.deg, (limb_angle_deg - 60) * u.deg)
+    scale = sf.at(loc, coord, _TEST_OBSTIME)
+    illumination = _limb_illumination(loc, coord, _TEST_OBSTIME)
+    np.testing.assert_allclose(scale / illumination, expected_scale, rtol=0.15)
 
 
 def test_earthshine_scale_factor_below_limb():
@@ -136,19 +136,13 @@ def test_earthshine_scale_factor_monotonic():
 
     loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
 
-    # Test limb angles from 24 deg to 120 deg.
-    # Use RA near the Sun so illumination is roughly constant.
-    # Start from 24 deg (below that, the limb component is clamped at 2.0
-    # and the illumination variation can break strict monotonicity).
-    limb_angles = [24, 30, 38, 50, 60, 80, 100, 120]
-    scales = []
-    for la in limb_angles:
-        alt_deg = la - 60
-        coord = SkyCoord(_SUN_RA_DEG * u.deg, alt_deg * u.deg)
-        scales.append(sf.at(loc, coord, _TEST_OBSTIME))
+    # Below the first calibration point the limb component is clamped at 2.0.
+    limb_angles = np.arange(24, 121) * u.deg
+    coord = SkyCoord(_SUN_RA_DEG * u.deg, limb_angles - 60 * u.deg)
+    scale = sf.at(loc, coord, _TEST_OBSTIME)
+    illumination = _limb_illumination(loc, coord, _TEST_OBSTIME)
 
-    for i in range(1, len(scales)):
-        assert scales[i] <= scales[i - 1]
+    assert np.all(np.diff(scale / illumination) <= 0)
 
 
 def test_earthshine_illumination_sunlit_vs_dark():
