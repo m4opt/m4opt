@@ -21,12 +21,12 @@ def downsample(wavelength, transmission):
     """Reduce the upstream throughput table to the vendored one."""
     split = np.searchsorted(wavelength, FINE_SAMPLING_BELOW)
     keep = np.concatenate(
-            [
-                np.arange(0, split),
-                np.arange(split, len(wavelength) - 1, COARSE_SAMPLING),
-                [len(wavelength) - 1],
-            ]
-        )
+        [
+            np.arange(0, split),
+            np.arange(split, len(wavelength) - 1, COARSE_SAMPLING),
+            [len(wavelength) - 1],
+        ]
+    )
     return QTable({"wavelength": wavelength[keep], "transmission": transmission[keep]})
 
 
