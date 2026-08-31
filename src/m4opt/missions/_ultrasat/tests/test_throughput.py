@@ -20,15 +20,13 @@ COARSE_SAMPLING = 10
 def downsample(wavelength, transmission):
     """Reduce the upstream throughput table to the vendored one."""
     split = np.searchsorted(wavelength, FINE_SAMPLING_BELOW)
-    keep = np.unique(
-        np.concatenate(
+    keep = np.concatenate(
             [
                 np.arange(0, split),
-                np.arange(split, len(wavelength), COARSE_SAMPLING),
+                np.arange(split, len(wavelength) - 1, COARSE_SAMPLING),
                 [len(wavelength) - 1],
             ]
         )
-    )
     return QTable({"wavelength": wavelength[keep], "transmission": transmission[keep]})
 
 
@@ -40,11 +38,11 @@ def test_throughput_matches_upstream():
     ``data/throughput.ecsv`` in ``ascii.ecsv`` format.
     """
     wavelength = (
-        np.loadtxt(download_file(UPSTREAM + "Wavelength.dat", cache=True)) * u.angstrom
+        np.loadtxt(download_file(f"{UPSTREAM}Wavelength.dat", cache=True)) * u.angstrom
     )
     # One column per radial distance from the optical axis; the first is on axis.
     transmission = np.loadtxt(
-        download_file(UPSTREAM + "ULTRASAT_TR.dat", cache=True), delimiter=","
+        download_file(f"{UPSTREAM}ULTRASAT_TR.dat", cache=True), delimiter=","
     )[:, 0]
 
     expected = downsample(wavelength, transmission)
