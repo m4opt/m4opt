@@ -3,9 +3,9 @@ from importlib import resources
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy.table import Table
+from astropy.table import QTable, Table
 from regions import RectangleSkyRegion
-from synphot import Gaussian1D, SpectralElement
+from synphot import Empirical1D, SpectralElement
 
 from ...constraints import (
     EarthLimbConstraint,
@@ -22,6 +22,15 @@ from ...synphot.background import (
 )
 from .._core import Mission
 from . import data
+
+
+def _read_throughput() -> SpectralElement:
+    # Total throughput on axis, including all optical elements, the detector
+    # quantum efficiency, and obscuration.
+    table = QTable.read(resources.files(data) / "throughput.ecsv")
+    return SpectralElement(
+        Empirical1D, points=table["wavelength"], lookup_table=table["transmission"]
+    )
 
 
 def _read_allsky_skygrid() -> SkyCoord:
@@ -58,14 +67,7 @@ ultrasat = Mission(
         plate_scale=(5.4 * u.arcsec) ** 2,
         # Circular aperture with a diameter of 33 cm
         area=np.pi * np.square(0.5 * 33 * u.cm),
-        bandpasses={
-            "NUV": SpectralElement(
-                Gaussian1D,
-                amplitude=0.25,
-                mean=2600 * u.angstrom,
-                stddev=340 * u.angstrom,
-            ),
-        },
+        bandpasses={"NUV": _read_throughput()},
         # FIXME: Add model for stray light
         background=GalacticBackground()
         + ZodiacalBackground()

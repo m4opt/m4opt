@@ -64,4 +64,4 @@ def test_broadcast_dust_extinction_skycoord():
             synphot.SourceSpectrum(synphot.ConstFlux1D, amplitude=0 * u.ABmag)
             * synphot.SpectralElement(DustExtinction()),
         ).to_value(u.mag)
-    np.testing.assert_almost_equal(result, [20.45453574, 19.29239958])
+    np.testing.assert_almost_equal(result, [20.39529851, 19.18077976])

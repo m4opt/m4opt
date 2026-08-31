@@ -5,6 +5,10 @@ Changes
 2.12.1 (unreleased)
 ===================
 
+- Use ULTRASAT's tabulated throughput curve rather than a Gaussian
+  approximation, which had a red leak some four orders of magnitude too
+  large and nearly doubled the predicted zodiacal background.
+
 - Fix the ULTRASAT readout noise, which was set to the noise budget's
   variance (6 e-/pix) rather than its RMS.
 
