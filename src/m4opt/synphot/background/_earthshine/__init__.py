@@ -147,19 +147,19 @@ class EarthshineBackground:
     distance between the target and the Earth's limb, and on the solar
     illumination of that part of the limb.
 
-    Parameters
-    ----------
-    factor : float
-        Overall normalization, for renormalizing to an observatory's own
-        stray light budget (default: 1). See the warning in
-        :mod:`m4opt.synphot.background`.
-
     The default constructor returns a spatially-dependent model that must be
     evaluated within an :func:`~m4opt.synphot.observing` context. Use
     :meth:`high` to get the constant "high" spectrum without spatial
     dependence.
 
     .. _`Table 6.4`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-6-tabular-sky-backgrounds
+
+    Parameters
+    ----------
+    factor : float
+        Overall normalization, for renormalizing to an observatory's own
+        stray light budget (default: 1). See the warning in
+        :mod:`m4opt.synphot.background`.
 
     References
     ----------
