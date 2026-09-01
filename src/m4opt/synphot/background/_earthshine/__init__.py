@@ -15,9 +15,10 @@ which provide discrete earthshine intensity levels at specific limb angles:
 
 The scale factor is interpolated in log2-space between these calibration
 points and extrapolated beyond them. It is then multiplied by the solar
-illumination of the part of the limb that the line of sight passes, so that
-earthshine falls to zero over the Earth's night side. Targets below the
-Earth's limb (occluded by Earth) receive zero earthshine.
+illumination of the visible limb, averaged around the limb but weighted
+toward the part of it that the line of sight passes, so that earthshine is
+faintest over the Earth's night side. Targets below the Earth's limb
+(occluded by Earth) receive zero earthshine.
 
 .. _`Table 6.4`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-6-tabular-sky-backgrounds
 
@@ -59,13 +60,24 @@ _LIMB_ANGLES_DEG = np.array([24.0, 38.0, 50.0])
 _LOG2_SCALE_FACTORS = np.array([1.0, 0.0, -1.0])  # log2([2.0, 1.0, 0.5])
 
 
-def _limb_illumination(observer_location, target_coord, obstime):
-    """Solar illumination where the line of sight grazes the Earth's limb.
+# Azimuths at which the visible limb is sampled. The illumination varies
+# smoothly around the limb, so a coarse ring is plenty.
+_LIMB_AZIMUTHS = np.linspace(0, 2 * np.pi, 36, endpoint=False)
 
-    The grazing point lies in the plane containing the observer and the target,
-    at an angle :math:`\\arccos(R_\\oplus / r)` from the sub-observer point.
-    The return value is the cosine of the solar incidence angle there, so it
-    falls to zero as that part of the limb turns away from the Sun.
+
+def _limb_illumination(observer_location, target_coord, obstime):
+    """Solar illumination of the visible limb, weighted toward the line of sight.
+
+    The visible limb is the circle of surface points where the observer's line
+    of sight is tangent to the Earth, an angle :math:`\\arccos(R_\\oplus / r)`
+    from the sub-observer point. The cosine of the solar incidence angle is
+    averaged around that circle, weighting each point by how close it lies to
+    the line of sight, on the angular scale of the Earth itself.
+
+    Averaging rather than taking the single nearest point matters for an
+    observer far from the Earth, where the whole limb approaches the terminator
+    and the incidence angle at any one point of it is a poor stand-in for how
+    brightly the Earth shines into the telescope.
     """
     frame = GCRS(obstime=obstime)
 
@@ -79,21 +91,39 @@ def _limb_illumination(observer_location, target_coord, obstime):
     target = unit_vectors(target_coord.transform_to(frame).cartesian)
     sun = unit_vectors(get_sun(obstime).transform_to(frame).cartesian)
 
-    # Component of the line of sight perpendicular to the sub-observer point,
-    # which selects the side of the limb that the telescope is looking past.
-    along = np.sum(target * observer, axis=-1, keepdims=True)
-    perpendicular = target - along * observer
-    norm = np.linalg.norm(perpendicular, axis=-1, keepdims=True)
-    # Looking straight up or straight down leaves the direction undefined; the
-    # limb is then equidistant all around, so any of it will do.
-    perpendicular = np.divide(
-        perpendicular, norm, out=np.zeros_like(perpendicular), where=norm > 0
-    )
-
+    sin_angular_radius = (R_earth / radius).to_value(u.dimensionless_unscaled)
     with np.errstate(invalid="ignore"):
-        gamma = np.arccos((R_earth / radius).to_value(u.dimensionless_unscaled))
-    grazing = np.cos(gamma) * observer + np.sin(gamma) * perpendicular
-    return np.clip(np.sum(grazing * sun, axis=-1), 0.0, None)
+        angular_radius = np.arcsin(sin_angular_radius)
+
+    # Orthonormal basis for the plane of the limb. The reference direction is
+    # chosen to be the one least parallel to the observer, so that the cross
+    # product is well conditioned wherever the observer happens to be.
+    reference = np.zeros_like(observer)
+    reference[..., 0] = 1.0
+    alternative = np.zeros_like(observer)
+    alternative[..., 2] = 1.0
+    reference = np.where(np.abs(observer[..., :1]) < 0.9, reference, alternative)
+    east = np.cross(observer, reference)
+    east /= np.linalg.norm(east, axis=-1, keepdims=True)
+    north = np.cross(observer, east)
+
+    # Points around the visible limb, and the directions to them.
+    cos_phi = np.cos(_LIMB_AZIMUTHS)[:, np.newaxis]
+    sin_phi = np.sin(_LIMB_AZIMUTHS)[:, np.newaxis]
+    limb = sin_angular_radius * observer[..., np.newaxis, :] + np.cos(
+        angular_radius
+    ) * (cos_phi * east[..., np.newaxis, :] + sin_phi * north[..., np.newaxis, :])
+    line_of_sight = limb * sin_angular_radius - observer[..., np.newaxis, :]
+    line_of_sight /= np.linalg.norm(line_of_sight, axis=-1, keepdims=True)
+
+    incidence = np.clip(np.sum(limb * sun[..., np.newaxis, :], axis=-1), 0.0, None)
+    cosine = np.sum(target[..., np.newaxis, :] * line_of_sight, axis=-1)
+    # Concentrate the weight on the angular scale of the Earth, so that the
+    # average is smooth everywhere, including along the observer's own axis
+    # where every point of the limb is equidistant.
+    concentration = 1 / (1 - np.cos(angular_radius))
+    weight = np.exp(concentration * (cosine - 1))
+    return np.sum(weight * incidence, axis=-1) / np.sum(weight, axis=-1)
 
 
 class EarthshineBackgroundScaleFactor(ExtrinsicScaleFactor):
