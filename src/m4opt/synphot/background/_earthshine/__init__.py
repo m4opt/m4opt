@@ -24,6 +24,24 @@ from . import data
 _LIMB_ANGLES_DEG = np.array([24.0, 38.0, 50.0])
 _LOG2_SCALE_FACTORS = np.array([1.0, 0.0, -1.0])  # log2([2.0, 1.0, 0.5])
 
+# Altitude at which those calibration points were measured. The angles above
+# are meaningful only relative to how large the Earth looked from there.
+_HST_ALTITUDE = 540 * u.km
+_HST_ANGULAR_RADIUS_DEG = np.degrees(
+    np.arcsin((R_earth / (R_earth + _HST_ALTITUDE)).to_value(u.dimensionless_unscaled))
+)
+
+
+def _earth_angular_radius_deg(observer_location, obstime):
+    """Angular radius of the Earth as the observer sees it, in degrees."""
+    radius = observer_location.get_gcrs(obstime).cartesian.norm()
+    with np.errstate(invalid="ignore"):
+        return np.degrees(
+            np.arcsin(
+                np.clip((R_earth / radius).to_value(u.dimensionless_unscaled), 0, 1)
+            )
+        )
+
 
 # Azimuths at which the visible limb is sampled. The illumination varies
 # smoothly around the limb, so a coarse ring is plenty.
@@ -47,9 +65,13 @@ def _limb_illumination(observer_location, target_coord, obstime):
     target = unit_vectors(target_coord.transform_to(frame).cartesian)
     sun = unit_vectors(get_sun(obstime).transform_to(frame).cartesian)
 
-    sin_angular_radius = (R_earth / radius).to_value(u.dimensionless_unscaled)
+    # Two trailing axes to spare, for the ring of limb samples and for the
+    # vector components, so that an array of observers broadcasts too.
+    sin_angular_radius = np.asarray(
+        (R_earth / radius).to_value(u.dimensionless_unscaled)
+    )[..., np.newaxis, np.newaxis]
     with np.errstate(invalid="ignore"):
-        angular_radius = np.arcsin(sin_angular_radius)
+        cos_angular_radius = np.sqrt(1 - np.square(sin_angular_radius))
 
     # Orthonormal basis for the plane of the limb. The reference direction is
     # chosen to be the one least parallel to the observer, so that the cross
@@ -68,7 +90,7 @@ def _limb_illumination(observer_location, target_coord, obstime):
     sin_phi = np.sin(_LIMB_AZIMUTHS)[:, np.newaxis]
     azimuth = cos_phi * east[..., np.newaxis, :] + sin_phi * north[..., np.newaxis, :]
     limb = sin_angular_radius * observer[..., np.newaxis, :] + (
-        np.cos(angular_radius) * azimuth
+        cos_angular_radius * azimuth
     )
     incidence = np.clip(np.sum(limb * sun[..., np.newaxis, :], axis=-1), 0.0, None)
 
@@ -97,7 +119,16 @@ class EarthshineBackgroundScaleFactor(ExtrinsicScaleFactor):
         angle = _get_angle_from_earth_limb(observer_location, target_coord, obstime)
         angle_deg = angle.to_value(u.deg)
 
-        log2_scale = np.interp(angle_deg, _LIMB_ANGLES_DEG, _LOG2_SCALE_FACTORS)
+        # The calibration is a profile in units of the Earth's angular size, so
+        # rescale the limb angle by how much smaller the Earth looks from here
+        # than it did from HST. Without this the halo would stay the same size
+        # on the sky however far away the observer is.
+        scaled_deg = angle_deg * (
+            _HST_ANGULAR_RADIUS_DEG
+            / _earth_angular_radius_deg(observer_location, obstime)
+        )
+
+        log2_scale = np.interp(scaled_deg, _LIMB_ANGLES_DEG, _LOG2_SCALE_FACTORS)
 
         # Extrapolate beyond the last calibration point using the slope
         # from the last two points, so earthshine decreases at large angles
@@ -106,8 +137,8 @@ class EarthshineBackgroundScaleFactor(ExtrinsicScaleFactor):
             _LIMB_ANGLES_DEG[-1] - _LIMB_ANGLES_DEG[-2]
         )
         log2_scale = np.where(
-            angle_deg > _LIMB_ANGLES_DEG[-1],
-            _LOG2_SCALE_FACTORS[-1] + slope * (angle_deg - _LIMB_ANGLES_DEG[-1]),
+            scaled_deg > _LIMB_ANGLES_DEG[-1],
+            _LOG2_SCALE_FACTORS[-1] + slope * (scaled_deg - _LIMB_ANGLES_DEG[-1]),
             log2_scale,
         )
 
@@ -164,6 +195,113 @@ class EarthshineBackground:
 
     .. _`Table 6.4`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-6-tabular-sky-backgrounds
 
+    .. plot::
+        :include-source: False
+        :caption: Earthshine seen from a grid of observer positions, all at
+            :math:`5 R_\oplus` and all looking back at the Earth. The Earth
+            occults the middle of each panel. An observer over the subsolar point
+            sees a full Earth and a symmetric halo; one over the midnight
+            meridian sees a new Earth and no earthshine at all. The Sun is
+            marked where it falls inside a panel, and pointed to by an arrow
+            where it does not.
+
+        import numpy as np
+        from astropy import units as u
+        from astropy.coordinates import (
+            EarthLocation,
+            SkyCoord,
+            SphericalRepresentation,
+            get_body,
+        )
+        from astropy.time import Time
+        from astropy.wcs import WCS
+        from ligo.skymap.plot import marker
+        from matplotlib import pyplot as plt
+
+        from m4opt.synphot.background._earthshine import EarthshineBackgroundScaleFactor
+
+        scale_factor = EarthshineBackgroundScaleFactor()
+        distance = 5 * u.Rearth
+        # Near the March equinox, when the subsolar point is close to (0, 0).
+        obstime = Time("2026-03-20T12:00:00")
+
+        half_width = 45
+        x = np.linspace(-half_width, half_width, 200)
+        x, y = np.meshgrid(x, x)
+        extent = [-half_width, half_width] * 2
+
+        lons = np.arange(-180, 181, 30) * u.deg
+        lats = np.arange(-60, 61, 30) * u.deg
+        fig, axs = plt.subplots(
+            len(lats),
+            len(lons),
+            figsize=(1.1 * len(lons), 1.1 * len(lats)),
+            subplot_kw=dict(aspect=1, xticks=[], yticks=[]),
+            gridspec_kw=dict(hspace=0.15, wspace=0.15),
+        )
+        for row, lat in zip(axs, lats[::-1]):
+            row[0].set_ylabel(f"{lat:latex}")
+            for ax, lon in zip(row, lons):
+                observer_location = EarthLocation(
+                    *SphericalRepresentation(lon, lat, distance).to_cartesian().xyz
+                )
+                earth_coord = get_body("earth", obstime, observer_location)
+
+                wcs = WCS(naxis=2)
+                wcs.wcs.crpix = [1, 1]
+                wcs.wcs.cdelt = [-1, 1]
+                wcs.wcs.crval = [earth_coord.ra.deg, earth_coord.dec.deg]
+                wcs.wcs.ctype = ["RA---ARC", "DEC--ARC"]
+                target_coord = SkyCoord(*wcs.all_pix2world(x, y, 0), unit=u.deg)
+
+                image = ax.imshow(
+                    scale_factor.at(observer_location, target_coord, obstime),
+                    vmin=0,
+                    vmax=2,
+                    origin="lower",
+                    extent=extent,
+                )
+                ax.set_xlim(-half_width, half_width)
+                ax.set_ylim(-half_width, half_width)
+                ax.set_autoscale_on(False)
+
+                # Mark the Sun, as a check that the earthshine is oriented correctly.
+                sun_coord = get_body("sun", obstime, observer_location)
+                sun_x, sun_y = wcs.all_world2pix(sun_coord.ra.deg, sun_coord.dec.deg, 0)
+                if earth_coord.separation(sun_coord) > 175 * u.deg:
+                    # The Sun is directly behind the observer, so it has no direction
+                    # on the sky to point to.
+                    pass
+                elif abs(sun_x) < half_width and abs(sun_y) < half_width:
+                    ax.plot(
+                        sun_x,
+                        sun_y,
+                        marker=marker.sun,
+                        markersize=8,
+                        markeredgewidth=1.5,
+                        color="orange",
+                    )
+                else:
+                    # Outside the field of view, so point to it from the border.
+                    radius = np.hypot(sun_x, sun_y)
+                    ax.arrow(
+                        np.clip(sun_x, -half_width, half_width),
+                        np.clip(sun_y, -half_width, half_width),
+                        6 * sun_x / radius,
+                        6 * sun_y / radius,
+                        color="orange",
+                        linewidth=1.5,
+                        clip_on=False,
+                        head_width=8,
+                        head_length=8,
+                    )
+        for ax, lon in zip(axs[-1], lons):
+            ax.set_xlabel(f"{lon:latex}")
+
+        fig.supxlabel("Geocentric longitude of observer")
+        fig.supylabel("Geocentric latitude of observer")
+        fig.colorbar(image, ax=axs, label="Earthshine scale factor")
+
     Parameters
     ----------
     factor : float
@@ -217,74 +355,6 @@ class EarthshineBackground:
     >>> float(background(5000 * u.angstrom).value) > 0
     True
 
-    .. plot::
-        :caption: Earthshine seen from a grid of observer positions, all at
-            :math:`5 R_\oplus` and all looking back at the Earth. The Earth
-            occults the middle of each panel. An observer over the subsolar point
-            sees a full Earth and a symmetric halo; one over the midnight meridian
-            sees a new Earth and no earthshine at all.
-
-        import numpy as np
-        from astropy import units as u
-        from astropy.coordinates import (
-            EarthLocation,
-            SkyCoord,
-            SphericalRepresentation,
-            get_body,
-        )
-        from astropy.time import Time
-        from astropy.wcs import WCS
-        from matplotlib import pyplot as plt
-
-        from m4opt.synphot.background._earthshine import EarthshineBackgroundScaleFactor
-
-        scale_factor = EarthshineBackgroundScaleFactor()
-        distance = 5 * u.Rearth
-        # Near the March equinox, when the subsolar point is close to (0, 0).
-        obstime = Time("2026-03-20T12:00:00")
-
-        half_width = 45
-        x = np.linspace(-half_width, half_width, 200)
-        x, y = np.meshgrid(x, x)
-        extent = [-half_width, half_width] * 2
-
-        lons = np.arange(-180, 181, 45) * u.deg
-        lats = np.arange(-45, 46, 45) * u.deg
-        fig, axs = plt.subplots(
-            len(lats),
-            len(lons),
-            figsize=(1.3 * len(lons), 1.3 * len(lats)),
-            subplot_kw=dict(aspect=1, xticks=[], yticks=[]),
-            gridspec_kw=dict(hspace=0.05, wspace=0.05),
-        )
-        for row, lat in zip(axs, lats[::-1]):
-            row[0].set_ylabel(f"{lat:latex}")
-            for ax, lon in zip(row, lons):
-                observer_location = EarthLocation(
-                    *SphericalRepresentation(lon, lat, distance).to_cartesian().xyz
-                )
-                earth_coord = get_body("earth", obstime, observer_location)
-
-                wcs = WCS(naxis=2)
-                wcs.wcs.crpix = [1, 1]
-                wcs.wcs.cdelt = [-1, 1]
-                wcs.wcs.crval = [earth_coord.ra.deg, earth_coord.dec.deg]
-                wcs.wcs.ctype = ["RA---ARC", "DEC--ARC"]
-                target_coord = SkyCoord(*wcs.all_pix2world(x, y, 0), unit=u.deg)
-
-                image = ax.imshow(
-                    scale_factor.at(observer_location, target_coord, obstime),
-                    vmin=0,
-                    vmax=2,
-                    origin="lower",
-                    extent=extent,
-                )
-        for ax, lon in zip(axs[-1], lons):
-            ax.set_xlabel(f"{lon:latex}")
-
-        fig.supxlabel("Geocentric longitude of observer")
-        fig.supylabel("Geocentric latitude of observer")
-        fig.colorbar(image, ax=axs, label="Earthshine scale factor")
     """
 
     def __new__(cls, factor: float = 1):

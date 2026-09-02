@@ -16,6 +16,7 @@ from astropy.time import Time
 from .....constraints._earth_limb import _get_angle_from_earth_limb
 from .... import observing
 from .. import (
+    _HST_ALTITUDE,
     EarthshineBackground,
     EarthshineBackgroundScaleFactor,
     _limb_illumination,
@@ -79,16 +80,21 @@ def test_earthshine_requires_context():
     "limb_angle_deg,expected_scale", [(24, 2.0), (38, 1.0), (50, 0.5)]
 )
 def test_earthshine_scale_factor_calibration_points(limb_angle_deg, expected_scale):
-    """Scale factor reproduces calibration points at 24, 38, and 50 degrees."""
+    """Scale factor reproduces calibration points at 24, 38, and 50 degrees.
+
+    The calibration points are STIS measurements, so they are reproduced at
+    HST's altitude; from anywhere else the profile is stretched by how much
+    smaller the Earth looks.
+    """
     sf = EarthshineBackgroundScaleFactor()
 
-    # Observer at 2*R_earth from center (altitude = R_earth above surface).
-    # limb_alt = arccos(R_earth / (2*R_earth)) = 60 deg.
-    # limb_angle = alt + 60 deg, so alt = limb_angle - 60 deg.
-    # At the North Pole, alt = dec.
-    loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
+    # limb_angle = alt + arccos(R_earth / r), and over the South Pole, which
+    # is the sunlit one at this epoch, alt = -dec.
+    distance = R_earth + _HST_ALTITUDE
+    loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, -distance)
+    limb_altitude = np.arccos(R_earth / distance).to(u.deg)
 
-    coord = SkyCoord(_SUN_RA_DEG * u.deg, (limb_angle_deg - 60) * u.deg)
+    coord = SkyCoord(_SUN_RA_DEG * u.deg, limb_altitude - limb_angle_deg * u.deg)
     scale = sf.at(loc, coord, _TEST_OBSTIME)
     illumination = _limb_illumination(loc, coord, _TEST_OBSTIME)
     np.testing.assert_allclose(scale / illumination, expected_scale, rtol=0.15)
@@ -251,3 +257,26 @@ def test_earthshine_finite_at_all_distances(distance):
     scale = sf.at(observer_location, coord, _TEST_OBSTIME)
     assert np.all(np.isfinite(scale))
     assert np.all(scale >= 0)
+
+
+def test_earthshine_broadcasts_over_observers():
+    """Arrays of observers and of targets broadcast against each other."""
+    sf = EarthshineBackgroundScaleFactor()
+    distance = [2, 5, 20] * u.Rearth
+    observer_location = EarthLocation(
+        *SphericalRepresentation([0, 45, 90] * u.deg, [0, 30, -30] * u.deg, distance)
+        .to_cartesian()
+        .xyz
+    )
+    coord = SkyCoord([0, 90, 180] * u.deg, [0, 30, -60] * u.deg)
+
+    scale = sf.at(observer_location, coord, _TEST_OBSTIME)
+    assert np.shape(scale) == (3,)
+    assert np.all(np.isfinite(scale))
+
+    # Each element must agree with evaluating that observer on its own.
+    for i in range(3):
+        one = EarthLocation(*observer_location[i].geocentric)
+        np.testing.assert_allclose(
+            sf.at(one, coord[i], _TEST_OBSTIME), scale[i], rtol=1e-12
+        )
