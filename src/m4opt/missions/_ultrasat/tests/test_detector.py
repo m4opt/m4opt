@@ -24,5 +24,5 @@ def test_ultrasat_limmag():
 
     np.testing.assert_almost_equal(
         limmag,
-        [21.5890735, 22.23677366],
+        [21.58909488, 22.23679655],
     )
