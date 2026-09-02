@@ -4,9 +4,16 @@ import numpy as np
 import pytest
 from astropy import units as u
 from astropy.constants import R_earth
-from astropy.coordinates import EarthLocation, SkyCoord, get_sun
+from astropy.coordinates import (
+    GCRS,
+    EarthLocation,
+    SkyCoord,
+    SphericalRepresentation,
+    get_sun,
+)
 from astropy.time import Time
 
+from .....constraints._earth_limb import _get_angle_from_earth_limb
 from .... import observing
 from .. import (
     EarthshineBackground,
@@ -179,3 +186,68 @@ def test_earthshine_illumination_depends_on_observer():
     assert _limb_illumination(near, coord, _TEST_OBSTIME) != _limb_illumination(
         far, coord, _TEST_OBSTIME
     )
+
+
+def observer_at(distance):
+    """An observer at a given geocentric distance, over the equator."""
+    return EarthLocation(
+        *SphericalRepresentation(0 * u.deg, 0 * u.deg, distance).to_cartesian().xyz
+    )
+
+
+def nadir_at(observer_location, obstime):
+    """The direction from the observer back toward the Earth."""
+    frame = GCRS(obstime=obstime)
+    cartesian = observer_location.get_gcrs(obstime).cartesian
+    spherical = SkyCoord(
+        *(-(cartesian / cartesian.norm())).xyz.value,
+        representation_type="cartesian",
+        frame=frame,
+    ).spherical
+    return SkyCoord(ra=spherical.lon, dec=spherical.lat, frame=frame)
+
+
+@pytest.mark.parametrize("distance", [2, 5, 6.6, 20, 100] * u.Rearth)
+def test_earthshine_occultation_shrinks_with_distance(distance):
+    """The occulted region is the Earth's disk, which shrinks with distance.
+
+    Restricted to distances where an :class:`~astropy.coordinates.EarthLocation`
+    still describes the observer well; see the warning in
+    :mod:`m4opt.synphot.background`.
+    """
+    sf = EarthshineBackgroundScaleFactor()
+    observer_location = observer_at(distance)
+    nadir = nadir_at(observer_location, _TEST_OBSTIME)
+    angular_radius = np.arcsin(u.Rearth / distance).to(u.deg)
+
+    # Spanning the limb at every distance, but avoiding the nadir itself, where
+    # the geodetic vertical and the geocentric radius differ by a few arcsec.
+    separation = np.concatenate(
+        [angular_radius * [0.5, 0.9, 1.1, 2.0], [10, 45, 90] * u.deg]
+    )
+    coord = nadir.directional_offset_by(0 * u.deg, separation)
+    limb_angle = _get_angle_from_earth_limb(observer_location, coord, _TEST_OBSTIME)
+
+    # The limb angle is the separation from the Earth's centre less its angular
+    # radius, so the occulted region shrinks in proportion to the Earth's size.
+    assert u.allclose(limb_angle, separation - angular_radius, atol=2 * u.arcsec)
+    assert np.all(sf.at(observer_location, coord[limb_angle < 0], _TEST_OBSTIME) == 0)
+
+
+@pytest.mark.parametrize("distance", [2, 5, 6.6, 20, 100, 1000] * u.Rearth)
+def test_earthshine_finite_at_all_distances(distance):
+    """The scale factor stays finite however small the Earth appears.
+
+    The weights that average the illumination around the limb must not
+    underflow for a distant observer, where the whole limb subtends a tiny
+    angle.
+    """
+    sf = EarthshineBackgroundScaleFactor()
+    observer_location = observer_at(distance)
+    nadir = nadir_at(observer_location, _TEST_OBSTIME)
+    offsets = np.geomspace(0.01, 90, 40) * u.deg
+    coord = nadir.directional_offset_by(0 * u.deg, offsets)
+
+    scale = sf.at(observer_location, coord, _TEST_OBSTIME)
+    assert np.all(np.isfinite(scale))
+    assert np.all(scale >= 0)

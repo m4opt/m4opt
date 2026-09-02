@@ -75,7 +75,7 @@ ultrasat = Mission(
         background=GalacticBackground()
         + ZodiacalBackground()
         + CerenkovBackground(factor=21)
-        + EarthshineBackground(factor=15),
+        + EarthshineBackground(factor=20),
         # The published noise budget quotes readout noise squared (6 e-/pix),
         # whereas this field is an RMS.
         read_noise=np.sqrt(6),
