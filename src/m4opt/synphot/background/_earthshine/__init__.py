@@ -142,8 +142,8 @@ class EarthshineBackgroundScaleFactor(ExtrinsicScaleFactor):
             log2_scale,
         )
 
-        # Modulate by the illumination of the part of the limb that the
-        # telescope is looking past, which is dark when the observer is over
+        # Modulate by the illumination of the limb, weighted toward the part
+        # the telescope looks past, which is dark when the observer is over
         # the Earth's night side.
         scale = np.exp2(log2_scale) * _limb_illumination(
             observer_location, target_coord, obstime
@@ -164,7 +164,8 @@ class EarthshineBackground:
     This is the earthshine spectrum from the HST STIS Instrument Handbook
     [1]_, `Table 6.4`_, measured 38 degrees from the Earth's limb and scaled
     by a factor that depends on the angular distance between the target and
-    the limb, and on the solar illumination of the limb.
+    the limb, on how large the Earth appears from the observer, and on the
+    solar illumination of the limb.
 
     The dependence on limb angle comes from the STIS Instrument Handbook and
     the STScI Exposure Time Calculator, which give earthshine levels at three
@@ -174,8 +175,15 @@ class EarthshineBackground:
     - 38 degrees from the limb: 1.0x the "high" spectrum ("high", baseline)
     - 50 degrees from the limb: 0.5x the "high" spectrum ("average")
 
-    The scale factor is interpolated in log2-space between those points and
-    extrapolated beyond them. It is then multiplied by the solar illumination
+    Those angles are measured from HST, so they mean nothing on their own: what
+    counts is how far from the limb they lie as a fraction of the Earth's
+    apparent size. The limb angle is therefore rescaled by the ratio of the
+    Earth's angular radius seen from HST to the one seen from the observer, and
+    the scale factor is interpolated in log2-space between the three points at
+    that rescaled angle, and extrapolated beyond them. Without the rescaling
+    the halo would stay the same size on the sky however distant the observer.
+
+    The scale factor is then multiplied by the solar illumination
     of the visible limb, the circle of surface points where the observer's
     line of sight is tangent to the Earth, an angle
     :math:`\arccos(R_\oplus / r)` from the sub-observer point. The cosine of
@@ -311,8 +319,8 @@ class EarthshineBackground:
     Warnings
     --------
     The calibration points are those of HST, which observes from low Earth orbit
-    where the Earth subtends a large solid angle. The angular scaling is a poor
-    substitute for a ray trace of a particular baffle design, and the further an
+    where the Earth subtends a large solid angle. A profile in limb angle is a
+    poor substitute for a ray trace of a particular baffle design, and the further an
     observatory is from the conditions under which the STIS numbers were measured
     -- an observatory at geostationary orbit, for instance -- the less the
     absolute normalization should be trusted. Use the ``factor`` argument to
@@ -321,10 +329,15 @@ class EarthshineBackground:
     Three separate things limit how far from the Earth this model may be used.
     The geometry of the limb itself is exact at any distance, but:
 
-    - The scale factor is a function of the angle from the limb alone, in absolute
-      degrees, so it carries no dependence on the observer's distance. The
-      earthshine of a distant observer does not fall off as the inverse square of
-      that distance the way it should, and ``factor`` has to absorb the difference.
+    - The profile is stretched by the apparent size of the Earth, so the halo
+      shrinks as the observer recedes, but its shape is still HST's, measured
+      between 24 and 50 degrees from the limb. Everything outside that range is
+      extrapolation, and for a distant observer the extrapolation is a long one:
+      the 48 degree limb constraint of a geostationary observatory rescales to
+      370 degrees, seven times past the far end of the calibration, where the
+      profile has fallen to :math:`5 \times 10^{-9}`. Take the shape on trust
+      only near the range that was measured, and use ``factor`` to renormalize
+      to an observatory's own stray light budget.
 
     - The Sun is treated as a point, so the terminator is sharp. Its penumbra
       spans a fraction :math:`r / 217 R_\oplus` of the Earth's angular radius,
