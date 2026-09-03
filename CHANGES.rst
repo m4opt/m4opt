@@ -9,6 +9,11 @@ Changes
   approximation, which had a red leak some four orders of magnitude too
   large and nearly doubled the predicted zodiacal background.
 
+- Add ``EarthshineBackground``, a model of sunlight reflected off the Earth,
+  scaled by the angular distance from the Earth's limb and by the solar
+  illumination of that part of the limb, and include it in the ULTRASAT
+  stray light budget.
+
 - Fix the ULTRASAT readout noise, which was set to the noise budget's
   variance (6 e-/pix) rather than its RMS.
 

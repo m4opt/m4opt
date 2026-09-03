@@ -6,12 +6,14 @@ angle of 1 square arcsecond.
 """
 
 from ._cerenkov import CerenkovBackground
+from ._earthshine import EarthshineBackground
 from ._galactic import GalacticBackground
 from ._skybright import SkyBackground
 from ._zodiacal import ZodiacalBackground
 
 __all__ = (
     "CerenkovBackground",
+    "EarthshineBackground",
     "GalacticBackground",
     "SkyBackground",
     "ZodiacalBackground",
