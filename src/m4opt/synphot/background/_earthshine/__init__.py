@@ -202,9 +202,16 @@ class EarthshineBackground:
             marked where it falls inside a panel, and pointed to by an arrow
             where it does not.
 
+        import warnings
+
+        warnings.filterwarnings("ignore", "Wswiglal-redir-stdio")
+
+        from dataclasses import dataclass
+
         import numpy as np
         from astropy import units as u
         from astropy.coordinates import (
+            CIRS,
             EarthLocation,
             SkyCoord,
             SphericalRepresentation,
@@ -214,90 +221,206 @@ class EarthshineBackground:
         from astropy.wcs import WCS
         from ligo.skymap.plot import marker
         from matplotlib import pyplot as plt
+        from scipy.optimize import least_squares, root_scalar
+        from tqdm.auto import tqdm
 
         from m4opt.synphot.background._earthshine import EarthshineBackgroundScaleFactor
 
-        scale_factor = EarthshineBackgroundScaleFactor()
-        distance = 5 * u.Rearth
-        # Near the March equinox, when the subsolar point is close to (0, 0).
-        obstime = Time("2026-03-20T12:00:00")
 
-        half_width = 45
-        x = np.linspace(-half_width, half_width, 200)
+        @dataclass
+        class ClosestSubsolarResult:
+            time: Time
+            lon_deg: float
+            lat_deg: float
+            error_arcsec: float
+            success: bool
+            message: str
+
+
+        def _subsolar_lon_lat_deg(t: Time) -> tuple[float, float]:
+            # Subsolar longitude/latitude (degrees) at time t.
+            sun_cirs = get_body("sun", t).transform_to(CIRS(obstime=t))
+            gast = t.sidereal_time("apparent", longitude=0 * u.deg)
+            lon = (sun_cirs.ra - gast).wrap_at(180 * u.deg).to_value(u.deg)  # east-positive
+            lat = sun_cirs.dec.to_value(u.deg)
+            return lon, lat
+
+
+        def _march_equinox_guess_jd(year: int) -> float:
+            # Good initial guess: March equinox from dec=0 crossing.
+            t0 = Time(f"{year}-03-19 00:00:00", scale="utc")
+            t1 = Time(f"{year}-03-22 00:00:00", scale="utc")
+
+            def dec_deg(jd):
+                t = Time(jd, format="jd", scale="utc")
+                return get_body("sun", t).transform_to(CIRS(obstime=t)).dec.to_value(u.deg)
+
+            sol = root_scalar(dec_deg, bracket=[t0.jd, t1.jd], method="brentq")
+            if not sol.converged:
+                raise RuntimeError(f"Could not bracket/solve equinox for {year}")
+            return sol.root
+
+
+        def closest_subsolar_origin_in_march(year: int) -> ClosestSubsolarResult:
+            # Find the March time (within March 1 to April 1 UTC window)
+            # that minimizes distance of subsolar point to (0°, 0°).
+            jd_lo = Time(f"{year}-03-01 00:00:00", scale="utc").jd
+            jd_hi = Time(f"{year}-04-01 00:00:00", scale="utc").jd
+            jd0 = _march_equinox_guess_jd(year)
+
+            def residuals(x):
+                jd = float(x[0])
+                t = Time(jd, format="jd", scale="utc")
+                lon_deg, lat_deg = _subsolar_lon_lat_deg(t)
+                # residuals in arcsec so both components are in same angular unit
+                return np.array([lon_deg * 3600.0, lat_deg * 3600.0])
+
+            sol = least_squares(
+                residuals,
+                x0=np.array([jd0]),
+                bounds=(np.array([jd_lo]), np.array([jd_hi])),
+                method="trf",
+                xtol=1e-14,
+                ftol=1e-14,
+                gtol=1e-14,
+            )
+
+            t_best = Time(float(sol.x[0]), format="jd", scale="utc")
+            lon_deg, lat_deg = _subsolar_lon_lat_deg(t_best)
+            err_arcsec = float(np.hypot(lon_deg * 3600.0, lat_deg * 3600.0))
+
+            return ClosestSubsolarResult(
+                time=t_best,
+                lon_deg=lon_deg,
+                lat_deg=lat_deg,
+                error_arcsec=err_arcsec,
+                success=sol.success,
+                message=sol.message,
+            )
+
+
+        distance = 5 * u.Rearth
+        scale_factor = EarthshineBackgroundScaleFactor()
+        x = np.linspace(-45, 45, 1000)
+        xmin = x.min()
+        xmax = x.max()
+        extent = (xmin, xmax, xmin, xmax)
         x, y = np.meshgrid(x, x)
-        extent = [-half_width, half_width] * 2
+        obstime = closest_subsolar_origin_in_march(2026).time
 
         lons = np.arange(-180, 181, 30) * u.deg
         lats = np.arange(-60, 61, 30) * u.deg
-        fig, axs = plt.subplots(
-            len(lats),
-            len(lons),
-            figsize=(1.1 * len(lons), 1.1 * len(lats)),
-            subplot_kw=dict(aspect=1, xticks=[], yticks=[]),
-            gridspec_kw=dict(hspace=0.15, wspace=0.15),
+        fig = plt.figure(figsize=(len(lons) + 1, len(lats) + 0.5))
+        gs = plt.GridSpec(
+            len(lats) + 1,
+            len(lons) + 2,
+            width_ratios=[0.5, *([1] * len(lons)), 0.5],
+            height_ratios=[*([1] * len(lats)), 0.5],
+            figure=fig,
+            left=0.025,
+            right=0.95,
+            bottom=0.05,
+            top=0.9,
         )
-        for row, lat in zip(axs, lats[::-1]):
-            row[0].set_ylabel(f"{lat:latex}")
-            for ax, lon in zip(row, lons):
-                observer_location = EarthLocation(
-                    *SphericalRepresentation(lon, lat, distance).to_cartesian().xyz
-                )
-                earth_coord = get_body("earth", obstime, observer_location)
-
-                wcs = WCS(naxis=2)
-                wcs.wcs.crpix = [1, 1]
-                wcs.wcs.cdelt = [-1, 1]
-                wcs.wcs.crval = [earth_coord.ra.deg, earth_coord.dec.deg]
-                wcs.wcs.ctype = ["RA---ARC", "DEC--ARC"]
-                target_coord = SkyCoord(*wcs.all_pix2world(x, y, 0), unit=u.deg)
-
-                image = ax.imshow(
-                    scale_factor.at(observer_location, target_coord, obstime),
-                    vmin=0,
-                    vmax=2,
-                    origin="lower",
-                    extent=extent,
-                )
-                ax.set_xlim(-half_width, half_width)
-                ax.set_ylim(-half_width, half_width)
-                ax.set_autoscale_on(False)
-
-                # Mark the Sun, as a check that the earthshine is oriented correctly.
-                sun_coord = get_body("sun", obstime, observer_location)
-                sun_x, sun_y = wcs.all_world2pix(sun_coord.ra.deg, sun_coord.dec.deg, 0)
-                if earth_coord.separation(sun_coord) > 175 * u.deg:
-                    # The Sun is directly behind the observer, so it has no direction
-                    # on the sky to point to.
-                    pass
-                elif abs(sun_x) < half_width and abs(sun_y) < half_width:
-                    ax.plot(
-                        sun_x,
-                        sun_y,
-                        marker=marker.sun,
-                        markersize=8,
-                        markeredgewidth=1.5,
-                        color="orange",
+        axs = [
+            [fig.add_subplot(gs[i, j + 1], aspect=1) for j in range(len(lons))]
+            for i in range(len(lats))
+        ]
+        with tqdm(total=len(lons) * len(lats)) as progress:
+            for row, lat in zip(axs, lats[::-1]):
+                row[0].set_ylabel(f"{lat:latex}")
+                for ax, lon in zip(row, lons):
+                    observer_location = EarthLocation(
+                        *SphericalRepresentation(lon, lat, distance).to_cartesian().xyz
                     )
-                else:
-                    # Outside the field of view, so point to it from the border.
-                    radius = np.hypot(sun_x, sun_y)
-                    ax.arrow(
-                        np.clip(sun_x, -half_width, half_width),
-                        np.clip(sun_y, -half_width, half_width),
-                        6 * sun_x / radius,
-                        6 * sun_y / radius,
-                        color="orange",
-                        linewidth=1.5,
-                        clip_on=False,
-                        head_width=8,
-                        head_length=8,
+                    earth_coord = get_body("earth", obstime, observer_location)
+                    sun_coord = get_body("sun", obstime, observer_location)
+
+                    wcs = WCS(naxis=2)
+                    wcs.wcs.crpix = [1, 1]
+                    wcs.wcs.cdelt = [-1, 1]
+                    wcs.wcs.crval = [earth_coord.ra.deg, earth_coord.dec.deg]
+                    wcs.wcs.ctype = ["RA---ARC", "DEC--ARC"]
+                    ra, dec = wcs.all_pix2world(x, y, 0)
+                    target_coord = SkyCoord(ra * u.deg, dec * u.deg, frame=earth_coord.frame)
+
+                    im = ax.imshow(
+                        scale_factor.at(observer_location, target_coord, obstime),
+                        vmin=0,
+                        vmax=2,
+                        origin="lower",
+                        extent=extent,
                     )
-        for ax, lon in zip(axs[-1], lons):
+                    ax.set_xlim(xmin, xmax)
+                    ax.set_ylim(xmin, xmax)
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    ax.set_autoscale_on(False)
+                    sun_x, sun_y = wcs.all_world2pix(sun_coord.ra.deg, sun_coord.dec.deg, 0)
+                    if lon == 0 * u.deg and lat == 0 * u.deg:
+                        pass
+                    elif xmin < sun_x < xmax and xmin < sun_y < xmax:
+                        # If the Sun is inside of the FOV, then plot its astronomical
+                        # symbol at its projected location.
+                        ax.plot(
+                            sun_x,
+                            sun_y,
+                            marker=marker.sun,
+                            markersize=10,
+                            markeredgewidth=1.5,
+                            color="orange",
+                        )
+                    else:
+                        # If the Sun is outside of the FOV, then plot an arrow outside
+                        # of the border of the axes to point to its direction.
+                        r = np.sqrt(np.square(sun_x) + np.square(sun_y))
+                        ax.arrow(
+                            np.clip(sun_x, xmin, xmax),
+                            np.clip(sun_y, xmin, xmax),
+                            6 * sun_x / r,
+                            6 * sun_y / r,
+                            color="orange",
+                            linewidth=1.5,
+                            clip_on=False,
+                            head_width=8,
+                            head_length=8,
+                        )
+                    progress.update()
+        for ax, lon in zip(row, lons):
             ax.set_xlabel(f"{lon:latex}")
 
-        fig.supxlabel("Geocentric longitude of observer")
-        fig.supylabel("Geocentric latitude of observer")
-        fig.colorbar(image, ax=axs, label="Earthshine scale factor")
+        plt.colorbar(im, cax=fig.add_subplot(gs[:-1, -1])).set_label("Earthshine scale factor")
+
+        ax = fig.add_subplot(gs[-1, 1:], facecolor="none")
+        ax.text(
+            0.5,
+            0.5,
+            "Geocentric longitude of observer",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+        )
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        ax = fig.add_subplot(gs[:-1, 0], facecolor="none")
+        ax.text(
+            0.5,
+            0.5,
+            "Geocentric latitude of observer",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+            rotation=90,
+        )
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        fig.suptitle(f"Earthshine at {distance:latex} at solar noon")
 
     Parameters
     ----------
