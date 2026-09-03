@@ -301,7 +301,7 @@ class EarthshineBackground:
 
         distance = 5 * u.Rearth
         scale_factor = EarthshineBackgroundScaleFactor()
-        x = np.linspace(-45, 45, 1000)
+        x = np.linspace(-45, 45, 200)
         xmin = x.min()
         xmax = x.max()
         extent = (xmin, xmax, xmin, xmax)
