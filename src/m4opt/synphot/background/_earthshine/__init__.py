@@ -30,8 +30,6 @@ _HST_ALTITUDE = 540 * u.km
 _HST_ANGULAR_RADIUS_DEG = np.arcsin(R_earth / (R_earth + _HST_ALTITUDE)).to_value(u.deg)
 
 
-
-
 # The Earth is sampled on a Fibonacci lattice, which spaces points over a
 # sphere about as evenly as anything this simple can.
 _SURFACE_SAMPLES = 512
