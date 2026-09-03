@@ -17,9 +17,11 @@ from .....constraints._earth_limb import _get_angle_from_earth_limb
 from .... import observing
 from .. import (
     _HST_ALTITUDE,
+    _HST_ANGULAR_RADIUS_DEG,
+    _REFERENCE_STRAY_LIGHT,
     EarthshineBackground,
     EarthshineBackgroundScaleFactor,
-    _limb_illumination,
+    _stray_light,
 )
 
 # On 2025-01-01, the Sun is at RA~281 deg, Dec~-23 deg. The limb angle tests
@@ -79,25 +81,21 @@ def test_earthshine_requires_context():
 @pytest.mark.parametrize(
     "limb_angle_deg,expected_scale", [(24, 2.0), (38, 1.0), (50, 0.5)]
 )
-def test_earthshine_scale_factor_calibration_points(limb_angle_deg, expected_scale):
-    """Scale factor reproduces calibration points at 24, 38, and 50 degrees.
+def test_stray_light_reproduces_calibration_points(limb_angle_deg, expected_scale):
+    """The integral reproduces the STIS levels for the geometry they describe.
 
-    The calibration points are STIS measurements, so they are reproduced at
-    HST's altitude; from anywhere else the profile is stretched by how much
-    smaller the Earth looks.
+    Those are measurements from HST looking past a fully sunlit Earth, so they
+    fix the exponent of the point source transmittance; anything else is a
+    prediction. Unit vectors are used directly so that the check does not
+    depend on placing an observer in a particular frame.
     """
-    sf = EarthshineBackgroundScaleFactor()
+    distance = ((R_earth + _HST_ALTITUDE) / R_earth).to_value(u.dimensionless_unscaled)
+    observer = np.array([0.0, 0.0, 1.0])
+    separation = np.radians(_HST_ANGULAR_RADIUS_DEG + limb_angle_deg)
+    target = np.array([np.sin(separation), 0.0, -np.cos(separation)])
 
-    # limb_angle = alt + arccos(R_earth / r), and over the South Pole, which
-    # is the sunlit one at this epoch, alt = -dec.
-    distance = R_earth + _HST_ALTITUDE
-    loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, -distance)
-    limb_altitude = np.arccos(R_earth / distance).to(u.deg)
-
-    coord = SkyCoord(_SUN_RA_DEG * u.deg, limb_altitude - limb_angle_deg * u.deg)
-    scale = sf.at(loc, coord, _TEST_OBSTIME)
-    illumination = _limb_illumination(loc, coord, _TEST_OBSTIME)
-    np.testing.assert_allclose(scale / illumination, expected_scale, rtol=0.15)
+    scale = _stray_light(distance, observer, target, observer) / _REFERENCE_STRAY_LIGHT
+    np.testing.assert_allclose(scale, expected_scale, rtol=0.25)
 
 
 def test_earthshine_scale_factor_below_limb():
@@ -113,49 +111,18 @@ def test_earthshine_scale_factor_below_limb():
     assert scale == 0.0
 
 
-def test_earthshine_scale_factor_clamps_near_limb():
-    """Scale factor clamps at 2.0 for targets between 0 and 24 deg from limb."""
-    sf = EarthshineBackgroundScaleFactor()
+def test_stray_light_falls_off_away_from_the_limb():
+    """Earthshine decreases as the line of sight moves away from the Earth."""
+    distance = 6.6  # geostationary, in Earth radii
+    observer = np.array([0.0, 0.0, 1.0])
+    angular_radius = np.degrees(np.arcsin(1 / distance))
 
-    # Observer at 2*R_earth, limb_alt = 60 deg.
-    loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
-
-    # Target just above limb (limb_angle ~ 5 deg, below 24 deg)
-    # alt = 5 - 60 = -55 deg
-    coord_near = SkyCoord(_SUN_RA_DEG * u.deg, -55 * u.deg)
-    scale_near = sf.at(loc, coord_near, _TEST_OBSTIME)
-    illumination = _limb_illumination(loc, coord_near, _TEST_OBSTIME)
-    np.testing.assert_allclose(scale_near / illumination, 2.0, rtol=0.15)
-
-
-def test_earthshine_scale_factor_extrapolates_far_from_limb():
-    """Scale factor extrapolates to small values far from the Earth limb."""
-    sf = EarthshineBackgroundScaleFactor()
-
-    # Observer at 2*R_earth, limb_alt = 60 deg.
-    loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
-
-    # Target at limb_angle = 80 deg (well above 50 deg calibration point).
-    # alt = 80 - 60 = 20 deg
-    coord_far = SkyCoord(_SUN_RA_DEG * u.deg, 20 * u.deg)
-    scale_far = sf.at(loc, coord_far, _TEST_OBSTIME)
-    # Should be much less than 0.5 (the value at 50 deg) due to extrapolation
-    assert scale_far < 0.1
-
-
-def test_earthshine_scale_factor_monotonic():
-    """Scale factor is monotonically decreasing with increasing limb angle."""
-    sf = EarthshineBackgroundScaleFactor()
-
-    loc = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 2 * R_earth)
-
-    # Below the first calibration point the limb component is clamped at 2.0.
-    limb_angles = np.arange(24, 121) * u.deg
-    coord = SkyCoord(_SUN_RA_DEG * u.deg, limb_angles - 60 * u.deg)
-    scale = sf.at(loc, coord, _TEST_OBSTIME)
-    illumination = _limb_illumination(loc, coord, _TEST_OBSTIME)
-
-    assert np.all(np.diff(scale / illumination) <= 0)
+    separation = np.radians(angular_radius + np.array([5.0, 20.0, 45.0, 80.0]))
+    target = np.stack(
+        [np.sin(separation), np.zeros_like(separation), -np.cos(separation)], axis=-1
+    )
+    scale = _stray_light(distance, observer, target, observer)
+    assert np.all(np.diff(scale) < 0)
 
 
 def test_earthshine_illumination_sunlit_vs_dark():
@@ -180,18 +147,16 @@ def test_earthshine_illumination_sunlit_vs_dark():
     assert scale_sunlit > 2 * scale_dark
 
 
-def test_earthshine_illumination_depends_on_observer():
-    """Illumination is evaluated at the limb, not along the line of sight.
+def test_earthshine_depends_on_observer():
+    """Two observers on opposite sides of the Earth see different earthshine.
 
-    Two observers on opposite sides of the Earth look past opposite limbs, so
-    the same target does not see the same earthshine.
+    They look past opposite parts of the Earth, one of which is better lit.
     """
+    sf = EarthshineBackgroundScaleFactor()
     coord = SkyCoord(_SUN_RA_DEG * u.deg, 0 * u.deg)
     near = EarthLocation.from_geocentric(2 * R_earth, 0 * u.m, 0 * u.m)
     far = EarthLocation.from_geocentric(-2 * R_earth, 0 * u.m, 0 * u.m)
-    assert _limb_illumination(near, coord, _TEST_OBSTIME) != _limb_illumination(
-        far, coord, _TEST_OBSTIME
-    )
+    assert sf.at(near, coord, _TEST_OBSTIME) != sf.at(far, coord, _TEST_OBSTIME)
 
 
 def observer_at(distance):

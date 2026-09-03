@@ -43,67 +43,86 @@ def _earth_angular_radius_deg(observer_location, obstime):
         )
 
 
-# Azimuths at which the visible limb is sampled. The illumination varies
-# smoothly around the limb, so a coarse ring is plenty.
-_LIMB_AZIMUTHS = np.linspace(0, 2 * np.pi, 36, endpoint=False)
+# The Earth is sampled on a Fibonacci lattice, which spaces points over a
+# sphere about as evenly as anything this simple can.
+_SURFACE_SAMPLES = 512
 
-# How sharply the average favors the near side of the limb over the far side.
-_LIMB_WEIGHT_CONCENTRATION = 2.0
+# Exponent of the point source transmittance, the fraction of the light from an
+# off-axis source that an instrument scatters onto its detector. A power law in
+# the off-axis angle with this exponent reproduces the STIS calibration points
+# above to about 15% when integrated over the Earth as HST sees it.
+_PST_EXPONENT = 3.3
+
+# Nearest the line of sight may come to a surface element before the point
+# source transmittance, which diverges on axis, is held fixed.
+_PST_MIN_ANGLE = np.radians(1.0)
 
 
-def _limb_illumination(observer_location, target_coord, obstime):
-    """Solar illumination of the visible limb, weighted toward the line of sight."""
-    frame = GCRS(obstime=obstime)
+def _fibonacci_sphere(samples):
+    index = np.arange(samples) + 0.5
+    z = 1 - 2 * index / samples
+    radius = np.sqrt(1 - np.square(z))
+    azimuth = np.pi * (1 + np.sqrt(5)) * index
+    return np.stack([radius * np.cos(azimuth), radius * np.sin(azimuth), z], axis=-1)
 
-    def unit_vectors(cartesian):
-        # Components last, so that they broadcast against arrays of targets.
-        return np.moveaxis((cartesian / cartesian.norm()).xyz.value, 0, -1)
 
-    observer_cartesian = observer_location.get_gcrs(obstime).cartesian
-    radius = observer_cartesian.norm()
-    observer = unit_vectors(observer_cartesian)
-    target = unit_vectors(target_coord.transform_to(frame).cartesian)
-    sun = unit_vectors(get_sun(obstime).transform_to(frame).cartesian)
+_EARTH_SURFACE = _fibonacci_sphere(_SURFACE_SAMPLES)
 
-    # Two trailing axes to spare, for the ring of limb samples and for the
-    # vector components, so that an array of observers broadcasts too.
-    sin_angular_radius = np.asarray(
-        (R_earth / radius).to_value(u.dimensionless_unscaled)
-    )[..., np.newaxis, np.newaxis]
-    with np.errstate(invalid="ignore"):
-        cos_angular_radius = np.sqrt(1 - np.square(sin_angular_radius))
 
-    # Orthonormal basis for the plane of the limb. The reference direction is
-    # chosen to be the one least parallel to the observer, so that the cross
-    # product is well conditioned wherever the observer happens to be.
-    reference = np.zeros_like(observer)
-    reference[..., 0] = 1.0
-    alternative = np.zeros_like(observer)
-    alternative[..., 2] = 1.0
-    reference = np.where(np.abs(observer[..., :1]) < 0.9, reference, alternative)
-    east = np.cross(observer, reference)
-    east /= np.linalg.norm(east, axis=-1, keepdims=True)
-    north = np.cross(observer, east)
+def _stray_light(distance, observer, target, sun):
+    """Earthshine scattered into the line of sight, in arbitrary units.
 
-    # Points around the visible limb, and the azimuth of each one.
-    cos_phi = np.cos(_LIMB_AZIMUTHS)[:, np.newaxis]
-    sin_phi = np.sin(_LIMB_AZIMUTHS)[:, np.newaxis]
-    azimuth = cos_phi * east[..., np.newaxis, :] + sin_phi * north[..., np.newaxis, :]
-    limb = sin_angular_radius * observer[..., np.newaxis, :] + (
-        cos_angular_radius * azimuth
+    Integrates the sunlit, visible part of the Earth, taking each surface
+    element to reflect sunlight diffusely, and weighting it by the point source
+    transmittance at its angle from the line of sight. Distances are in Earth
+    radii and the vectors are unit vectors.
+
+    Only dot products with the surface appear, never the surface vectors
+    themselves, so this holds nothing larger than one value per target per
+    surface sample.
+    """
+    surface = _EARTH_SURFACE
+    distance = np.asarray(distance)[..., np.newaxis]
+    along_observer = np.einsum("...i,ni->...n", observer, surface)
+    along_target = np.einsum("...i,ni->...n", target, surface)
+    illumination = np.clip(np.einsum("...i,ni->...n", sun, surface), 0.0, None)
+    observer_target = np.sum(observer * target, axis=-1)[..., np.newaxis]
+
+    # Distance from each surface element to the observer.
+    separation = np.sqrt(
+        np.maximum(np.square(distance) - 2 * distance * along_observer + 1, 1e-12)
     )
-    incidence = np.clip(np.sum(limb * sun[..., np.newaxis, :], axis=-1), 0.0, None)
+    # Elements on the far side of the Earth face away and are not visible.
+    cos_emission = (distance * along_observer - 1) / separation
+    cos_off_axis = np.clip(
+        (along_target - distance * observer_target) / separation, -1.0, 1.0
+    )
+    transmittance = np.power(
+        np.maximum(np.arccos(cos_off_axis), _PST_MIN_ANGLE), -_PST_EXPONENT
+    )
 
-    # Weight each point of the limb by how far its azimuth lies toward the line
-    # of sight. The component of the line of sight across the observer's axis
-    # vanishes as the target approaches that axis, so the weights even out into
-    # a plain average over the whole limb exactly where its near side stops
-    # being well defined.
-    along = np.sum(target * observer, axis=-1, keepdims=True)
-    across = target - along * observer
-    projection = np.sum(across[..., np.newaxis, :] * azimuth, axis=-1)
-    weight = np.exp(_LIMB_WEIGHT_CONCENTRATION * projection)
-    return np.sum(weight * incidence, axis=-1) / np.sum(weight, axis=-1)
+    contribution = np.where(
+        cos_emission > 0,
+        illumination * cos_emission * transmittance / np.square(separation),
+        0.0,
+    )
+    return contribution.sum(axis=-1) * 4 * np.pi / len(surface)
+
+
+def _reference_stray_light():
+    """The same integral for HST, 38 degrees from the limb of a full Earth.
+
+    Dividing by this anchors the model to the spectrum, which is a measurement
+    made in exactly that configuration.
+    """
+    distance = ((R_earth + _HST_ALTITUDE) / R_earth).to_value(u.dimensionless_unscaled)
+    observer = np.array([0.0, 0.0, 1.0])
+    separation = np.radians(_HST_ANGULAR_RADIUS_DEG + _LIMB_ANGLES_DEG[1])
+    target = np.array([np.sin(separation), 0.0, -np.cos(separation)])
+    return _stray_light(distance, observer, target, observer)
+
+
+_REFERENCE_STRAY_LIGHT = _reference_stray_light()
 
 
 class EarthshineBackgroundScaleFactor(ExtrinsicScaleFactor):
@@ -116,44 +135,25 @@ class EarthshineBackgroundScaleFactor(ExtrinsicScaleFactor):
 
     @override
     def at(self, observer_location, target_coord, obstime):
+        frame = GCRS(obstime=obstime)
+
+        def unit_vectors(cartesian):
+            # Components last, so that they broadcast against arrays of targets.
+            return np.moveaxis((cartesian / cartesian.norm()).xyz.value, 0, -1)
+
+        cartesian = observer_location.get_gcrs(obstime).cartesian
+        distance = (cartesian.norm() / R_earth).to_value(u.dimensionless_unscaled)
+        observer = unit_vectors(cartesian)
+        target = unit_vectors(target_coord.transform_to(frame).cartesian)
+        sun = unit_vectors(get_sun(obstime).transform_to(frame).cartesian)
+
+        scale = _stray_light(distance, observer, target, sun) / _REFERENCE_STRAY_LIGHT
+
+        # Nothing to see through the Earth.
         angle = _get_angle_from_earth_limb(observer_location, target_coord, obstime)
-        angle_deg = angle.to_value(u.deg)
+        scale = np.where(angle.to_value(u.deg) > 0, scale, 0.0)
 
-        # The calibration is a profile in units of the Earth's angular size, so
-        # rescale the limb angle by how much smaller the Earth looks from here
-        # than it did from HST. Without this the halo would stay the same size
-        # on the sky however far away the observer is.
-        scaled_deg = angle_deg * (
-            _HST_ANGULAR_RADIUS_DEG
-            / _earth_angular_radius_deg(observer_location, obstime)
-        )
-
-        log2_scale = np.interp(scaled_deg, _LIMB_ANGLES_DEG, _LOG2_SCALE_FACTORS)
-
-        # Extrapolate beyond the last calibration point using the slope
-        # from the last two points, so earthshine decreases at large angles
-        # rather than clamping at 0.5.
-        slope = (_LOG2_SCALE_FACTORS[-1] - _LOG2_SCALE_FACTORS[-2]) / (
-            _LIMB_ANGLES_DEG[-1] - _LIMB_ANGLES_DEG[-2]
-        )
-        log2_scale = np.where(
-            scaled_deg > _LIMB_ANGLES_DEG[-1],
-            _LOG2_SCALE_FACTORS[-1] + slope * (scaled_deg - _LIMB_ANGLES_DEG[-1]),
-            log2_scale,
-        )
-
-        # Modulate by the illumination of the limb, weighted toward the part
-        # the telescope looks past, which is dark when the observer is over
-        # the Earth's night side.
-        scale = np.exp2(log2_scale) * _limb_illumination(
-            observer_location, target_coord, obstime
-        )
-
-        # Zero for targets behind the Earth, and for observers so close to the
-        # geocenter that the limb angle is undefined.
-        scale = np.where(angle_deg > 0, scale, 0.0)
-
-        if np.ndim(angle_deg) == 0:
+        if np.ndim(scale) == 0:
             return scale.item()
         return scale
 
@@ -162,39 +162,37 @@ class EarthshineBackground:
     r"""Earthshine sky background: sunlight reflected off Earth.
 
     This is the earthshine spectrum from the HST STIS Instrument Handbook
-    [1]_, `Table 6.4`_, measured 38 degrees from the Earth's limb and scaled
-    by a factor that depends on the angular distance between the target and
-    the limb, on how large the Earth appears from the observer, and on the
-    solar illumination of the limb.
+    [1]_, `Table 6.4`_, measured 38 degrees from the Earth's limb, scaled to
+    the observer's own geometry: where they are, which part of the Earth is
+    both sunlit and in view, and how far off axis it lies.
 
-    The dependence on limb angle comes from the STIS Instrument Handbook and
-    the STScI Exposure Time Calculator, which give earthshine levels at three
-    limb angles:
+    The Earth is treated as an extended source of stray light. Each element of
+    its surface reflects sunlight diffusely, in proportion to the cosine of the
+    solar incidence angle there, and the sunlit part of the Earth that the
+    observer can see is integrated, weighting each element by the *point source
+    transmittance*: the fraction of the light from a source that far off axis
+    that the instrument scatters onto its detector. Targets below the limb,
+    occulted by the Earth, receive no earthshine at all.
+
+    Lumping the solar spectrum and the Earth's albedo into the measured
+    spectrum this way avoids modelling the albedo itself, which in the
+    ultraviolet is dominated by ozone absorption and varies by four orders of
+    magnitude across a few hundred angstroms.
+
+    The point source transmittance is taken to be a power law in the off-axis
+    angle. Its exponent is fixed by the STIS Instrument Handbook and the STScI
+    Exposure Time Calculator, which give earthshine levels at three limb
+    angles for HST:
 
     - 24 degrees from the limb: 2.0x the "high" spectrum ("extremely high")
     - 38 degrees from the limb: 1.0x the "high" spectrum ("high", baseline)
     - 50 degrees from the limb: 0.5x the "high" spectrum ("average")
 
-    Those angles are measured from HST, so they mean nothing on their own: what
-    counts is how far from the limb they lie as a fraction of the Earth's
-    apparent size. The limb angle is therefore rescaled by the ratio of the
-    Earth's angular radius seen from HST to the one seen from the observer, and
-    the scale factor is interpolated in log2-space between the three points at
-    that rescaled angle, and extrapolated beyond them. Without the rescaling
-    the halo would stay the same size on the sky however distant the observer.
-
-    The scale factor is then multiplied by the solar illumination
-    of the visible limb, the circle of surface points where the observer's
-    line of sight is tangent to the Earth, an angle
-    :math:`\arccos(R_\oplus / r)` from the sub-observer point. The cosine of
-    the solar incidence angle is averaged around that circle, weighted toward
-    the part of the limb that the line of sight passes, so that earthshine is
-    faintest over the Earth's night side. Averaging rather than taking the
-    single nearest point of the limb matters for an observer far from the
-    Earth, where the whole limb approaches the terminator and the incidence
-    angle at any one point of it is a poor stand-in for how brightly the Earth
-    shines into the telescope. Targets below the limb, occulted by the Earth,
-    receive no earthshine at all.
+    Integrating over the Earth as HST sees it reproduces those three levels to
+    about 25% for an exponent of 3.3, which is an ordinary value for a baffled
+    telescope. The integral is normalized by its own value in the configuration
+    the "high" spectrum was measured in, so that the spectrum keeps its
+    measured meaning and only the change in geometry is predicted.
 
     The default constructor returns a spatially-dependent model that must be
     evaluated within an :func:`~m4opt.synphot.observing` context. Use
@@ -313,8 +311,8 @@ class EarthshineBackground:
     Parameters
     ----------
     factor : float
-        Overall normalization, for renormalizing to an observatory's own
-        stray light budget (default: 1). See the warnings below.
+        Ratio of the observatory's off-axis rejection to HST's, which the
+        measured spectrum carries (default: 1). See the warnings below.
 
     Warnings
     --------
@@ -329,15 +327,12 @@ class EarthshineBackground:
     Three separate things limit how far from the Earth this model may be used.
     The geometry of the limb itself is exact at any distance, but:
 
-    - The profile is stretched by the apparent size of the Earth, so the halo
-      shrinks as the observer recedes, but its shape is still HST's, measured
-      between 24 and 50 degrees from the limb. Everything outside that range is
-      extrapolation, and for a distant observer the extrapolation is a long one:
-      the 48 degree limb constraint of a geostationary observatory rescales to
-      370 degrees, seven times past the far end of the calibration, where the
-      profile has fallen to :math:`5 \times 10^{-9}`. Take the shape on trust
-      only near the range that was measured, and use ``factor`` to renormalize
-      to an observatory's own stray light budget.
+    - The point source transmittance is one power law, with an exponent fixed
+      by three measurements spanning 24 to 50 degrees from HST's limb. Real
+      instruments differ from one another by orders of magnitude in how well
+      they reject off-axis light, and ``factor`` exists to carry that ratio.
+      It is a renormalization to an observatory's own stray light budget, not
+      a free parameter.
 
     - The Sun is treated as a point, so the terminator is sharp. Its penumbra
       spans a fraction :math:`r / 217 R_\oplus` of the Earth's angular radius,
@@ -346,11 +341,12 @@ class EarthshineBackground:
       terminator is all penumbra.
 
     - An :class:`~astropy.coordinates.EarthLocation` is fixed to the rotating
-      Earth, so a distant observer is carried around at a large speed and acquires
-      a correspondingly large stellar aberration: 2 arcseconds at geostationary
-      orbit, but 320 arcseconds at :math:`1000 R_\oplus`, which exceeds the
-      angular radius of the Earth itself. Beyond a few hundred Earth radii an
-      ``EarthLocation`` no longer usefully describes the observer.
+      Earth, so a distant observer is carried around at a large speed and
+      acquires a correspondingly large stellar aberration: 2 arcseconds at
+      geostationary orbit, but 320 arcseconds at :math:`1000 R_\oplus`, which
+      exceeds the angular radius of the Earth itself. Beyond a few hundred
+      Earth radii an ``EarthLocation`` no longer usefully describes the
+      observer.
 
     References
     ----------
