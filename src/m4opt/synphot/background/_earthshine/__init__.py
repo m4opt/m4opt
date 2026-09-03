@@ -39,9 +39,14 @@ _SURFACE_SAMPLES = 512
 # above to about 15% when integrated over the Earth as HST sees it.
 _PST_EXPONENT = 3.3
 
-# Nearest the line of sight may come to a surface element before the point
-# source transmittance, which diverges on axis, is held fixed.
-_PST_MIN_ANGLE = np.radians(1.0)
+# The point source transmittance diverges on axis, and a power law is only
+# evidence for it over the angles the calibration covers. In each of the three
+# configurations above, the nearest part of the Earth sits exactly at the limb
+# angle, so the smallest angle any of them constrain is the first of them; the
+# transmittance is held fixed inside that. Without this a line of sight grazing
+# the limb would pick up an arbitrarily large contribution from the sliver of
+# surface it passes closest to.
+_PST_MIN_ANGLE = np.radians(_LIMB_ANGLES_DEG[0])
 
 
 def _fibonacci_sphere(samples):

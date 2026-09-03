@@ -245,3 +245,23 @@ def test_earthshine_broadcasts_over_observers():
         np.testing.assert_allclose(
             sf.at(one, coord[i], _TEST_OBSTIME), scale[i], rtol=1e-12
         )
+
+
+def test_stray_light_bounded_at_the_limb():
+    """The scale factor stays bounded for a line of sight grazing the limb.
+
+    The point source transmittance diverges on axis, so without holding it
+    fixed inside the calibrated range a line of sight that grazes the limb
+    would pick up an unbounded contribution from the surface it passes closest
+    to.
+    """
+    distance = 5.0
+    observer = np.array([0.0, 0.0, 1.0])
+    angular_radius = np.degrees(np.arcsin(1 / distance))
+
+    separation = np.radians(angular_radius + np.geomspace(1e-3, 10, 40))
+    target = np.stack(
+        [np.sin(separation), np.zeros_like(separation), -np.cos(separation)], axis=-1
+    )
+    scale = _stray_light(distance, observer, target, observer) / _REFERENCE_STRAY_LIGHT
+    assert np.all(scale < 10)
