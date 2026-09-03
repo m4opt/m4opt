@@ -30,15 +30,6 @@ _HST_ALTITUDE = 540 * u.km
 _HST_ANGULAR_RADIUS_DEG = np.arcsin(R_earth / (R_earth + _HST_ALTITUDE)).to_value(u.deg)
 
 
-def _earth_angular_radius_deg(observer_location, obstime):
-    """Angular radius of the Earth as the observer sees it, in degrees."""
-    radius = observer_location.get_gcrs(obstime).cartesian.norm()
-    with np.errstate(invalid="ignore"):
-        return np.degrees(
-            np.arcsin(
-                np.clip((R_earth / radius).to_value(u.dimensionless_unscaled), 0, 1)
-            )
-        )
 
 
 # The Earth is sampled on a Fibonacci lattice, which spaces points over a
