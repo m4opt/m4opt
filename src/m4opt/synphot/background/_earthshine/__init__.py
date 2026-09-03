@@ -27,9 +27,7 @@ _LOG2_SCALE_FACTORS = np.array([1.0, 0.0, -1.0])  # log2([2.0, 1.0, 0.5])
 # Altitude at which those calibration points were measured. The angles above
 # are meaningful only relative to how large the Earth looked from there.
 _HST_ALTITUDE = 540 * u.km
-_HST_ANGULAR_RADIUS_DEG = np.degrees(
-    np.arcsin((R_earth / (R_earth + _HST_ALTITUDE)).to_value(u.dimensionless_unscaled))
-)
+_HST_ANGULAR_RADIUS_DEG = np.arcsin(R_earth / (R_earth + _HST_ALTITUDE)).to_value(u.deg)
 
 
 def _earth_angular_radius_deg(observer_location, obstime):
