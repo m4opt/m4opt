@@ -22,7 +22,6 @@ from . import data
 # the STScI ETC documentation.
 # See https://etc.stsci.edu/etcstatic/users_guide/1_ref_9_background.html
 _LIMB_ANGLES_DEG = np.array([24.0, 38.0, 50.0])
-_LOG2_SCALE_FACTORS = np.array([1.0, 0.0, -1.0])  # log2([2.0, 1.0, 0.5])
 
 # Altitude at which those calibration points were measured. The angles above
 # are meaningful only relative to how large the Earth looked from there.
