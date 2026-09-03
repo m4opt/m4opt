@@ -477,8 +477,8 @@ class EarthshineBackground:
     >>> from astropy import units as u
     >>> from m4opt.synphot.background import EarthshineBackground
     >>> background = EarthshineBackground.high()
-    >>> float(background(5000 * u.angstrom).value) > 0
-    True
+    >>> float(background(5000 * u.angstrom).value)
+    6.619863286318664e-07
 
     """
 
