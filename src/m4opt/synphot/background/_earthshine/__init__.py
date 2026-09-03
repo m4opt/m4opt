@@ -316,6 +316,8 @@ class EarthshineBackground:
     Three separate things limit how far from the Earth this model may be used.
     The geometry of the limb itself is exact at any distance, but:
 
+    - The oblateness of the Earth is neglected.
+
     - The point source transmittance is one power law, with an exponent fixed
       by three measurements spanning 24 to 50 degrees from HST's limb. Real
       instruments differ from one another by orders of magnitude in how well
