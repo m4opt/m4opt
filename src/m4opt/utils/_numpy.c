@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
@@ -99,6 +100,52 @@ static npy_intp count_intersect1d(
     return result;
 }
 
+static npy_intp intersect1d(
+    npy_intp **out,
+    const npy_intp *a,
+    const npy_intp *b,
+    size_t n_a,
+    size_t n_b)
+{
+    size_t n_out = n_a < n_b ? n_a : n_b;
+    if (n_out == 0) {
+        *out = NULL;
+        return 0;
+    }
+
+    npy_intp *result = malloc(n_out * sizeof(npy_intp));
+    if (!result) return -1;
+
+    const npy_intp *first1 = a, *last1 = a + n_a;
+    const npy_intp *first2 = b, *last2 = b + n_b;
+    npy_intp count = 0;
+
+    while (first1 != last1 && first2 != last2) {
+        first1 = lower_bound_onesided(first1, last1, *first2);
+        if (first1 == last1)
+            break;
+
+        first2 = lower_bound_onesided(first2, last2, *first1);
+        if (first2 == last2)
+            break;
+
+        if (*first1 == *first2) {
+            result[count++] = *first1;
+            ++first1;
+            ++first2;
+        }
+    }
+
+    if (count == 0) {
+        free(result);
+        *out = NULL;
+        return 0;
+    } else {
+        *out = realloc(result, count * sizeof(npy_intp));
+        return count;
+    }
+}
+
 static PyObject *py_count_intersect1d(PyObject *NPY_UNUSED(self), PyObject *const *args, Py_ssize_t nargs) {
     PyObject *a = NULL, *b = NULL, *result = NULL;
     if (nargs != 2) {
@@ -113,6 +160,57 @@ static PyObject *py_count_intersect1d(PyObject *NPY_UNUSED(self), PyObject *cons
         PyArray_SIZE((PyArrayObject *) a),
         PyArray_SIZE((PyArrayObject *) b)
     ));
+done:
+    Py_XDECREF(a);
+    Py_XDECREF(b);
+    return result;
+}
+
+static void intersect1d_destroy_result(PyObject *capsule) {
+    free(PyCapsule_GetPointer(capsule, NULL));
+}
+
+static PyObject *py_intersect1d(PyObject *NPY_UNUSED(self), PyObject *const *args, Py_ssize_t nargs) {
+    PyObject *a = NULL, *b = NULL, *result = NULL;
+    if (nargs != 2) {
+        PyErr_Format(PyExc_TypeError, "intersect1d() takes exactly two arguments (%zd given)", (ssize_t) nargs);
+        goto done;
+    }
+    if (!(a = PyArray_FROMANY(args[0], NPY_INTP, 1, 1, NPY_ARRAY_CARRAY_RO))) goto done;
+    if (!(b = PyArray_FROMANY(args[1], NPY_INTP, 1, 1, NPY_ARRAY_CARRAY_RO))) goto done;
+    npy_intp *out = NULL;
+    npy_intp count = intersect1d(
+        &out,
+        (const npy_intp *) PyArray_DATA((PyArrayObject *) a),
+        (const npy_intp *) PyArray_DATA((PyArrayObject *) b),
+        PyArray_SIZE((PyArrayObject *) a),
+        PyArray_SIZE((PyArrayObject *) b)
+    );
+    if (count < 0)
+    {
+        PyErr_NoMemory();
+        goto done;
+    }
+    result = PyArray_SimpleNewFromData(1, &count, NPY_INTP, out);
+    if (!result)
+    {
+        if (out) free(out);
+        goto done;
+    }
+    if (out) {
+        PyObject *capsule = PyCapsule_New(out, NULL, intersect1d_destroy_result);
+        if (!capsule) {
+            Py_DECREF(result);
+            free(out);
+            result = NULL;
+            goto done;
+        }
+        if (PyArray_SetBaseObject((PyArrayObject *) result, capsule)) {
+            Py_DECREF(result);
+            result = NULL;
+            goto done;
+        }
+    }
 done:
     Py_XDECREF(a);
     Py_XDECREF(b);
@@ -222,6 +320,7 @@ free_arrays:
 static PyMethodDef methods[] = {
     {"count_intersect1d", (PyCFunction)py_count_intersect1d, METH_FASTCALL},
     {"count_intersect1d_combinations", (PyCFunction)py_count_intersect1d_combinations, METH_O},
+    {"intersect1d", (PyCFunction)py_intersect1d, METH_FASTCALL},
     {/* Sentinel */}
 };
 

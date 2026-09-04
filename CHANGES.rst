@@ -36,6 +36,8 @@ Changes
 - Fix the ULTRASAT readout noise, which was set to the noise budget's
   variance (6 e-/pix) rather than its RMS.
 
+- Add ``intersect1d``, an accelerated version of ``numpy.intersect1d``.
+
 2.12.0 (2026-08-28)
 ===================
 
