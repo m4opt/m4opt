@@ -9,6 +9,7 @@ from ._numpy import (
 from ._numpy import (
     count_intersect1d_combinations as _count_intersect1d_combinations,
 )
+from ._numpy import intersect1d as _intersect1d
 
 __all__ = (
     "atmost_1d",
@@ -17,6 +18,7 @@ __all__ = (
     "count_intersect1d",
     "count_intersect1d_combinations",
     "full_indices",
+    "intersect1d",
 )
 
 
@@ -123,6 +125,10 @@ def count_intersect1d(a: npt.ArrayLike, b: npt.ArrayLike) -> int:
     The elements of arrays `a` and `b` must be sorted and unique. If they are
     not, then the behavior of this function is undefined.
 
+    See Also
+    --------
+    numpy.intersect1d, intersect1d, count_intersect1d_combinations
+
     Examples
     --------
     >>> from m4opt.utils.numpy import count_intersect1d
@@ -158,6 +164,10 @@ def count_intersect1d_combinations(
         The number of elements in common for each pairwise combination, in the
         order produced by :func:`itertools.combinations`.
 
+    See Also
+    --------
+    numpy.intersect1d, intersect1d, count_intersect1d
+
     Notes
     -----
     This calculation cannot be effectively parallelized using traditional
@@ -166,6 +176,43 @@ def count_intersect1d_combinations(
     with the number of input arrays N.
     """
     return _count_intersect1d_combinations(arrays)
+
+
+def intersect1d(
+    a: npt.ArrayLike, b: npt.ArrayLike
+) -> np.ndarray[tuple[int], np.dtype[np.intp]]:
+    """Calculate the cardinality of the intersection of `a` and `b`.
+
+    This is equivalent to, but much faster than, ``np.intersect1d(a, b)``.
+
+    Parameters
+    ----------
+    a
+        A sorted 1D array of type :obj:`numpy.intp`.
+    b
+        A sorted 1D array of type :obj:`numpy.intp`.
+
+    Returns
+    -------
+    :
+        An array of elements that are in both `a` and `b`.
+
+    Warnings
+    --------
+    The elements of arrays `a` and `b` must be sorted and unique. If they are
+    not, then the behavior of this function is undefined.
+
+    See Also
+    --------
+    numpy.intersect1d, count_intersect1d, count_intersect1d_combinations
+
+    Examples
+    --------
+    >>> from m4opt.utils.numpy import count_intersect1d
+    >>> intersect1d([0, 1], [1, 2, 3])
+    array([1])
+    """
+    return _intersect1d(a, b)
 
 
 def full_indices(n):

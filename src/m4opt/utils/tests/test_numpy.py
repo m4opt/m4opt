@@ -7,7 +7,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra import numpy as xp
 
-from ..numpy import count_intersect1d, count_intersect1d_combinations
+from ..numpy import count_intersect1d, count_intersect1d_combinations, intersect1d
 
 sets1d = xp.arrays(
     dtype=np.intp,
@@ -16,8 +16,21 @@ sets1d = xp.arrays(
 ).map(np.sort)
 
 
+def intersect1d_slow(a, b):
+    return np.intersect1d(a, b)
+
+
 def count_intersect1d_slow(a, b):
-    return np.intersect1d(a, b).size
+    return intersect1d_slow(a, b).size
+
+
+def count_intersect1d_combinations_slow(a):
+    return np.asarray([count_intersect1d(*args) for args in combinations(a, 2)])
+
+
+@given(a=sets1d, b=sets1d)
+def test_intersect1d(a, b):
+    np.testing.assert_array_equal(intersect1d(a, b), intersect1d_slow(a, b))
 
 
 @given(a=sets1d, b=sets1d)
@@ -35,13 +48,14 @@ def setup():
     return (setup_set1d(), setup_set1d()), {}
 
 
-@pytest.mark.parametrize("implementation", (count_intersect1d, count_intersect1d_slow))
-def test_benchmark_count_intersect1d(implementation, benchmark):
+@pytest.mark.parametrize("implementation", (intersect1d, intersect1d_slow))
+def test_benchmark_intersect1d(implementation, benchmark):
     benchmark.pedantic(implementation, setup=setup, rounds=100, warmup_rounds=1)
 
 
-def count_intersect1d_combinations_slow(a):
-    return np.asarray([count_intersect1d(*args) for args in combinations(a, 2)])
+@pytest.mark.parametrize("implementation", (count_intersect1d, count_intersect1d_slow))
+def test_benchmark_count_intersect1d(implementation, benchmark):
+    benchmark.pedantic(implementation, setup=setup, rounds=100, warmup_rounds=1)
 
 
 @given(arrays=st.lists(sets1d, min_size=2))
