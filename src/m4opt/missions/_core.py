@@ -2,6 +2,7 @@ from collections.abc import Hashable
 from dataclasses import dataclass
 
 from astropy.coordinates import SkyCoord
+from numpy import typing as npt
 from regions import Region, Regions
 
 from ..constraints import Constraint
@@ -55,3 +56,12 @@ class Mission:
 
     detector: Detector | None = None
     """Detector model."""
+
+    field_ids: npt.NDArray | dict[Hashable, npt.NDArray] | None = None
+    """Identifiers the mission gives its reference pointings, if it names them.
+
+    Parallel to :attr:`skygrid`, and a dictionary with the same keys when
+    :attr:`skygrid` is one. These are the mission's own identifiers, which need
+    not be contiguous or ordered: ZTF's run from 1 to 1897 with gaps across
+    1778 fields.
+    """

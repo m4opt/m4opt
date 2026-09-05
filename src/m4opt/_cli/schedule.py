@@ -283,6 +283,11 @@ def schedule(
 
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
+        # Row of each field in the mission sky grid, carried through filtering.
+        skygrid_indices = np.arange(len(target_coords))
+        field_ids = mission.field_ids
+        if isinstance(field_ids, dict):
+            field_ids = field_ids.get(skygrid)
         exptime_min_s = exptime_min.to_value(u.s)
         cadence_s = cadence.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
@@ -313,6 +318,7 @@ def schedule(
         good = np.asarray([len(intervals) > 0 for intervals in observable_intervals])
         observable_intervals = observable_intervals[good]
         target_coords = target_coords[good]
+        skygrid_indices = skygrid_indices[good]
 
     with status("calculating footprints"):
         if isinstance(mission.observer_location, EarthFixedObserverLocation):
@@ -336,6 +342,7 @@ def schedule(
             rolls = rolls[good]
             footprints = footprints[good]
             observable_intervals = observable_intervals[good]
+            skygrid_indices = skygrid_indices[good]
         else:
             n_fields = len(target_coords)
 
@@ -668,6 +675,23 @@ def schedule(
                     "roll": rolls[
                         np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
                     ].ravel(),
+                    "field_index": skygrid_indices[
+                        np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
+                    ].ravel(),
+                    **(
+                        {}
+                        if field_ids is None
+                        else {
+                            "field_id": np.asarray(field_ids)[
+                                skygrid_indices[
+                                    np.tile(
+                                        np.flatnonzero(field_values)[:, np.newaxis],
+                                        visits,
+                                    )
+                                ].ravel()
+                            ]
+                        }
+                    ),
                 },
                 descriptions={
                     "action": "Action for the spacecraft",
@@ -675,6 +699,8 @@ def schedule(
                     "duration": "Duration of segment",
                     "target_coord": "Coordinates of the center of the FOV",
                     "roll": "Position angle of the FOV",
+                    "field_index": "Row of the field in the mission sky grid",
+                    "field_id": "Identifier the mission gives the field",
                 },
                 meta={
                     "command": shlex.join(sys.argv),
@@ -731,6 +757,8 @@ def schedule(
                             table["roll"][:-1],
                             table["roll"][1:],
                         ),
+                        # A slew belongs to no field.
+                        "field_index": np.full(nrows, -1),
                     }
                 )
                 table = vstack(

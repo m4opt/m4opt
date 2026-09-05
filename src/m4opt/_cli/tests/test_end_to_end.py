@@ -6,6 +6,7 @@ from astropy import units as u
 from astropy.table import QTable, unique
 from click import UsageError
 
+from ... import missions
 from .. import app
 from . import data
 
@@ -107,6 +108,25 @@ def test_end_to_end_no_solution(run_scheduler):
 def test_end_to_end_solution(run_scheduler):
     table = run_scheduler("--timelimit=1min", "--exptime-min=300s")
     assert len(table) >= 3
+
+
+def test_field_index_identifies_the_sky_grid_row(run_scheduler):
+    """Each observation names the sky grid row it points at."""
+    table = run_scheduler("--timelimit=1min", "--exptime-min=300s")
+    observations = table[table["action"] == "observe"]
+    assert len(observations) > 0
+
+    mission = getattr(missions, table.meta["args"]["mission"])
+    grid = mission.skygrid
+    if isinstance(grid, dict):
+        grid = grid[table.meta["args"]["skygrid"]]
+    indices = np.asarray(observations["field_index"])
+    assert np.all(indices >= 0)
+    separation = grid[indices].separation(observations["target_coord"])
+    np.testing.assert_allclose(separation.deg, 0, atol=1e-9)
+
+    # A slew belongs to no field.
+    assert np.all(np.asarray(table[table["action"] == "slew"]["field_index"]) == -1)
 
 
 def test_fixed_exptime_with_appmag_dist(fits_path, ecsv_path, run_cli, mission_args):
