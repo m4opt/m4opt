@@ -64,10 +64,12 @@ def _make_fov():
 
 
 def _read_skygrid():
+    # The columns are whitespace-aligned but not of a fixed width: a
+    # fixed-width reader locks the boundaries to the first row and truncates
+    # the right ascension of every row after it.
     table = Table.read(
         resources.files(data) / "ZTF_Fields.txt",
-        format="ascii.fixed_width_no_header",
-        delimiter=" ",
+        format="ascii.no_header",
         comment="%",
     )
     return SkyCoord(table["col2"], table["col3"], unit=u.deg)
