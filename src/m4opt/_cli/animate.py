@@ -32,6 +32,7 @@ from ..synphot import observing
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
 from .core import app
+from .schedule import _exptime_over_bandpasses
 
 
 @app.command()
@@ -91,6 +92,11 @@ def animate(
         visits = table.meta["args"]["visits"]
         absmag_mean = table.meta["args"]["absmag_mean"]
         bandpass = table.meta["args"]["bandpass"]
+        # Schedules written before the bandpass became one entry per visit
+        # record a single name.
+        if isinstance(bandpass, str) or bandpass is None:
+            bandpass = [bandpass]
+        bandpass = list(dict.fromkeys(bandpass))
         snr = table.meta["args"]["snr"]
         exptime_min = table.meta["args"]["exptime_min"]
 
@@ -214,14 +220,15 @@ def animate(
                     target_coord=hpx.healpix_to_skycoord(np.arange(hpx.npix)),
                     obstime=time_steps[0],
                 ):
-                    exptime = mission.detector.get_exptime(
+                    exptime = _exptime_over_bandpasses(
+                        mission,
                         snr,
                         synphot.SourceSpectrum(
                             synphot.ConstFlux1D(absmag_mean * u.ABmag + distmod)
                         )
                         * DustExtinction(),
                         bandpass,
-                    ).to_value(u.s)
+                    )
                 ims = [
                     ax.imshow_hpx(
                         exptime,
