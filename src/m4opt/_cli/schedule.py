@@ -100,6 +100,13 @@ def schedule(
             help="Name of sky grid to use, if the mission supports multiple sky grids.",
         ),
     ] = None,
+    event_time: Annotated[
+        Time | None,
+        typer.Option(
+            help="Time of the event, which --delay and --deadline are measured "
+            "from. Defaults to the gps_time in the sky map header.",
+        ),
+    ] = None,
     delay: Annotated[
         u.Quantity,
         typer.Option(
@@ -246,9 +253,16 @@ def schedule(
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
         skymap_moc = read_sky_map(skymap, moc=True)
         skymap_flat = rasterize(skymap_moc, hpx.level)
-        event_time = Time(
-            Time(skymap_moc.meta["gps_time"], format="gps").utc, format="iso"
-        )
+        if event_time is None:
+            # The sky map carries the trigger time unless one was given.
+            try:
+                gps_time = skymap_moc.meta["gps_time"]
+            except KeyError:
+                raise UsageError(
+                    f'The sky map "{skymap.name}" has no gps_time in its header. '
+                    "Pass --event-time, or write the sky map with a gps_time."
+                ) from None
+            event_time = Time(Time(gps_time, format="gps").utc, format="iso")
 
     with status("propagating orbit"):
         obstimes = event_time + np.arange(
@@ -677,6 +691,7 @@ def schedule(
                         "max_fields": max_fields,
                         "time_step": time_step,
                         "skymap": skymap.name,
+                        "event_time": event_time.isot,
                         "visits": visits,
                         "exptime_min": exptime_min,
                         "exptime_max": exptime_max,
