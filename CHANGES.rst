@@ -5,6 +5,9 @@ Changes
 2.12.1 (unreleased)
 ===================
 
+- Fix ``TypeError`` when a scalar appears on the left of an arithmetic
+  operator applied to an array of decision variables, as in ``5 - x``.
+
 - Use ULTRASAT's tabulated throughput curve rather than a Gaussian
   approximation, which had a red leak some four orders of magnitude too
   large and nearly doubled the predicted zodiacal background.
