@@ -5,6 +5,10 @@ Changes
 2.12.1 (unreleased)
 ===================
 
+- Fix a crash in variable exposure time mode for ground-based missions, where
+  the observer location was passed as an array over all observing times rather
+  than at the single time for which the exposure time is evaluated.
+
 - Use ULTRASAT's tabulated throughput curve rather than a Gaussian
   approximation, which had a red leak some four orders of magnitude too
   large and nearly doubled the predicted zodiacal background.
