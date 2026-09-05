@@ -1,5 +1,6 @@
 import shlex
 import sys
+from itertools import pairwise
 from typing import Annotated
 
 import numpy as np
@@ -78,6 +79,70 @@ def prepare_piecewise_breakpoints(breakpoints):
     return [tuple(col.item() for col in row) for row in breakpoints]
 
 
+def add_filter_block_constraints(
+    model, field_vars, time_field_visit_vars, half_exptime, filter_changes, exchange_s
+):
+    """Confine each visit to a contiguous block of a single bandpass.
+
+    Every field observes visit ``i`` in the same bandpass, so grouping the
+    visits into non-overlapping blocks means that the filter is exchanged once
+    per element of ``filter_changes`` that is true, however many fields are
+    observed.
+
+    The exchange is assumed to happen while the telescope slews, so the gap
+    between two blocks is the exchange time rather than the exchange time plus
+    a slew.
+
+    Parameters
+    ----------
+    model
+        The MILP model.
+    field_vars
+        Binary variable for each field, true if the field is observed.
+    time_field_visit_vars
+        Midpoint time of each visit to each field, in seconds.
+    half_exptime
+        Half of the exposure time of each field, in seconds. May be an array of
+        variables if the exposure time is adaptive.
+    filter_changes
+        For each pair of consecutive visits, whether the bandpass changes.
+    exchange_s
+        Time to exchange one filter for another, in seconds.
+    """
+    visits = time_field_visit_vars.shape[1]
+    block_start_vars = model.continuous_vars(visits)
+    block_end_vars = model.continuous_vars(visits)
+    for visit in range(visits):
+        times = time_field_visit_vars[:, visit]
+        model.add_indicators(
+            field_vars, times - half_exptime - block_start_vars[visit] >= 0
+        )
+        model.add_indicators(
+            field_vars, times + half_exptime - block_end_vars[visit] <= 0
+        )
+    model.add_constraints_(
+        block_start_vars[1:]
+        - block_end_vars[:-1]
+        - exchange_s * np.asarray(filter_changes)
+        >= 0
+    )
+    return block_start_vars, block_end_vars
+
+
+def _exptime_over_bandpasses(mission, snr, spectrum, bandpasses):
+    """Exposure time reaching the target SNR in every one of ``bandpasses``.
+
+    A field has a single exposure time shared by all of its visits, so the
+    least sensitive bandpass governs.
+    """
+    return np.maximum.reduce(
+        [
+            mission.detector.get_exptime(snr, spectrum, bandpass).to_value(u.s)
+            for bandpass in bandpasses
+        ]
+    )
+
+
 @app.command()
 @progress()
 def schedule(
@@ -149,7 +214,14 @@ def schedule(
     ] = True,
     snr: Annotated[float, typer.Option(help="Signal to noise ratio for detection")] = 5,
     bandpass: Annotated[
-        str | None, typer.Option(help="Name of detector bandpass")
+        list[str] | None,
+        typer.Option(
+            help="Name of detector bandpass. Repeat the option to cycle through "
+            "several bandpasses on successive visits; for example, "
+            "--bandpass g --bandpass r observes each field in g and then in r. "
+            "Visits are grouped into contiguous blocks of a single bandpass so "
+            "that the filter is exchanged only between blocks."
+        ),
     ] = None,
     visits: Annotated[int, typer.Option(min=1, help="Number of visits")] = 2,
     cadence: Annotated[
@@ -232,6 +304,14 @@ def schedule(
        --absmag-stdev option).
     """
     adaptive_exptime = absmag_mean is not None
+
+    # Successive visits cycle through the requested bandpasses, so that
+    # --bandpass g --bandpass r over three visits gives g, r, g.
+    visit_bandpasses = [
+        bandpass[i % len(bandpass)] if bandpass else None for i in range(visits)
+    ]
+    unique_bandpasses = list(dict.fromkeys(visit_bandpasses))
+    filter_changes = [lhs != rhs for lhs, rhs in pairwise(visit_bandpasses)]
 
     """Schedule a target of opportunity observation."""
     with status("loading sky map"):
@@ -369,8 +449,7 @@ def schedule(
                     target_coord=hpx.healpix_to_skycoord(good)[:, np.newaxis],
                     obstime=obstimes[0],
                 ):
-                    exptime_pixel_s = mission.detector.get_exptime(
-                        snr,
+                    spectrum = (
                         synphot.SourceSpectrum(synphot.ConstFlux1D(0 * u.ABmag))
                         * synphot.SpectralElement(
                             TabularScaleFactor(
@@ -379,9 +458,11 @@ def schedule(
                                 ).to_value(u.dimensionless_unscaled)
                             )
                         )
-                        * DustExtinction(),
-                        bandpass,
-                    ).to_value(u.s)
+                        * DustExtinction()
+                    )
+                    exptime_pixel_s = _exptime_over_bandpasses(
+                        mission, snr, spectrum, unique_bandpasses
+                    )
                 exptime_max_s = max(
                     min(
                         exptime_max.to_value(u.s),
@@ -408,14 +489,15 @@ def schedule(
                     target_coord=hpx.healpix_to_skycoord(good),
                     obstime=obstimes[0],
                 ):
-                    exptime_pixel_s = mission.detector.get_exptime(
+                    exptime_pixel_s = _exptime_over_bandpasses(
+                        mission,
                         snr,
                         synphot.SourceSpectrum(
                             synphot.ConstFlux1D(absmag_mean * u.ABmag + distmod)
                         )
                         * DustExtinction(),
-                        bandpass,
-                    ).to_value(u.s)
+                        unique_bandpasses,
+                    )
                 exptime_min_s = min(
                     max(exptime_min_s, exptime_pixel_s.min(initial=exptime_min_s)),
                     exptime_max.to_value(u.s),
@@ -509,6 +591,19 @@ def schedule(
                     model.add_constraints_(
                         (time_field_visit_vars[:, 1:] - time_field_visit_vars[:, :-1])
                         >= rhs[:, np.newaxis]
+                    )
+
+            if any(filter_changes):
+                with status("adding filter block constraints"):
+                    add_filter_block_constraints(
+                        model,
+                        field_vars,
+                        time_field_visit_vars,
+                        0.5 * exptime_field_vars
+                        if adaptive_exptime
+                        else np.full(n_fields, 0.5 * exptime_min_s),
+                        filter_changes,
+                        mission.filter_exchange_time.to_value(u.s),
                     )
 
             with status("adding slew constraints"):
@@ -649,6 +744,10 @@ def schedule(
                     "roll": rolls[
                         np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
                     ].ravel(),
+                    "bandpass": np.tile(
+                        np.array([band or "" for band in visit_bandpasses], dtype=str),
+                        field_values.sum(),
+                    ),
                 },
                 descriptions={
                     "action": "Action for the spacecraft",
@@ -656,6 +755,7 @@ def schedule(
                     "duration": "Duration of segment",
                     "target_coord": "Coordinates of the center of the FOV",
                     "roll": "Position angle of the FOV",
+                    "bandpass": "Detector bandpass",
                 },
                 meta={
                     "command": shlex.join(sys.argv),
@@ -674,7 +774,7 @@ def schedule(
                         "absmag_mean": absmag_mean,
                         "absmag_stdev": absmag_stdev,
                         "appmag_dist": appmag_dist,
-                        "bandpass": bandpass,
+                        "bandpass": visit_bandpasses,
                         "snr": snr,
                         "cutoff": cutoff,
                     },
@@ -700,16 +800,24 @@ def schedule(
             # Add slew segments to table.
             if len(table) > 0:
                 nrows = len(table) - 1
+                slew_duration = mission.slew.time(
+                    table["target_coord"][:-1],
+                    table["target_coord"][1:],
+                    table["roll"][:-1],
+                    table["roll"][1:],
+                )
+                # The filter is exchanged while the telescope slews, so a
+                # change costs only the excess over the slew itself.
+                changed = table["bandpass"][:-1] != table["bandpass"][1:]
+                slew_duration[changed] = np.maximum(
+                    slew_duration[changed], mission.filter_exchange_time
+                )
                 slew_table = QTable(
                     {
                         "action": np.full(nrows, "slew"),
                         "start_time": (table["start_time"] + table["duration"])[:-1],
-                        "duration": mission.slew.time(
-                            table["target_coord"][:-1],
-                            table["target_coord"][1:],
-                            table["roll"][:-1],
-                            table["roll"][1:],
-                        ),
+                        "duration": slew_duration,
+                        "bandpass": np.full(nrows, ""),
                     }
                 )
                 table = vstack(
