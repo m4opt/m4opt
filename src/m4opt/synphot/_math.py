@@ -41,19 +41,19 @@ def countrate(
     <Quantity 1.12409479e+09 PHOTLAM>
     >>> with observing(EarthLocation.of_site('Palomar'), SkyCoord(*np.meshgrid(np.linspace(0, 360, 100), np.linspace(-90, 90, 200)), unit=u.deg), Time('2024-01-01')):
     ...     countrate(spectrum, band)
-    <Quantity [[1.15320102e+14, 1.15320102e+14, 1.15320102e+14, ...,
-                1.15320102e+14, 1.15320102e+14, 1.15320102e+14],
-               [1.25062090e+14, 1.26075744e+14, 1.27402724e+14, ...,
-                1.24497734e+14, 1.24740423e+14, 1.25062090e+14],
-               [1.32286015e+14, 1.32147384e+14, 1.31646656e+14, ...,
-                1.27972484e+14, 1.30482658e+14, 1.32286015e+14],
+    <Quantity [[1.15140438e+14, 1.15140438e+14, 1.15140438e+14, ...,
+                1.15140438e+14, 1.15140438e+14, 1.15140438e+14],
+               [1.24826976e+14, 1.25836843e+14, 1.27159526e+14, ...,
+                1.24264912e+14, 1.24506600e+14, 1.24826976e+14],
+               [1.32033983e+14, 1.31895443e+14, 1.31395121e+14, ...,
+                1.27727678e+14, 1.30232553e+14, 1.32033983e+14],
                ...,
-               [9.87043893e+13, 8.69811951e+13, 9.38715461e+13, ...,
-                1.12819824e+14, 1.09335735e+14, 9.87043893e+13],
-               [1.21601239e+14, 1.19479681e+14, 1.17085538e+14, ...,
-                1.16983070e+14, 1.19741001e+14, 1.21601239e+14],
-               [1.04718610e+14, 1.04718610e+14, 1.04718610e+14, ...,
-                1.04718610e+14, 1.04718610e+14, 1.04718610e+14]] 1 / (s cm2)>
+               [9.86638417e+13, 8.70293885e+13, 9.38712128e+13, ...,
+                1.12658842e+14, 1.09202848e+14, 9.86638417e+13],
+               [1.21382128e+14, 1.19272528e+14, 1.16893607e+14, ...,
+                1.16791828e+14, 1.19532294e+14, 1.21382128e+14],
+               [1.04625376e+14, 1.04625376e+14, 1.04625376e+14, ...,
+                1.04625376e+14, 1.04625376e+14, 1.04625376e+14]] 1 / (s cm2)>
     """
     count_rate_unit = 1 / (u.s * u.cm**2)
     scale_factors = []
@@ -98,21 +98,27 @@ def countrate(
                 spectrum * DustExtinction(Ebv)
             ).to_value(count_rate_unit)
 
-        if dust_extinction is not None:
-            xp = dust_map().query(state.get().target_coord)
-            n_samples = 512
-            if np.size(xp) >= n_samples:
-                x = np.linspace(0, dust_extinction.model.Ebv_max, n_samples)
-                y = base_countrate_extinction_for_Ebv(x)
-                xp = dust_map().query(state.get().target_coord)
-                return (
-                    interp1d(x, y, kind="cubic", copy=False, assume_sorted=True)(xp)
-                    * count_rate_unit
-                )
-            else:
-                return base_countrate_extinction_for_Ebv(xp) * count_rate_unit
-        else:
+        if dust_extinction is None:
             return base_countrate_no_extinction(spectrum)
+
+        # Rather than integrate the spectrum once for every target, integrate
+        # it over a grid of reddenings and interpolate, which pays off as soon
+        # as there are more targets than grid points. Extinction is exponential
+        # in the reddening, so it is the logarithm of the count rate that is
+        # nearly straight and worth interpolating, and the grid need only cover
+        # the reddenings that the targets actually have.
+        xp = dust_map().query(state.get().target_coord)
+        n_samples = 512
+        low, high = np.min(xp), np.max(xp)
+        if np.size(xp) < n_samples or not high > low:
+            return base_countrate_extinction_for_Ebv(xp) * count_rate_unit
+
+        x = np.linspace(low, high, n_samples)
+        y = np.log(base_countrate_extinction_for_Ebv(x))
+        return (
+            np.exp(interp1d(x, y, kind="cubic", copy=False, assume_sorted=True)(xp))
+            * count_rate_unit
+        )
 
     def evaluate_term(term):
         match term:
