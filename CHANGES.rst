@@ -5,6 +5,13 @@ Changes
 2.12.1 (unreleased)
 ===================
 
+- Add Gurobi as an alternative MILP solver backend. The solver is selected
+  automatically from whichever of ``cplex`` or ``gurobipy`` is installed,
+  preferring CPLEX, and can be chosen explicitly with the ``M4OPT_SOLVER``
+  environment variable or :func:`m4opt.milp.set_backend`. Install the solver of
+  your choice with ``pip install "m4opt[cplex]"`` or ``pip install
+  "m4opt[gurobi]"``.
+
 - Use ULTRASAT's tabulated throughput curve rather than a Gaussian
   approximation, which had a red leak some four orders of magnitude too
   large and nearly doubled the predicted zodiacal background.
