@@ -255,3 +255,10 @@ def test_solution_values_match_shape(m):
     solution = m.solve()
     assert solution.get_values(x).shape == (3, 2)
     assert solution.get_objective_value() == pytest.approx(6)
+
+
+def test_variable_bounds(m):
+    """Variables report the bounds they were created with."""
+    x = m.continuous_vars(3, lb=2, ub=7)
+    assert [v.lb for v in x] == [2, 2, 2]
+    assert [v.ub for v in x] == [7, 7, 7]

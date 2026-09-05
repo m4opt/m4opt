@@ -80,6 +80,16 @@ class GurobiVarProxy:
     def __le__(self, other):
         return self._var <= _unwrap(other)
 
+    @property
+    def lb(self):
+        self._model._grb.update()
+        return self._var.LB
+
+    @property
+    def ub(self):
+        self._model._grb.update()
+        return self._var.UB
+
     def __repr__(self):
         return repr(self._var)
 
