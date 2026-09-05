@@ -704,6 +704,11 @@ def schedule(
                         "cutoff": cutoff,
                     },
                     "objective_value": objective_value,
+                    # An empty schedule means either that nothing was
+                    # observable or that the solver found nothing in time. A
+                    # solver may return a solution that schedules no field.
+                    "has_observable_fields": has_model,
+                    "has_solution": bool(field_values.any()),
                     "best_bound": model.best_bound if has_model else 0,
                     "solution_status": model.solve_details.status
                     if has_model
