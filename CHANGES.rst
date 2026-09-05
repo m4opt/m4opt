@@ -5,6 +5,12 @@ Changes
 2.12.1 (unreleased)
 ===================
 
+- Allow ``--bandpass`` to be repeated so that successive visits cycle through
+  several bandpasses. Visits are grouped into contiguous blocks of a single
+  bandpass, so a schedule exchanges the filter only once per block boundary.
+
+- Add ``Mission.filter_exchange_time`` and set it to 110 s for ZTF.
+
 - Use ULTRASAT's tabulated throughput curve rather than a Gaussian
   approximation, which had a red leak some four orders of magnitude too
   large and nearly doubled the predicted zodiacal background.
