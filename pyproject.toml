@@ -12,8 +12,7 @@ dependencies = [
     "astropy >= 7.1.0",
     "astropy-healpix",
     "astroquery",
-    "cplex ~= 22.1.2.0",
-    "docplex",
+    "click >= 8.2.0",  # https://github.com/pallets/click/pull/2829
     "dust-extinction >= 1.7",
     "dustmaps",
     "frozendict; python_version < '3.15'",
@@ -43,6 +42,15 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Astronomy",
     "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+cplex = [
+    "cplex ~= 22.1.2.0",
+    "docplex",
+]
+gurobi = [
+    "gurobipy",
 ]
 
 [dependency-groups]
