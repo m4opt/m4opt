@@ -4,6 +4,7 @@ import pytest
 import numpy as np
 from astropy import units as u
 from astropy.table import QTable, unique
+from click import UsageError
 
 from .. import app
 from . import data
@@ -157,11 +158,8 @@ def test_event_time_required_when_absent_from_sky_map(
     skymap_without_gps_time, ecsv_path, run_cli
 ):
     """A sky map with no trigger time says how to supply one."""
-    result = run_cli(
-        app, "schedule", skymap_without_gps_time, ecsv_path, "--mission=uvex"
-    )
-    assert result.exit_code != 0
-    assert "--event-time" in str(result.output) + str(result.exception)
+    with pytest.raises(UsageError, match="--event-time"):
+        run_cli(app, "schedule", skymap_without_gps_time, ecsv_path, "--mission=uvex")
 
 def test_event_time_option_supplies_the_trigger_time(
     skymap_without_gps_time, ecsv_path, run_cli
