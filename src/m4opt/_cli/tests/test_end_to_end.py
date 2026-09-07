@@ -1,8 +1,10 @@
 from importlib import resources
 
+import numpy as np
 import pytest
 from astropy import units as u
 from astropy.table import QTable, unique
+from click import UsageError
 
 from .. import app
 from . import data
@@ -139,3 +141,90 @@ def test_max_fields_limits_the_problem(fits_path, ecsv_path, run_cli):
     observations = table[table["action"] == "observe"]
     assert len(unique(observations["target_coord"].to_table())) <= max_fields
     assert table.meta["args"]["max_fields"] == max_fields
+
+
+@pytest.fixture
+def skymap_without_gps_time(tmp_path):
+    """A sky map generated locally, which carries no trigger time."""
+    import astropy_healpix as ah
+    from ligo.skymap.io import write_sky_map
+
+    path = str(tmp_path / "nogps.fits")
+    npix = ah.nside_to_npix(8)
+    write_sky_map(path, np.full(npix, 1 / npix), moc=False, nest=True)
+    return path
+
+
+def test_event_time_required_when_absent_from_sky_map(
+    skymap_without_gps_time, ecsv_path, run_cli
+):
+    """A sky map with no trigger time says how to supply one."""
+    with pytest.raises(UsageError, match="--event-time"):
+        run_cli(app, "schedule", skymap_without_gps_time, ecsv_path, "--mission=uvex")
+
+
+def test_event_time_option_supplies_the_trigger_time(
+    skymap_without_gps_time, ecsv_path, run_cli
+):
+    """--event-time schedules a sky map that carries no trigger time."""
+    result = run_cli(
+        app,
+        "schedule",
+        skymap_without_gps_time,
+        ecsv_path,
+        "--mission=uvex",
+        "--bandpass=NUV",
+        "--nside=32",
+        "--deadline=2hour",
+        "--timelimit=10s",
+        "--no-appmag-dist",
+        "--event-time=2026-03-01T00:00:00",
+    )
+    assert result.exit_code == 0
+    assert QTable.read(ecsv_path).meta["args"]["event_time"] == (
+        "2026-03-01T00:00:00.000"
+    )
+
+
+def test_event_time_overrides_the_sky_map(fits_path, ecsv_path, run_cli):
+    """An explicit trigger time takes precedence over the sky map header."""
+    result = run_cli(
+        app,
+        "schedule",
+        fits_path,
+        ecsv_path,
+        "--mission=uvex",
+        "--bandpass=NUV",
+        "--nside=32",
+        "--deadline=2hour",
+        "--timelimit=10s",
+        "--no-appmag-dist",
+        "--event-time=2026-03-01T00:00:00",
+    )
+    assert result.exit_code == 0
+    assert QTable.read(ecsv_path).meta["args"]["event_time"] == (
+        "2026-03-01T00:00:00.000"
+    )
+
+
+def test_animate_uses_the_recorded_event_time(
+    skymap_without_gps_time, ecsv_path, gif_path, run_cli
+):
+    """An animation needs no trigger time beyond the one the schedule records."""
+    result = run_cli(
+        app,
+        "schedule",
+        skymap_without_gps_time,
+        ecsv_path,
+        "--mission=uvex",
+        "--bandpass=NUV",
+        "--nside=32",
+        "--deadline=4hour",
+        "--timelimit=15s",
+        "--no-appmag-dist",
+        "--event-time=2026-03-01T00:00:00",
+    )
+    assert result.exit_code == 0
+    result = run_cli(app, "animate", ecsv_path, gif_path, "--time-step=1hour")
+    assert result.exit_code == 0
+    assert gif_path.read_bytes().startswith(b"GIF89a")

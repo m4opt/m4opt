@@ -17,6 +17,13 @@ Changes
   table reader so that all 1778 fields fell within 10 degrees of R.A. 0. ZTF
   schedules were empty as a result.
 
+- Add ``--event-time``, the time that ``--delay`` and ``--deadline`` are
+  measured from. It defaults to the ``DATE-OBS`` field of the sky map as
+  before, so a sky map written without one can now be scheduled, and a sky
+  map missing it reports what to do rather than a ``KeyError``. Schedules
+  record the time they were measured from, and ``m4opt animate`` reads it
+  from there rather than from the sky map.
+
 - Use ULTRASAT's tabulated throughput curve rather than a Gaussian
   approximation, which had a red leak some four orders of magnitude too
   large and nearly doubled the predicted zodiacal background.
