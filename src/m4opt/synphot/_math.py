@@ -114,9 +114,16 @@ def countrate(
             return base_countrate_extinction_for_Ebv(xp) * count_rate_unit
 
         x = np.linspace(low, high, n_samples)
-        y = np.log(base_countrate_extinction_for_Ebv(x))
+        y = base_countrate_extinction_for_Ebv(x)
+        if not np.all(y > 0):
+            # Reddening severe enough to underflow the count rate has no
+            # logarithm to interpolate.
+            return base_countrate_extinction_for_Ebv(xp) * count_rate_unit
+
         return (
-            np.exp(interp1d(x, y, kind="cubic", copy=False, assume_sorted=True)(xp))
+            np.exp(
+                interp1d(x, np.log(y), kind="cubic", copy=False, assume_sorted=True)(xp)
+            )
             * count_rate_unit
         )
 
