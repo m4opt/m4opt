@@ -5,9 +5,10 @@ Changes
 2.12.1 (unreleased)
 ===================
 
-- Add ``--max-fields``, the number of most probable fields to consider. It
-  was fixed at 50, which silently truncated the problem for instruments whose
-  sky grid covers a localization with more fields than that.
+- Add ``--max-fields`` to control how many of the most probable fields the
+  scheduler considers, which was fixed at 50. The cap bounds the size of the
+  MILP problem, which grows roughly quadratically with it, so raising it
+  trades solving time for the chance to cover more of a large localization.
 
 - Use ULTRASAT's tabulated throughput curve rather than a Gaussian
   approximation, which had a red leak some four orders of magnitude too
