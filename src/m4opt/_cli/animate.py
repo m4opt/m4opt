@@ -95,7 +95,7 @@ def animate(
         snr = table.meta["args"]["snr"]
         exptime_min = table.meta["args"]["exptime_min"]
         # The schedule records the time it was measured from.
-        recorded_event_time = table.meta["args"].get("event_time")
+        event_time = table.meta["args"].get("event_time")
 
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
