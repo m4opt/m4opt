@@ -8,9 +8,7 @@ def athena_interp(points, values, xi):
     # FIXME for Athena: fill in this function with your own Catmull-Rom
     # interpolation code.
     #
-    # The spline coefficients are solved directly. The default iterative solver
-    # stops on an absolute tolerance, which misses the grid values by about
-    # 1e-5 and underflows to zero for values smaller than that.
+    # The default iterative solver stops on an absolute tolerance.
     return RegularGridInterpolator(
         points,
         np.asarray(values, dtype=float),

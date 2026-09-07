@@ -108,8 +108,7 @@ def test_athena_interp(data):
     in_bounds_with_padding = ((data.xi >= lo + delta) & (data.xi <= hi - delta)).all(
         axis=-1
     )
-    # A value that cancels to zero carries no relative scale of its own, so
-    # rounding is allowed at the magnitude of the samples.
+    # A value that cancels to zero has no relative scale of its own.
     finite = np.abs(values[np.isfinite(values)])
     np.testing.assert_allclose(
         result[in_bounds_with_padding],
