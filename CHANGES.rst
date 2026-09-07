@@ -10,6 +10,10 @@ Changes
   MILP problem, which grows roughly quadratically with it, so raising it
   trades solving time for the chance to cover more of a large localization.
 
+- Fix the ZTF sky grid, whose right ascensions were truncated by a fixed-width
+  table reader so that all 1778 fields fell within 10 degrees of R.A. 0. ZTF
+  schedules were empty as a result.
+
 - Use ULTRASAT's tabulated throughput curve rather than a Gaussian
   approximation, which had a red leak some four orders of magnitude too
   large and nearly doubled the predicted zodiacal background.
