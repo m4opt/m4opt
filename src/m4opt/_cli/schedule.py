@@ -157,6 +157,14 @@ def schedule(
         typer.Option(help="Minimum time separation between visits"),
     ] = 30 * u.min,
     nside: Annotated[int, typer.Option(help="HEALPix resolution")] = 512,
+    max_fields: Annotated[
+        int,
+        typer.Option(
+            min=1,
+            help="Consider only this many of the most probable fields. Raising "
+            "it grows the problem roughly quadratically",
+        ),
+    ] = 50,
     timelimit: Annotated[
         u.Quantity,
         typer.Option(
@@ -302,8 +310,8 @@ def schedule(
             rolls = nominal_roll(observer_locations[0], target_coords, event_time)
         footprints = footprint_healpix(hpx, mission.fov, target_coords, rolls)
 
-        # Select only the most probable 50 fields.
-        n_fields = 50
+        # Consider only the most probable fields.
+        n_fields = max_fields
         if len(target_coords) > n_fields:
             good = np.argpartition(
                 [-skymap_flat[footprint]["PROB"].sum() for footprint in footprints],
@@ -666,6 +674,7 @@ def schedule(
                         "mission": mission.name,
                         "skygrid": skygrid,
                         "nside": nside,
+                        "max_fields": max_fields,
                         "time_step": time_step,
                         "skymap": skymap.name,
                         "visits": visits,

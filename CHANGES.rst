@@ -5,6 +5,11 @@ Changes
 2.12.1 (unreleased)
 ===================
 
+- Add ``--max-fields`` to control how many of the most probable fields the
+  scheduler considers, which was fixed at 50. The cap bounds the size of the
+  MILP problem, which grows roughly quadratically with it, so raising it
+  trades solving time for the chance to cover more of a large localization.
+
 - Fix the ZTF sky grid, whose right ascensions were truncated by a fixed-width
   table reader so that all 1778 fields fell within 10 degrees of R.A. 0. ZTF
   schedules were empty as a result.
