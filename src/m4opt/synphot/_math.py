@@ -116,8 +116,7 @@ def countrate(
         x = np.linspace(low, high, n_samples)
         y = base_countrate_extinction_for_Ebv(x)
         if not np.all(y > 0):
-            # Reddening severe enough to underflow the count rate has no
-            # logarithm to interpolate.
+            # A count rate that has underflowed to zero has no logarithm.
             return base_countrate_extinction_for_Ebv(xp) * count_rate_unit
 
         return (
