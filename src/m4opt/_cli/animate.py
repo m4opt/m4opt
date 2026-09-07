@@ -12,6 +12,7 @@ from astropy.table import QTable
 from astropy.time import Time
 from astropy.visualization.units import quantity_support
 from astropy_healpix import HEALPix
+from click import UsageError
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
 from ligo.skymap.plot.allsky import AutoScaledWCSAxes
@@ -93,14 +94,26 @@ def animate(
         bandpass = table.meta["args"]["bandpass"]
         snr = table.meta["args"]["snr"]
         exptime_min = table.meta["args"]["exptime_min"]
+        # The schedule records the time it was measured from.
+        recorded_event_time = table.meta["args"].get("event_time")
 
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
         skymap_moc = read_sky_map(skymap, moc=True)
         probs = rasterize(skymap_moc["UNIQ", "PROBDENSITY"], hpx.level)["PROB"]
-        event_time = Time(
-            Time(skymap_moc.meta["gps_time"], format="gps").utc, format="iso"
-        )
+        if recorded_event_time is not None:
+            event_time = Time(recorded_event_time)
+        else:
+            # Schedules written before the time was recorded fall back to the
+            # sky map, as this did.
+            try:
+                gps_time = skymap_moc.meta["gps_time"]
+            except KeyError:
+                raise UsageError(
+                    f'Neither the schedule nor the sky map "{skymap}" says what '
+                    "time the schedule was measured from."
+                ) from None
+            event_time = Time(Time(gps_time, format="gps").utc, format="iso")
 
     with status("making animation"), quantity_support():
         with status("setting up axes"):

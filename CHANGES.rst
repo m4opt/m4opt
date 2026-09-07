@@ -20,7 +20,9 @@ Changes
 - Add ``--event-time``, the time that ``--delay`` and ``--deadline`` are
   measured from. It defaults to the ``gps_time`` in the sky map header as
   before, so a sky map generated without one can now be scheduled, and a sky
-  map missing it reports what to do rather than a ``KeyError``.
+  map missing it reports what to do rather than a ``KeyError``. Schedules
+  record the time they were measured from, and ``m4opt animate`` reads it
+  from there rather than from the sky map.
 
 - Use ULTRASAT's tabulated throughput curve rather than a Gaussian
   approximation, which had a red leak some four orders of magnitude too
