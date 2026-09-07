@@ -2,6 +2,7 @@ from typing import Annotated
 
 import typer
 from astropy import units as u
+from astropy.time import Time
 from typer._click.types import ParamType
 from typer._types import TyperChoice
 from typer.main import get_click_type as _get_click_type
@@ -35,6 +36,18 @@ class QuantityClickType(ParamType):
         return result
 
 
+class TimeClickType(ParamType):
+    name = "Astropy time"
+
+    def convert(self, value, param, ctx):
+        if isinstance(value, Time):
+            return value
+        try:
+            return Time(value)
+        except ValueError:
+            self.fail(f"value '{value}' is not a recognized time", param, ctx)
+
+
 class MissionClickType(TyperChoice):
     def __init__(self):
         choices = [name for name in missions.__all__ if name[0].islower()]
@@ -51,6 +64,8 @@ def get_click_type(*, annotation, parameter_info):
     """Monkeypatch for typer.main.get_click_type to add support for new types."""
     if lenient_issubclass(annotation, u.Quantity):
         return QuantityClickType()
+    elif lenient_issubclass(annotation, Time):
+        return TimeClickType()
     elif lenient_issubclass(annotation, missions.Mission):
         return MissionClickType()
     else:

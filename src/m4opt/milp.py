@@ -304,8 +304,14 @@ class VariableArray(np.ndarray):
                 .view(self.__class__)
             )
         elif method == "__call__":
+            # A scalar operand, as in ``5 - x``, has no view to take.
             return getattr(ufunc_map[ufunc], method)(
-                *(input.view(self.__class__) for input in inputs)
+                *(
+                    input.view(self.__class__)
+                    if isinstance(input, np.ndarray)
+                    else input
+                    for input in inputs
+                )
             ).view(self.__class__)
         else:
             return NotImplemented

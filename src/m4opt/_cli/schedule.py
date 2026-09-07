@@ -115,6 +115,13 @@ def schedule(
             help="Name of sky grid to use, if the mission supports multiple sky grids.",
         ),
     ] = None,
+    event_time: Annotated[
+        Time | None,
+        typer.Option(
+            help="Time of the event, which --delay and --deadline are measured "
+            "from. Defaults to the DATE-OBS field in the sky map header.",
+        ),
+    ] = None,
     delay: Annotated[
         u.Quantity,
         typer.Option(
@@ -179,6 +186,14 @@ def schedule(
         typer.Option(help="Minimum time separation between visits"),
     ] = 30 * u.min,
     nside: Annotated[int, typer.Option(help="HEALPix resolution")] = 512,
+    max_fields: Annotated[
+        int,
+        typer.Option(
+            min=1,
+            help="Consider only this many of the most probable fields. Raising "
+            "it grows the problem roughly quadratically",
+        ),
+    ] = 50,
     timelimit: Annotated[
         u.Quantity,
         typer.Option(
@@ -268,9 +283,17 @@ def schedule(
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
         skymap_moc = read_sky_map(skymap, moc=True)
         skymap_flat = rasterize(skymap_moc, hpx.level)
-        event_time = Time(
-            Time(skymap_moc.meta["gps_time"], format="gps").utc, format="iso"
-        )
+        if event_time is None:
+            # The sky map carries the trigger time unless one was given.
+            try:
+                gps_time = skymap_moc.meta["gps_time"]
+            except KeyError:
+                raise UsageError(
+                    f'The sky map "{skymap.name}" has no DATE-OBS in its header, '
+                    "which is where the time of the event is read from. "
+                    "Pass --event-time instead."
+                ) from None
+            event_time = Time(Time(gps_time, format="gps").utc, format="iso")
 
     with status("propagating orbit"):
         obstimes = event_time + np.arange(
@@ -332,8 +355,8 @@ def schedule(
             rolls = nominal_roll(observer_locations[0], target_coords, event_time)
         footprints = footprint_healpix(hpx, mission.fov, target_coords, rolls)
 
-        # Select only the most probable 50 fields.
-        n_fields = 50
+        # Consider only the most probable fields.
+        n_fields = max_fields
         if len(target_coords) > n_fields:
             good = np.argpartition(
                 [-skymap_flat[footprint]["PROB"].sum() for footprint in footprints],
@@ -728,8 +751,10 @@ def schedule(
                         "mission": mission.name,
                         "skygrid": skygrid,
                         "nside": nside,
+                        "max_fields": max_fields,
                         "time_step": time_step,
                         "skymap": skymap.name,
+                        "event_time": event_time.isot,
                         "visits": visits,
                         "exptime_min": exptime_min,
                         "exptime_max": exptime_max,
