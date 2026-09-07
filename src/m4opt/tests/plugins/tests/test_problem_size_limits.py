@@ -9,7 +9,7 @@ from m4opt.tests.plugins.problem_size_limits import (  # noqa: F401
 )
 """
 
-SOURCE = '''
+SOURCE = """
 import pytest
 from docplex.mp.utils import DOcplexLimitsExceeded
 
@@ -33,7 +33,7 @@ def test_from_the_body():
 
 def test_unrelated_error_is_not_skipped():
     raise ValueError("something else")
-'''
+"""
 
 
 @pytest.fixture
