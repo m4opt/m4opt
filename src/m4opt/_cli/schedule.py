@@ -79,56 +79,6 @@ def prepare_piecewise_breakpoints(breakpoints):
     return [tuple(col.item() for col in row) for row in breakpoints]
 
 
-def add_filter_block_constraints(
-    model, field_vars, time_field_visit_vars, half_exptime, filter_changes, exchange_s
-):
-    """Confine each visit to a contiguous block of a single bandpass.
-
-    Every field observes visit ``i`` in the same bandpass, so grouping the
-    visits into non-overlapping blocks means that the filter is exchanged once
-    per element of ``filter_changes`` that is true, however many fields are
-    observed.
-
-    The exchange is assumed to happen while the telescope slews, so the gap
-    between two blocks is the exchange time rather than the exchange time plus
-    a slew.
-
-    Parameters
-    ----------
-    model
-        The MILP model.
-    field_vars
-        Binary variable for each field, true if the field is observed.
-    time_field_visit_vars
-        Midpoint time of each visit to each field, in seconds.
-    half_exptime
-        Half of the exposure time of each field, in seconds. May be an array of
-        variables if the exposure time is adaptive.
-    filter_changes
-        For each pair of consecutive visits, whether the bandpass changes.
-    exchange_s
-        Time to exchange one filter for another, in seconds.
-    """
-    visits = time_field_visit_vars.shape[1]
-    block_start_vars = model.continuous_vars(visits)
-    block_end_vars = model.continuous_vars(visits)
-    for visit in range(visits):
-        times = time_field_visit_vars[:, visit]
-        model.add_indicators(
-            field_vars, times - half_exptime - block_start_vars[visit] >= 0
-        )
-        model.add_indicators(
-            field_vars, times + half_exptime - block_end_vars[visit] <= 0
-        )
-    model.add_constraints_(
-        block_start_vars[1:]
-        - block_end_vars[:-1]
-        - exchange_s * np.asarray(filter_changes)
-        >= 0
-    )
-    return block_start_vars, block_end_vars
-
-
 def _exptime_over_bandpasses(mission, snr, spectrum, bandpasses):
     """Exposure time reaching the target SNR in every one of ``bandpasses``.
 
@@ -223,20 +173,11 @@ def schedule(
             "that the filter is exchanged only between blocks."
         ),
     ] = None,
-    filter_change: Annotated[
-        bool, typer.Option(help="If the telescope has lengthy filter changes.")
-    ] = False,
     visits: Annotated[int, typer.Option(min=1, help="Number of visits")] = 2,
     cadence: Annotated[
         u.Quantity,
         typer.Option(help="Minimum time separation between visits"),
     ] = 30 * u.min,
-    time_seqs: Annotated[
-        typer.FileText | None,
-        typer.Option(
-            help="Optional CSV file with a preset sequence of exposure times (line 1, in s) and inter-round delays (line 2, in min) for a telescope with filter changes."
-        ),
-    ] = None,
     nside: Annotated[int, typer.Option(help="HEALPix resolution")] = 512,
     timelimit: Annotated[
         u.Quantity,
@@ -291,7 +232,7 @@ def schedule(
     """Generate an observing plan for a GW sky map.
 
     \b
-    The scheduler has five modes:
+    The scheduler has three modes:
 
     \b
     1. Fixed exposure time. Every field has the same exposure time given by the
@@ -299,29 +240,13 @@ def schedule(
        --absmag-mean option.
 
     \b
-    2. Fixed exposure time with filter changes. Every field has the same
-        exposure time given by the --exptime-min option. Each field is visited
-        k times before any field is visited k+1 times. This mode is selected
-        if you omit the --absmag-mean option and choose --filter-change.
-
-    \b
-    3. Pre-set exposure times and inter-round delays. Exposure times and
-        delays between consecutive visits of the same field are pre-set in a
-        provided CSV file. All fields on their k visit will have the k exposure
-        time specified in the CSV file. Consecutive observations of the same
-        field (e.g. k and k+1 visits) will be separated by the k delay
-        specified in the CSV file. Each field is visited k times before any
-        field is visited k+1 times. This mode is selected if you choose
-        --filter-change and provide a file for the --test-seqs option.
-
-    \b
-    4. Variable exposure time. Each field may have a different exposure time,
+    2. Variable exposure time. Each field may have a different exposure time,
        adjusted for the posterior median distance along each line of sight.
        This mode is selected if you specify a value for the --absmag-mean
        option but also pass the --no-appmag-dist option.
 
     \b
-    5. Variable exposure time with an absolute magnitude distribution. Each
+    3. Variable exposure time with an absolute magnitude distribution. Each
        field may have a different exposure time, adjusted to optimize the
        detection probability given the posterior distance distribution and a
        Gaussian distribution of absolute magnitudes. This mode is selected if
@@ -329,15 +254,6 @@ def schedule(
        --absmag-stdev option).
     """
     adaptive_exptime = absmag_mean is not None
-    preset_exp_del = time_seqs is not None
-    if (filter_change is False) and preset_exp_del:
-        raise NotImplementedError(
-            "Sequences of exposure times and inter-round delays can only be used if the telescope has filter changes. Please pass --filter-change."
-        )
-    if adaptive_exptime and filter_change:
-        raise NotImplementedError(
-            "Adaptive exposure time cannot currently be used if the telescope has filter changes. Please choose one to implement."
-        )
 
     # Successive visits cycle through the requested bandpasses, so that
     # --bandpass g --bandpass r over three visits gives g, r, g.
@@ -390,27 +306,6 @@ def schedule(
             ],
             dtype=object,
         )
-
-        # Extract exposure time and inter-round delays from CSV file
-        if preset_exp_del:
-            time_seqs_lines = time_seqs.readlines()
-            exptime_seq = time_seqs_lines[0].split(",")
-            exptime_seq = np.asarray([float(x) for x in exptime_seq])
-            cadence_seq = time_seqs_lines[1].split(",")
-            cadence_seq = np.asarray([float(y) for y in cadence_seq]) * u.min
-            cadence_seq = cadence_seq.to_value(u.s)
-            assert len(exptime_seq) == (len(cadence_seq) + 1), (
-                "Number of exposure times and number of inter-round delays must be consistent."
-            )
-            assert len(exptime_seq) == visits, (
-                "Exactly one exposure time must be provided for each desired visit."
-            )
-            assert (len(cadence_seq) + 1) == visits, (
-                "Number of inter-round delays must be exactly one less than the number of visits."
-            )
-            assert np.all(exptime_seq >= exptime_min_s), (
-                "All values of exposure time must exceed the specified minimum exposure time."
-            )
 
         # Keep only intervals that are at least as long as the exposure time.
         observable_intervals = np.asarray(
@@ -613,8 +508,6 @@ def schedule(
                 ):
                     assert len(intervals) > 0
                     begin, end = intervals.T
-                    if preset_exp_del:
-                        exptime = exptime_seq
                     if len(intervals) == 1:
                         model.add_constraints_(
                             time_visit_vars - begin - 0.5 * exptime >= 0
@@ -623,8 +516,6 @@ def schedule(
                             time_visit_vars - end + 0.5 * exptime <= 0
                         )
                     else:
-                        if preset_exp_del:
-                            exptime = exptime[:, np.newaxis]
                         visit_interval_vars = model.binary_vars(
                             (visits, len(intervals))
                         )
@@ -643,65 +534,17 @@ def schedule(
 
             if visits > 1:
                 with status("adding cadence constraints"):
-                    if preset_exp_del:
-                        exptime_del_buffer = (
-                            0.5 * (exptime_seq[1:] + exptime_seq[:-1]) + cadence_seq
-                        )
-                        rhs = (
-                            field_vars[:, np.newaxis]
-                            * exptime_del_buffer[np.newaxis, :]
-                        )
+                    if adaptive_exptime:
+                        rhs = cadence_s * field_vars + exptime_field_vars
                     else:
-                        if adaptive_exptime:
-                            rhs = cadence_s * field_vars + exptime_field_vars
-                        else:
-                            rhs = (exptime_min_s + cadence_s) * field_vars
-                        rhs = rhs[:, np.newaxis]
+                        rhs = (exptime_min_s + cadence_s) * field_vars
                     model.add_constraints_(
                         (time_field_visit_vars[:, 1:] - time_field_visit_vars[:, :-1])
-                        >= rhs
-                    )
-
-            if any(filter_changes):
-                with status("adding filter block constraints"):
-                    add_filter_block_constraints(
-                        model,
-                        field_vars,
-                        time_field_visit_vars,
-                        0.5 * exptime_field_vars
-                        if adaptive_exptime
-                        else np.full(n_fields, 0.5 * exptime_min_s),
-                        filter_changes,
-                        mission.filter_exchange_time.to_value(u.s),
+                        >= rhs[:, np.newaxis]
                     )
 
             with status("adding slew constraints"):
-                p, q = full_indices(visits)
-                if preset_exp_del:
-                    rhs1 = (slew_time_s[:, np.newaxis] + exptime_seq[np.newaxis, :]) * (
-                        field_vars[slew_i, np.newaxis]
-                        + field_vars[slew_j, np.newaxis]
-                        - 1
-                    )
-                    rhs2 = (
-                        slew_time_s[:, np.newaxis]
-                        + 0.5
-                        * (exptime_seq[np.newaxis, 1:] + exptime_seq[np.newaxis, :-1])
-                    ) * (
-                        field_vars[slew_i, np.newaxis]
-                        + field_vars[slew_j, np.newaxis]
-                        - 1
-                    )
-                    rhs3 = (
-                        slew_time_s[:, np.newaxis]
-                        + 0.5
-                        * (exptime_seq[np.newaxis, 1:] + exptime_seq[np.newaxis, :-1])
-                    ) * (
-                        field_vars[slew_j, np.newaxis]
-                        + field_vars[slew_i, np.newaxis]
-                        - 1
-                    )
-                elif adaptive_exptime:
+                if adaptive_exptime:
                     rhs = 0.5 * (
                         exptime_field_vars[slew_i] + exptime_field_vars[slew_j]
                     ) + slew_time_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
@@ -709,40 +552,32 @@ def schedule(
                     rhs = (slew_time_s + exptime_min_s) * (
                         field_vars[slew_i] + field_vars[slew_j] - 1
                     )
-                    if filter_change:
-                        rhs1 = rhs
-                        rhs2 = rhs
-                        rhs3 = (slew_time_s + exptime_min_s) * (
-                            field_vars[slew_j] + field_vars[slew_i] - 1
-                        )
-                if filter_change:
-                    same_visit_times = (
+
+                if any(filter_changes):
+                    # Every field is visited for the kth time before any field
+                    # is visited for the k+1th, so the filter is exchanged once
+                    # per block boundary however many fields are observed. The
+                    # ordering also makes the absolute value redundant across
+                    # visits, leaving it only within one.
+                    exchange_s = mission.filter_exchange_time.to_value(u.s)
+                    gap = rhs + exchange_s * np.asarray(filter_changes)[:, np.newaxis]
+                    within_visit = (
                         time_field_visit_vars[slew_i, :]
                         - time_field_visit_vars[slew_j, :]
                     )
-                    consec_visit_times1 = (
+                    after_i = (
                         time_field_visit_vars[slew_i, 1:]
                         - time_field_visit_vars[slew_j, :-1]
                     )
-                    consec_visit_times2 = (
+                    after_j = (
                         time_field_visit_vars[slew_j, 1:]
                         - time_field_visit_vars[slew_i, :-1]
                     )
-                    if preset_exp_del:
-                        model.add_constraints_(model.abs(same_visit_times) >= rhs1)
-                        model.add_constraints_(consec_visit_times1 >= rhs2)
-                        model.add_constraints_(consec_visit_times2 >= rhs3)
-                    else:
-                        model.add_constraints_(
-                            model.abs(np.transpose(same_visit_times)) >= rhs1
-                        )
-                        model.add_constraints_(
-                            np.transpose(consec_visit_times1) >= rhs2
-                        )
-                        model.add_constraints_(
-                            np.transpose(consec_visit_times2) >= rhs3
-                        )
+                    model.add_constraints_(model.abs(np.transpose(within_visit)) >= rhs)
+                    model.add_constraints_(np.transpose(after_i) >= gap)
+                    model.add_constraints_(np.transpose(after_j) >= gap)
                 else:
+                    p, q = full_indices(visits)
                     model.add_constraints_(
                         model.abs(
                             time_field_visit_vars[slew_i, p[:, np.newaxis]]
@@ -800,13 +635,9 @@ def schedule(
                     )
 
             with status("adding cuts"):
-                if preset_exp_del:
-                    exptime_sum = np.sum(exptime_seq)
-                else:
-                    exptime_sum = visits * exptime_min_s
                 model.add_user_cut_constraint(
                     model.sum_vars_all_different(field_vars)
-                    <= (deadline - delay).to_value(u.s) / (exptime_sum)
+                    <= (deadline - delay).to_value(u.s) / (visits * exptime_min_s)
                 )
                 if adaptive_exptime:
                     model.add_user_cut_constraint(
@@ -846,41 +677,29 @@ def schedule(
                 time_field_visit_values = np.empty(time_field_visit_vars.shape)
                 exptime_field_values = np.empty(field_vars.shape)
                 objective_value = 0.0
-                start_time_add = (
-                    time_field_visit_values[field_values]
-                    - 0.5 * exptime_field_values[field_values][:, np.newaxis]
-                )
-                tiled_duration = np.tile(
-                    exptime_field_values[field_values][:, np.newaxis], visits
-                )
             else:
                 field_values = solution.get_values(field_vars) >= 0.5
                 time_field_visit_values = solution.get_values(time_field_visit_vars)
-                if preset_exp_del:
-                    start_time_add = (
-                        time_field_visit_values[field_values] - 0.5 * exptime_seq
-                    )
-                    tiled_duration = np.tile(exptime_seq, field_values.sum())
+                if adaptive_exptime:
+                    exptime_field_values = solution.get_values(exptime_field_vars)
+                    field_values &= exptime_field_values > 0
                 else:
-                    if adaptive_exptime:
-                        exptime_field_values = solution.get_values(exptime_field_vars)
-                        field_values &= exptime_field_values > 0
-                    else:
-                        exptime_field_values = np.full(n_fields, exptime_min_s)
-                    start_time_add = (
-                        time_field_visit_values[field_values]
-                        - 0.5 * exptime_field_values[field_values][:, np.newaxis]
-                    )
-                    tiled_duration = np.tile(
-                        exptime_field_values[field_values][:, np.newaxis], visits
-                    )
+                    exptime_field_values = np.full(n_fields, exptime_min_s)
                 objective_value = solution.get_objective_value()
 
             table = QTable(
                 {
                     "action": np.full(field_values.sum() * visits, "observe"),
-                    "start_time": obstimes[0] + start_time_add.ravel() * u.s,
-                    "duration": tiled_duration.ravel() * u.s,
+                    "start_time": obstimes[0]
+                    + (
+                        time_field_visit_values[field_values]
+                        - 0.5 * exptime_field_values[field_values][:, np.newaxis]
+                    ).ravel()
+                    * u.s,
+                    "duration": np.tile(
+                        exptime_field_values[field_values][:, np.newaxis], visits
+                    ).ravel()
+                    * u.s,
                     "target_coord": target_coords[
                         np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
                     ].ravel(),
@@ -914,8 +733,6 @@ def schedule(
                         "visits": visits,
                         "exptime_min": exptime_min,
                         "exptime_max": exptime_max,
-                        "filter-change": filter_change,
-                        "time-seqs": time_seqs.name if time_seqs is not None else None,
                         "absmag_mean": absmag_mean,
                         "absmag_stdev": absmag_stdev,
                         "appmag_dist": appmag_dist,

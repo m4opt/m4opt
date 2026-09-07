@@ -137,7 +137,7 @@ Maximize the sum of the probability of all of the pixels that are contained with
     \sum_{i \in I} \rho_i p_i
 
 Problem 2: Filter changes with fixed exposure time
----------------------------------
+--------------------------------------------------
 
 In this variation, we enforce that every field must be visited :math:`k` times before any field is visited :math:`k + 1` times to allow for length filter changes to occur between visits. The exposure time is fixed for all fields and visits.
 
@@ -169,78 +169,7 @@ Objective
 
 Same as above.
 
-Problem 3: Filter changes with time sequences
----------------------------------
-
-In this variation, we build upon Problem 2 to accommodate a sequence of exposure times and inter-round delays (cadences) for each distinct visit rather than fixed values.
-
-MILP problem formulation
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-Additional parameters
-"""""""""""""""""""""
-
-- :math:`\left(\epsilon_k\right)_{k \in K}`: exposure time of visit :math:`k`
-- :math:`\left(\gamma_k\right)_{k \in K}`: minimum inter-round delay between visit :math:`k` and visit :math:`k+1` of the same field
-
-Constraints
-"""""""""""
-
-The constraints are slightly different to Problem 2:
-
-**Depth.** Same as above.
-
-**Cadence.** This is similar to Equation :eq:`fixed-exptime-constraint-cadence`, except that we replace :math:`\epsilon` and :math:`\gamma` with :math:`\epsilon_{k}` and :math:`\gamma_{k}`.
-
-.. math::
-    :label: time-sequence-constraint-cadence
-
-    \forall k > 1 ,\; j :\quad t_{jk} - t_{j,k-1} \geq \left(0.5\left(\epsilon_{k-1} + \epsilon_{k}\right) + \gamma_{k-1}\right) r_j
-
-**No overlap.** This is similar to Equation :eq:`filter-change-constraint-no-overlap`, except except that we replace :math:`\epsilon` with the equivalent values from the sequence for a given visit.
-
-.. math::
-    :label: time-sequence-constraint-no-overlap
-
-    \begin{eqnarray}
-    \forall j \neq j',\; k > 1 :\quad t_{jk} - t_{j^\prime, k-1} \geq \left(\sigma_{jj^\prime} + 0.5\left(\epsilon_{k-1} + \epsilon_{k}\right)\right) \left( r_j + r_{j^\prime} - 1\right)\\
-    \forall j \neq j',\; k :\quad \left|t_{jk} - t_{j^\prime k}\right| \geq \left(\sigma_{jj^\prime} + \epsilon_{k}\right) \left( r_j + r_{j^\prime} - 1\right)
-    \end{eqnarray}
-**Field of regard.** This is similar to Equations :eq:`fixed-exptime-constraint-for-one` and :eq:`fixed-exptime-constraint-for-many`, except that we replace :math:`\epsilon` with :math:`\epsilon_{k}`.
-
-For fields that have one observable segment:
-
-.. math::
-    :label: time-sequence-constraint-for-one
-
-    \forall j ,\; k \;, m \mid {n_M}_j = 1 :\quad \alpha_{jm} + \epsilon_k / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon_k / 2
-
-For fields that have more than one observable segment:
-
-.. math::
-    :label: time-sequence-constraint-for-many
-
-    \begin{eqnarray}
-    \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + \epsilon_k / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon_k / 2, \\
-    \sum_m s_{jkm} &\geq& 1
-    \end{eqnarray}
-
-Additional cuts
-"""""""""""""""
-
-**Total exposure time.** Replace Equation :eq:`fixed-exptime-cut-total-time` with:
-
-.. math::
-    :label: time-sequence-cut-total-time
-
-    \sum_{j \in J} r_j \leq \frac{\delta - \beta}{\sum_{k \in K} \epsilon_{k}}
-
-Objective
-"""""""""
-
-Same as above.
-
-Problem 4: Variable exposure time
+Problem 3: Variable exposure time
 ---------------------------------
 
 In this variation of Problem 1, we have a sky map of the exposure time required to detect the source as a function of its position on the sky. We permit the exposure time to vary for each field. A given pixel counts toward the objective value only if the exposure time of a field that contains that pixel exceeds the pixel's exposure time.
@@ -334,7 +263,7 @@ Objective
 
 Same as above.
 
-Problem 5: Variable exposure time with prior distribution of absolute magnitude
+Problem 4: Variable exposure time with prior distribution of absolute magnitude
 -------------------------------------------------------------------------------
 
 In this variation, we don't know the precise absolute magnitude :math:`X` of the source. In the case of kilonovae, our prior knowledge about the absolute magnitude is scant; for the sake of mathematical convenience, we assume that the absolute magnitude has a normal distribution, :math:`X \sim~ \mathcal{N}[\mu_X, \sigma_X]`. We need to compute the distribution of *apparent* magnitudes :math:`x` in order to determine the probability of detection as a function of exposure time for each pixel.
