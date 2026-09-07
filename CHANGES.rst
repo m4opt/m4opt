@@ -36,6 +36,9 @@ Changes
 - Fix the ULTRASAT readout noise, which was set to the noise budget's
   variance (6 e-/pix) rather than its RMS.
 
+- Skip a test whose fixture exceeds the problem size that the installed CPLEX
+  license allows, as was already done for the body of a test.
+
 2.12.0 (2026-08-28)
 ===================
 
