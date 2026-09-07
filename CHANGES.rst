@@ -5,6 +5,9 @@ Changes
 2.12.1 (unreleased)
 ===================
 
+- Fix ``TypeError`` when a scalar appears on the left of an arithmetic
+  operator applied to an array of decision variables, as in ``5 - x``.
+
 - Add ``--max-fields`` to control how many of the most probable fields the
   scheduler considers, which was fixed at 50. The cap bounds the size of the
   MILP problem, which grows roughly quadratically with it, so raising it
