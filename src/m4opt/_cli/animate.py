@@ -101,7 +101,7 @@ def animate(
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
         skymap_moc = read_sky_map(skymap, moc=True)
         probs = rasterize(skymap_moc["UNIQ", "PROBDENSITY"], hpx.level)["PROB"]
-        if recorded_event_time is not None:
+        if recorded_event_time is None:
             event_time = Time(recorded_event_time)
         else:
             # Schedules written before the time was recorded fall back to the
