@@ -116,3 +116,26 @@ def test_fixed_exptime_with_appmag_dist(fits_path, ecsv_path, run_cli):
         # Notably: no --no-appmag-dist and no --absmag-mean
     )
     assert result.exit_code == 0
+
+
+def test_max_fields_limits_the_problem(fits_path, ecsv_path, run_cli):
+    """No more fields are scheduled than the cap allows."""
+    max_fields = 3
+    result = run_cli(
+        app,
+        "schedule",
+        fits_path,
+        ecsv_path,
+        "--mission=uvex",
+        "--bandpass=NUV",
+        "--nside=32",
+        "--deadline=8hour",
+        "--timelimit=30s",
+        "--no-appmag-dist",
+        f"--max-fields={max_fields}",
+    )
+    assert result.exit_code == 0
+    table = QTable.read(ecsv_path)
+    observations = table[table["action"] == "observe"]
+    assert len(unique(observations["target_coord"].to_table())) <= max_fields
+    assert table.meta["args"]["max_fields"] == max_fields
