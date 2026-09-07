@@ -110,6 +110,7 @@ ztf = Mission(
     #
     # FIXME: Implement non-uniform slew rate about different axes.
     slew=EigenAxisSlew(2.5 * u.deg / u.s, 0.4 * u.deg / u.s**2),
+    filter_exchange_time=110 * u.s,
     # Table 1 of https://ui.adsabs.harvard.edu/abs/2020PASP..132c8001D
     detector=Detector(
         area=np.pi * np.square(0.5 * 1244.6 * u.mm),
