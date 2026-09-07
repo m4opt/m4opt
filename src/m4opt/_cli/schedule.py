@@ -259,8 +259,9 @@ def schedule(
                 gps_time = skymap_moc.meta["gps_time"]
             except KeyError:
                 raise UsageError(
-                    f'The sky map "{skymap.name}" has no gps_time in its header. '
-                    "Pass --event-time, or write the sky map with a gps_time."
+                    f'The sky map "{skymap.name}" has no DATE-OBS in its header, '
+                    "which is where the time of the event is read from. "
+                    "Pass --event-time instead."
                 ) from None
             event_time = Time(Time(gps_time, format="gps").utc, format="iso")
 
