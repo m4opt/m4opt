@@ -36,6 +36,10 @@ Changes
 - Fix the ULTRASAT readout noise, which was set to the noise budget's
   variance (6 e-/pix) rather than its RMS.
 
+- Record ``has_observable_fields`` and ``has_solution`` in the schedule
+  metadata. An empty schedule previously gave no way to tell a sky that was
+  never observable from a solve that ran out of time.
+
 2.12.0 (2026-08-28)
 ===================
 

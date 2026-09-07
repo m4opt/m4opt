@@ -87,6 +87,7 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, request):
 def test_end_to_end_no_solution(run_scheduler):
     table = run_scheduler("--timelimit=1s", "--exptime-min=5hour", "--cutoff=0.1")
     assert len(table) == 0
+    assert not table.meta["has_solution"]
     assert table.meta["solution_status"].startswith("aborted")
     assert table.meta["objective_value"] == pytest.approx(0, abs=1e-7)
     assert table.meta["total_time"]["slack"] == 6 * u.hour
@@ -95,6 +96,8 @@ def test_end_to_end_no_solution(run_scheduler):
 def test_end_to_end_solution(run_scheduler):
     table = run_scheduler("--timelimit=1min", "--exptime-min=300s")
     assert len(table) >= 3
+    assert table.meta["has_observable_fields"]
+    assert table.meta["has_solution"]
 
 
 def test_fixed_exptime_with_appmag_dist(fits_path, ecsv_path, run_cli):
@@ -228,3 +231,44 @@ def test_animate_uses_the_recorded_event_time(
     result = run_cli(app, "animate", ecsv_path, gif_path, "--time-step=1hour")
     assert result.exit_code == 0
     assert gif_path.read_bytes().startswith(b"GIF89a")
+
+
+def test_nothing_observable_is_not_a_failed_solve(fits_path, ecsv_path, run_cli):
+    """An empty schedule says whether anything was observable at all."""
+    result = run_cli(
+        app,
+        "schedule",
+        fits_path,
+        ecsv_path,
+        "--mission=uvex",
+        "--bandpass=NUV",
+        "--nside=32",
+        "--deadline=1s",
+        "--timelimit=10s",
+        "--no-appmag-dist",
+    )
+    assert result.exit_code == 0
+    meta = QTable.read(ecsv_path).meta
+    assert not meta["has_observable_fields"]
+    assert not meta["has_solution"]
+
+
+def test_solver_gave_up_is_not_an_unobservable_sky(fits_path, ecsv_path, run_cli):
+    """A solve that finds nothing is distinguishable from an unobservable sky."""
+    result = run_cli(
+        app,
+        "schedule",
+        fits_path,
+        ecsv_path,
+        "--mission=uvex",
+        "--bandpass=NUV",
+        "--nside=32",
+        "--deadline=4hour",
+        "--timelimit=20s",
+        "--no-appmag-dist",
+        "--cutoff=0.999",
+    )
+    assert result.exit_code == 0
+    meta = QTable.read(ecsv_path).meta
+    assert meta["has_observable_fields"]
+    assert not meta["has_solution"]
