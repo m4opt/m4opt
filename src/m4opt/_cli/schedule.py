@@ -104,7 +104,7 @@ def schedule(
         Time | None,
         typer.Option(
             help="Time of the event, which --delay and --deadline are measured "
-            "from. Defaults to the gps_time in the sky map header.",
+            "from. Defaults to the DATE-OBS field in the sky map header.",
         ),
     ] = None,
     delay: Annotated[
