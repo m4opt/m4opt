@@ -136,3 +136,13 @@ def test_to_stream(m, suffix, tmp_path):
     m.maximize(x)
     with (tmp_path / "model").with_suffix(suffix).open("wb") as f:
         m.to_stream(f)
+
+
+@pytest.mark.parametrize(
+    "expr",
+    ("x + 5", "5 + x", "x - 5", "5 - x", "-x", "2 * x", "x * 2"),
+)
+def test_scalar_arithmetic(m, expr):
+    """A scalar may appear on either side of an arithmetic operator."""
+    x = m.continuous_vars((3, 2), lb=0, ub=1)
+    m.add_constraints_(eval(expr, None, {"x": x}) >= -100)
