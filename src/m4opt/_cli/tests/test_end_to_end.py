@@ -9,6 +9,18 @@ from click import UsageError
 from .. import app
 from . import data
 
+#: Each mission with a bandpass that its detector has, so that the same test
+#: bodies run for a space telescope and a ground based one.
+MISSIONS = {
+    "uvex": ("--mission=uvex", "--bandpass=NUV"),
+    "ztf": ("--mission=ztf", "--bandpass=g"),
+}
+
+
+@pytest.fixture(params=MISSIONS)
+def mission_args(request):
+    return MISSIONS[request.param]
+
 
 @pytest.fixture
 def fits_path():
@@ -27,13 +39,13 @@ def gif_path(tmp_path):
 
 
 @pytest.fixture(params=[None, -14])
-def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, request):
+def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, mission_args, request):
     absmag_mean = request.param
 
     def func(*args):
         args = [
             *args,
-            "--bandpass=NUV",
+            *mission_args,
             "--nside=128",
             "--deadline=6hour",
             "--no-appmag-dist",
@@ -97,7 +109,7 @@ def test_end_to_end_solution(run_scheduler):
     assert len(table) >= 3
 
 
-def test_fixed_exptime_with_appmag_dist(fits_path, ecsv_path, run_cli):
+def test_fixed_exptime_with_appmag_dist(fits_path, ecsv_path, run_cli, mission_args):
     """Fixed exposure time mode should work when appmag_dist is True (default).
 
     Regression test for https://github.com/m4opt/m4opt/issues/XXX:
@@ -110,7 +122,7 @@ def test_fixed_exptime_with_appmag_dist(fits_path, ecsv_path, run_cli):
         "schedule",
         fits_path,
         ecsv_path,
-        "--bandpass=NUV",
+        *mission_args,
         "--nside=128",
         "--deadline=6hour",
         "--exptime-min=300s",
