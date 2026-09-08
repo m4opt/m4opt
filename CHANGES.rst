@@ -2,7 +2,7 @@
 Changes
 *******
 
-2.12.1 (unreleased)
+2.13.0 (2026-09-08)
 ===================
 
 - Fix a crash in variable exposure time mode for ground-based missions, where
