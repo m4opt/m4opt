@@ -5,6 +5,10 @@ Changes
 2.12.1 (unreleased)
 ===================
 
+- Fix a crash in variable exposure time mode for ground-based missions, where
+  the observer location was passed as an array over all observing times rather
+  than at the single time for which the exposure time is evaluated.
+
 - Fix ``TypeError`` when a scalar appears on the left of an arithmetic
   operator applied to an array of decision variables, as in ``5 - x``.
 
