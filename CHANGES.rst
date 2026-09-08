@@ -2,6 +2,16 @@
 Changes
 *******
 
+2.14.0 (unreleased)
+===================
+
+- Fix the interpolation of dust extinction. The count rate was sampled on a
+  grid spaced linearly out to the most reddened pixel of the whole dust map,
+  E(B-V) of 165, so that its first step landed at 0.32 and 82% of the sky fell
+  inside it. The grid is now spaced in asinh and the logarithm of the count
+  rate is interpolated, which extinction makes nearly straight, reducing the
+  error from a few percent to about one part in a billion.
+
 2.13.0 (2026-09-08)
 ===================
 
