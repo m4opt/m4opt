@@ -691,7 +691,7 @@ def schedule(
                     "duration": "Duration of segment",
                     "target_coord": "Coordinates of the center of the FOV",
                     "roll": "Position angle of the FOV",
-                    "field_id": "The mission's name for the field observed",
+                    "field_id": "The mission's ID for the field observed",
                 },
                 meta={
                     "command": shlex.join(sys.argv),
