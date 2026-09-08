@@ -81,6 +81,22 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, mission_args, request
         ).all()
         assert (observations["duration"] <= table.meta["args"]["exptime_max"]).all()
 
+        grid = getattr(missions, table.meta["args"]["mission"]).skygrid
+        if isinstance(grid, dict):
+            grid = grid[table.meta["args"]["skygrid"]]
+        field_ids = observations["field_id"]
+        assert not np.any(np.ma.getmaskarray(field_ids)), (
+            "an observation names the field it points at"
+        )
+        # The identifier indexes the grid, so no translation is needed.
+        separation = grid[np.asarray(field_ids)].separation(
+            observations["target_coord"]
+        )
+        np.testing.assert_allclose(np.asarray(separation.deg), 0, atol=1e-9)
+        assert np.all(
+            np.ma.getmaskarray(table[table["action"] == "slew"]["field_id"])
+        ), "a slew points at no field"
+
         result = run_cli(
             app,
             "animate",
@@ -108,28 +124,6 @@ def test_end_to_end_no_solution(run_scheduler):
 def test_end_to_end_solution(run_scheduler):
     table = run_scheduler("--timelimit=1min", "--exptime-min=300s")
     assert len(table) >= 3
-
-
-def test_field_id_names_the_field_observed(run_scheduler):
-    """Each observation names the field it points at, as the mission names it."""
-    table = run_scheduler("--timelimit=1min", "--exptime-min=300s")
-    observations = table[table["action"] == "observe"]
-    assert len(observations) > 0
-
-    mission = getattr(missions, table.meta["args"]["mission"])
-    grid = mission.skygrid
-    if isinstance(grid, dict):
-        grid = grid[table.meta["args"]["skygrid"]]
-    field_ids = observations["field_id"]
-    assert not np.any(field_ids.mask), "an observation always names its field"
-    field_ids = np.asarray(field_ids)
-    # The identifier indexes the grid, so no translation is needed.
-    pointing = grid[field_ids]
-    separation = pointing.separation(observations["target_coord"])
-    np.testing.assert_allclose(np.asarray(separation.deg), 0, atol=1e-9)
-
-    # A slew points at no field.
-    assert np.all(table[table["action"] == "slew"]["field_id"].mask)
 
 
 def test_fixed_exptime_with_appmag_dist(fits_path, ecsv_path, run_cli, mission_args):

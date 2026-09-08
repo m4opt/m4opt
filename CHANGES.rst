@@ -12,6 +12,12 @@ Changes
   rate is interpolated, which extinction makes nearly straight, reducing the
   error from a few percent to about one part in a billion.
 
+- Add a ``field_id`` column to schedules, naming the field that each
+  observation points at. For a mission that numbers its own fields the value
+  is that number: ZTF's sky grid is now indexed by its field identifiers,
+  which run from 1 to 1897 across 1778 fields, with the numbers it does not
+  use masked out. A slew points at no field, so its identifier is masked.
+
 2.13.0 (2026-09-08)
 ===================
 
@@ -51,12 +57,6 @@ Changes
   variance (6 e-/pix) rather than its RMS.
 
 - Add ``intersect1d``, an accelerated version of ``numpy.intersect1d``.
-
-- Add a ``field_id`` column to schedules, naming the field that each
-  observation points at. For a mission that numbers its own fields the value
-  is that number: ZTF's sky grid is now indexed by its field identifiers,
-  which run from 1 to 1897 across 1778 fields, with the numbers it does not
-  use masked out. A slew points at no field, so its identifier is masked.
 
 2.12.0 (2026-08-28)
 ===================
