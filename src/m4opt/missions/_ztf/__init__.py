@@ -76,9 +76,10 @@ def _read_skygrid():
     # The grid is numbered by ZTF's own field identifiers, which run from 1 to
     # 1897 with one gap over 882-1000; the fields it does not use are masked.
     ids = np.asarray(table["col1"])
-    ra = np.zeros(ids.max() + 1)
-    dec = np.zeros(ids.max() + 1)
-    mask = np.ones(ids.max() + 1, dtype=bool)
+    n = ids.max() + 1
+    ra = np.zeros(n)
+    dec = np.zeros(n)
+    mask = np.ones(n, dtype=bool)
     ra[ids] = table["col2"]
     dec[ids] = table["col3"]
     mask[ids] = False
