@@ -56,7 +56,7 @@ Changes
   observation points at. For a mission that numbers its own fields the value
   is that number: ZTF's sky grid is now indexed by its field identifiers,
   which run from 1 to 1897 across 1778 fields, with the numbers it does not
-  use masked out. A slew belongs to no field and is recorded as -1.
+  use masked out. A slew points at no field, so its identifier is masked.
 
 2.12.0 (2026-08-28)
 ===================

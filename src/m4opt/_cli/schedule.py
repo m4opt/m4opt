@@ -284,16 +284,11 @@ def schedule(
         # The row of the grid is the mission's own name for the field. A
         # mission that numbers its fields leaves gaps, masked out of the grid
         # and dropped here so that everything below is dense.
-        field_ids = np.arange(len(target_coords))
-        ra, dec = target_coords.ra, target_coords.dec
-        mask = getattr(ra, "mask", None)
-        if mask is not None:
-            keep = ~np.asarray(mask)
-            ra, dec, field_ids = ra[keep], dec[keep], field_ids[keep]
+        keep = ~target_coords.mask
+        field_ids = np.arange(len(target_coords))[keep]
+        target_coords = target_coords.unmasked[keep]
         # FIXME: https://github.com/astropy/astropy/issues/17030
-        target_coords = SkyCoord(
-            getattr(ra, "unmasked", ra), getattr(dec, "unmasked", dec)
-        )
+        target_coords = SkyCoord(target_coords.ra, target_coords.dec)
         exptime_min_s = exptime_min.to_value(u.s)
         cadence_s = cadence.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
@@ -748,8 +743,6 @@ def schedule(
                             table["roll"][:-1],
                             table["roll"][1:],
                         ),
-                        # A slew belongs to no field.
-                        "field_id": np.full(nrows, -1),
                     }
                 )
                 table = vstack(
