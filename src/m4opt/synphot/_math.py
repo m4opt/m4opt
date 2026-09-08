@@ -5,10 +5,11 @@ import numpy as np
 import sympy
 from astropy import units as u
 from astropy.modeling import CompoundModel, Model
-from scipy.interpolate import interp1d
+from scipy.interpolate import RegularGridInterpolator, interp1d
 from synphot import SourceSpectrum, SpectralElement
 
 from ._extrinsic import ScaleFactor, state
+from .extinction._atmosphere import AtmosphericExtinctionForSkyCoord
 from .extinction._dust import DustExtinction, DustExtinctionForSkyCoord, dust_map
 
 
@@ -41,23 +42,24 @@ def countrate(
     <Quantity 1.12409479e+09 PHOTLAM>
     >>> with observing(EarthLocation.of_site('Palomar'), SkyCoord(*np.meshgrid(np.linspace(0, 360, 100), np.linspace(-90, 90, 200)), unit=u.deg), Time('2024-01-01')):
     ...     countrate(spectrum, band)
-    <Quantity [[1.15320102e+14, 1.15320102e+14, 1.15320102e+14, ...,
-                1.15320102e+14, 1.15320102e+14, 1.15320102e+14],
-               [1.25062090e+14, 1.26075744e+14, 1.27402724e+14, ...,
-                1.24497734e+14, 1.24740423e+14, 1.25062090e+14],
-               [1.32286015e+14, 1.32147384e+14, 1.31646656e+14, ...,
-                1.27972484e+14, 1.30482658e+14, 1.32286015e+14],
+    <Quantity [[1.15140438e+14, 1.15140438e+14, 1.15140438e+14, ...,
+                1.15140438e+14, 1.15140438e+14, 1.15140438e+14],
+               [1.24826976e+14, 1.25836843e+14, 1.27159526e+14, ...,
+                1.24264912e+14, 1.24506600e+14, 1.24826976e+14],
+               [1.32033983e+14, 1.31895443e+14, 1.31395121e+14, ...,
+                1.27727678e+14, 1.30232553e+14, 1.32033983e+14],
                ...,
-               [9.87043893e+13, 8.69811951e+13, 9.38715461e+13, ...,
-                1.12819824e+14, 1.09335735e+14, 9.87043893e+13],
-               [1.21601239e+14, 1.19479681e+14, 1.17085538e+14, ...,
-                1.16983070e+14, 1.19741001e+14, 1.21601239e+14],
-               [1.04718610e+14, 1.04718610e+14, 1.04718610e+14, ...,
-                1.04718610e+14, 1.04718610e+14, 1.04718610e+14]] 1 / (s cm2)>
+               [9.86638417e+13, 8.70293885e+13, 9.38712128e+13, ...,
+                1.12658842e+14, 1.09202848e+14, 9.86638417e+13],
+               [1.21382128e+14, 1.19272528e+14, 1.16893607e+14, ...,
+                1.16791828e+14, 1.19532294e+14, 1.21382128e+14],
+               [1.04625376e+14, 1.04625376e+14, 1.04625376e+14, ...,
+                1.04625376e+14, 1.04625376e+14, 1.04625376e+14]] 1 / (s cm2)>
     """
     count_rate_unit = 1 / (u.s * u.cm**2)
     scale_factors = []
     dust_extinction = None
+    atmospheric_extinction = None
 
     def model_to_expr(model):
         match model:
@@ -73,6 +75,11 @@ def countrate(
                 symbol = ModelSymbol(model)
                 nonlocal dust_extinction
                 dust_extinction = symbol
+                return symbol
+            case AtmosphericExtinctionForSkyCoord():
+                symbol = ModelSymbol(model)
+                nonlocal atmospheric_extinction
+                atmospheric_extinction = symbol
                 return symbol
             case _:
                 return ModelSymbol(model)
@@ -92,27 +99,92 @@ def countrate(
         return (spectrum * bandpass).integrate(bandpass.waveset) / u.photon
 
     def base_countrate(spectrum):
+        # Both kinds of extinction dim the source by an amount that depends on
+        # where it is, through one number each: the reddening of the dust in
+        # front of it, and the airmass of the line of sight. Rather than
+        # integrate the spectrum separately for every target, integrate it over
+        # a grid of those numbers and interpolate, which pays off as soon as
+        # there are more targets than grid points.
+        n_samples = 512
+
         @np.vectorize(otypes=[float])
-        def base_countrate_extinction_for_Ebv(Ebv):
+        def countrate_for_Ebv(Ebv):
             return base_countrate_no_extinction(
                 spectrum * DustExtinction(Ebv)
             ).to_value(count_rate_unit)
 
+        @np.vectorize(otypes=[float])
+        def countrate_for_airmass(airmass):
+            return base_countrate_no_extinction(
+                spectrum * atmospheric_extinction.model.at_airmass(airmass)
+            ).to_value(count_rate_unit)
+
+        @np.vectorize(otypes=[float])
+        def countrate_for_both(Ebv, airmass):
+            return base_countrate_no_extinction(
+                spectrum
+                * DustExtinction(Ebv)
+                * atmospheric_extinction.model.at_airmass(airmass)
+            ).to_value(count_rate_unit)
+
+        def grid(values, size):
+            """Points spanning the values, or None if they span nothing."""
+            low, high = np.min(values), np.max(values)
+            if not high > low:
+                return None
+            return np.linspace(low, high, size)
+
         if dust_extinction is not None:
-            xp = dust_map().query(state.get().target_coord)
-            n_samples = 512
-            if np.size(xp) >= n_samples:
-                x = np.linspace(0, dust_extinction.model.Ebv_max, n_samples)
-                y = base_countrate_extinction_for_Ebv(x)
-                xp = dust_map().query(state.get().target_coord)
+            Ebv = dust_map().query(state.get().target_coord)
+        if atmospheric_extinction is not None:
+            airmass = atmospheric_extinction.model.airmass
+
+        # Extinction is exponential in each of these, so the logarithm of the
+        # count rate is nearly straight in them and interpolates far better
+        # than the count rate itself.
+        match (dust_extinction, atmospheric_extinction):
+            case (None, None):
+                return base_countrate_no_extinction(spectrum)
+            case (_, None):
+                x = None if np.size(Ebv) < n_samples else grid(Ebv, n_samples)
+                if x is None:
+                    return countrate_for_Ebv(Ebv) * count_rate_unit
+                y = np.log(countrate_for_Ebv(x))
                 return (
-                    interp1d(x, y, kind="cubic", copy=False, assume_sorted=True)(xp)
+                    np.exp(
+                        interp1d(x, y, kind="cubic", copy=False, assume_sorted=True)(
+                            Ebv
+                        )
+                    )
                     * count_rate_unit
                 )
-            else:
-                return base_countrate_extinction_for_Ebv(xp) * count_rate_unit
-        else:
-            return base_countrate_no_extinction(spectrum)
+            case (None, _):
+                x = None if np.size(airmass) < n_samples else grid(airmass, n_samples)
+                if x is None:
+                    return countrate_for_airmass(airmass) * count_rate_unit
+                y = np.log(countrate_for_airmass(x))
+                return (
+                    np.exp(
+                        interp1d(x, y, kind="cubic", copy=False, assume_sorted=True)(
+                            airmass
+                        )
+                    )
+                    * count_rate_unit
+                )
+            case _:
+                # Two parameters, so the grid is two-dimensional and each side
+                # of it is correspondingly coarser.
+                side = int(np.sqrt(n_samples))
+                shape = np.broadcast_shapes(np.shape(Ebv), np.shape(airmass))
+                x = y = None
+                if np.prod(shape, dtype=int) >= side * side:
+                    x, y = grid(Ebv, side), grid(airmass, side)
+                if x is None or y is None:
+                    return countrate_for_both(Ebv, airmass) * count_rate_unit
+                z = np.log(countrate_for_both(x[:, np.newaxis], y[np.newaxis, :]))
+                interp = RegularGridInterpolator((x, y), z, method="cubic")
+                points = np.stack(np.broadcast_arrays(Ebv, airmass), axis=-1)
+                return np.exp(interp(points)) * count_rate_unit
 
     def evaluate_term(term):
         match term:
@@ -130,13 +202,21 @@ def countrate(
                 )
 
     expr = model_to_expr(spectrum.model)
-    if (
-        dust_extinction is not None
-        and (new_expr := expr.extract_multiplicatively(dust_extinction)) is not None
-    ):
-        expr = new_expr
-    else:
-        dust_extinction = None
+    # Each kind of extinction can be pulled out of the expression and applied
+    # by interpolation instead. Any that will not factor out stays in the
+    # spectrum and is integrated directly.
+    if dust_extinction is not None:
+        if (new_expr := expr.extract_multiplicatively(dust_extinction)) is not None:
+            expr = new_expr
+        else:
+            dust_extinction = None
+    if atmospheric_extinction is not None:
+        if (
+            new_expr := expr.extract_multiplicatively(atmospheric_extinction)
+        ) is not None:
+            expr = new_expr
+        else:
+            atmospheric_extinction = None
 
     return sum(
         evaluate_coef(coef) * evaluate_term(term)
