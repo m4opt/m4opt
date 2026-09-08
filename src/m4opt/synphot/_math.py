@@ -99,21 +99,26 @@ def countrate(
             ).to_value(count_rate_unit)
 
         if dust_extinction is not None:
-            xp = dust_map().query(state.get().target_coord)
+            # The map is float32, whose quantization would swamp the
+            # interpolation error, so work in double precision throughout.
+            xp = np.asarray(dust_map().query(state.get().target_coord), dtype=float)
             n_samples = 512
             if np.size(xp) >= n_samples:
                 # Extinction is exponential in the reddening, so interpolate
                 # the logarithm, which is nearly straight, over a grid spaced
-                # in asinh, which resolves the small reddenings that almost
-                # every sightline has while still reaching Ebv_max. Past a
-                # reddening of about 120 the count rate falls below the
-                # smallest positive double; such a sightline is dark either
-                # way, so floor it. Ebv_max and the dust map are float32, and
-                # their quantization would swamp the interpolation error.
+                # in asinh. The linear width is the reddening below which the
+                # spacing stops refining; 3 sits in a broad optimum, resolving
+                # the small reddenings that almost every sightline has while
+                # still reaching Ebv_max. Past a reddening of about 120 the
+                # count rate falls below the smallest positive double, and such
+                # a sightline is dark either way, so floor it.
+                linear_width = 3
                 x = np.linspace(
-                    0, np.arcsinh(float(dust_extinction.model.Ebv_max)), n_samples
+                    0,
+                    np.arcsinh(float(dust_extinction.model.Ebv_max) / linear_width),
+                    n_samples,
                 )
-                y = base_countrate_extinction_for_Ebv(np.sinh(x))
+                y = base_countrate_extinction_for_Ebv(linear_width * np.sinh(x))
                 return (
                     np.exp(
                         interp1d(
@@ -122,7 +127,7 @@ def countrate(
                             kind="cubic",
                             copy=False,
                             assume_sorted=True,
-                        )(np.arcsinh(xp, dtype=float))
+                        )(np.arcsinh(xp / linear_width))
                     )
                     * count_rate_unit
                 )
