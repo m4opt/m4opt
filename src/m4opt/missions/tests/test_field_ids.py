@@ -1,7 +1,11 @@
+from importlib import resources
+
 import numpy as np
 import pytest
+from astropy.table import Table
 
 from .. import ultrasat, uvex, ztf
+from .._ztf import data
 
 
 def test_the_ztf_grid_is_numbered_by_field_id():
@@ -23,13 +27,8 @@ def test_a_field_ztf_uses_is_not_masked(field_id):
 
 def test_the_ztf_grid_matches_the_field_list():
     """Each coordinate sits at the row its own identifier names."""
-    from astropy.table import Table
-
-    from .._ztf import data
-
     table = Table.read(
-        __import__("importlib.resources", fromlist=["files"]).files(data)
-        / "ZTF_Fields.txt",
+        resources.files(data) / "ZTF_Fields.txt",
         format="ascii.no_header",
         comment="%",
     )
