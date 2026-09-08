@@ -6,6 +6,7 @@ from astropy import units as u
 from astropy.table import QTable, unique
 from click import UsageError
 
+from ... import missions
 from .. import app
 from . import data
 
@@ -79,6 +80,22 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, mission_args, request
             observations["duration"] + 1e-3 * u.s >= table.meta["args"]["exptime_min"]
         ).all()
         assert (observations["duration"] <= table.meta["args"]["exptime_max"]).all()
+
+        grid = getattr(missions, table.meta["args"]["mission"]).skygrid
+        if isinstance(grid, dict):
+            grid = grid[table.meta["args"]["skygrid"]]
+        field_ids = observations["field_id"]
+        assert not np.any(np.ma.getmaskarray(field_ids)), (
+            "an observation names the field it points at"
+        )
+        # The identifier indexes the grid, so no translation is needed.
+        separation = grid[np.asarray(field_ids)].separation(
+            observations["target_coord"]
+        )
+        np.testing.assert_allclose(np.asarray(separation.deg), 0, atol=1e-9)
+        assert np.all(
+            np.ma.getmaskarray(table[table["action"] == "slew"]["field_id"])
+        ), "a slew points at no field"
 
         result = run_cli(
             app,

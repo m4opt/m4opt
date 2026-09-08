@@ -4,6 +4,7 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import EarthLocation, SkyCoord
 from astropy.table import Table
+from astropy.utils.masked import Masked
 from regions import PolygonSkyRegion, Regions
 
 from ...constraints import (
@@ -72,7 +73,20 @@ def _read_skygrid():
         format="ascii.no_header",
         comment="%",
     )
-    return SkyCoord(table["col2"], table["col3"], unit=u.deg)
+    # The grid is numbered by ZTF's own field identifiers, which run from 1 to
+    # 1897 with one gap over 882-1000; the fields it does not use are masked.
+    ids = np.asarray(table["col1"])
+    n = ids.max() + 1
+    ra = np.zeros(n)
+    dec = np.zeros(n)
+    mask = np.ones(n, dtype=bool)
+    ra[ids] = table["col2"]
+    dec[ids] = table["col3"]
+    mask[ids] = False
+    return SkyCoord(
+        Masked(ra * u.deg, mask=mask),
+        Masked(dec * u.deg, mask=mask),
+    )
 
 
 ztf = Mission(

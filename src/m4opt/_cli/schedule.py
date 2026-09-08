@@ -281,6 +281,12 @@ def schedule(
                 f"skygrid '{skygrid}' not found. Options: {', '.join(map(str, mission.skygrid.keys()))}"
             )
 
+        # The row of the grid is the mission's own name for the field. A
+        # mission that numbers its fields leaves gaps, masked out of the grid
+        # and dropped here so that everything below is dense.
+        keep = ~target_coords.mask
+        field_ids = np.arange(len(target_coords))[keep]
+        target_coords = target_coords.unmasked[keep]
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
         exptime_min_s = exptime_min.to_value(u.s)
@@ -313,6 +319,7 @@ def schedule(
         good = np.asarray([len(intervals) > 0 for intervals in observable_intervals])
         observable_intervals = observable_intervals[good]
         target_coords = target_coords[good]
+        field_ids = field_ids[good]
 
     with status("calculating footprints"):
         if isinstance(mission.observer_location, EarthFixedObserverLocation):
@@ -336,6 +343,7 @@ def schedule(
             rolls = rolls[good]
             footprints = footprints[good]
             observable_intervals = observable_intervals[good]
+            field_ids = field_ids[good]
         else:
             n_fields = len(target_coords)
 
@@ -668,6 +676,9 @@ def schedule(
                     "roll": rolls[
                         np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
                     ].ravel(),
+                    "field_id": field_ids[
+                        np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
+                    ].ravel(),
                 },
                 descriptions={
                     "action": "Action for the spacecraft",
@@ -675,6 +686,7 @@ def schedule(
                     "duration": "Duration of segment",
                     "target_coord": "Coordinates of the center of the FOV",
                     "roll": "Position angle of the FOV",
+                    "field_id": "The mission's ID for the field observed",
                 },
                 meta={
                     "command": shlex.join(sys.argv),
