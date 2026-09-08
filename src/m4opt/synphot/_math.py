@@ -98,33 +98,38 @@ def countrate(
                 spectrum * DustExtinction(Ebv)
             ).to_value(count_rate_unit)
 
-        if dust_extinction is None:
+        if dust_extinction is not None:
+            xp = dust_map().query(state.get().target_coord)
+            n_samples = 512
+            if np.size(xp) >= n_samples:
+                # Extinction is exponential in the reddening, so interpolate
+                # the logarithm, which is nearly straight, over a grid spaced
+                # in asinh, which resolves the small reddenings that almost
+                # every sightline has while still reaching Ebv_max. Past a
+                # reddening of about 120 the count rate falls below the
+                # smallest positive double; such a sightline is dark either
+                # way, so floor it. Ebv_max and the dust map are float32, and
+                # their quantization would swamp the interpolation error.
+                x = np.linspace(
+                    0, np.arcsinh(float(dust_extinction.model.Ebv_max)), n_samples
+                )
+                y = base_countrate_extinction_for_Ebv(np.sinh(x))
+                return (
+                    np.exp(
+                        interp1d(
+                            x,
+                            np.log(np.maximum(y, np.finfo(y.dtype).tiny)),
+                            kind="cubic",
+                            copy=False,
+                            assume_sorted=True,
+                        )(np.arcsinh(xp, dtype=float))
+                    )
+                    * count_rate_unit
+                )
+            else:
+                return base_countrate_extinction_for_Ebv(xp) * count_rate_unit
+        else:
             return base_countrate_no_extinction(spectrum)
-
-        # Rather than integrate the spectrum once for every target, integrate
-        # it over a grid of reddenings and interpolate, which pays off as soon
-        # as there are more targets than grid points. Extinction is exponential
-        # in the reddening, so it is the logarithm of the count rate that is
-        # nearly straight and worth interpolating, and the grid need only cover
-        # the reddenings that the targets actually have.
-        xp = dust_map().query(state.get().target_coord)
-        n_samples = 512
-        low, high = np.min(xp), np.max(xp)
-        if np.size(xp) < n_samples or not high > low:
-            return base_countrate_extinction_for_Ebv(xp) * count_rate_unit
-
-        x = np.linspace(low, high, n_samples)
-        y = base_countrate_extinction_for_Ebv(x)
-        if not np.all(y > 0):
-            # A count rate that has underflowed to zero has no logarithm.
-            return base_countrate_extinction_for_Ebv(xp) * count_rate_unit
-
-        return (
-            np.exp(
-                interp1d(x, np.log(y), kind="cubic", copy=False, assume_sorted=True)(xp)
-            )
-            * count_rate_unit
-        )
 
     def evaluate_term(term):
         match term:

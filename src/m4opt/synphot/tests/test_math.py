@@ -56,7 +56,41 @@ def test_dust_interpolation_matches_direct_integration():
         ]
     )
 
-    np.testing.assert_allclose(interpolated, direct, rtol=1e-6)
+    np.testing.assert_allclose(interpolated, direct, rtol=1e-8)
+
+
+def test_dust_interpolation_ignores_the_other_targets():
+    """A sightline's count rate does not depend on what else is evaluated with it.
+
+    The reddening grid is fixed rather than spanning the reddenings that happen
+    to be present, so the same sightline gives the same count rate whichever
+    targets accompany it.
+    """
+    location = EarthLocation.of_site("Palomar")
+    spectrum = (
+        synphot.SourceSpectrum(synphot.BlackBody1D, temperature=1000 * u.Kelvin)
+        * DustExtinction()
+    )
+    bandpass = synphot.SpectralElement.from_filter("johnson_r")
+
+    def sightlines(n, seed):
+        rng = np.random.default_rng(seed)
+        return SkyCoord(
+            rng.uniform(0, 360, n) * u.deg,
+            np.degrees(np.arcsin(rng.uniform(-1, 1, n))) * u.deg,
+        )
+
+    probes = sightlines(20, 11)
+    results = [
+        _batch_countrate(
+            location,
+            np.concatenate([probes, sightlines(TARGETS, seed)]),
+            spectrum,
+            bandpass,
+        )[: len(probes)]
+        for seed in (12, 13)
+    ]
+    np.testing.assert_array_equal(*results)
 
 
 def _batch_countrate(location, coord, spectrum, bandpass):
