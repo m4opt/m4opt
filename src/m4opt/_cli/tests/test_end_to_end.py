@@ -110,8 +110,8 @@ def test_end_to_end_solution(run_scheduler):
     assert len(table) >= 3
 
 
-def test_field_index_identifies_the_sky_grid_row(run_scheduler):
-    """Each observation names the sky grid row it points at."""
+def test_field_id_names_the_field_observed(run_scheduler):
+    """Each observation names the field it points at, as the mission names it."""
     table = run_scheduler("--timelimit=1min", "--exptime-min=300s")
     observations = table[table["action"] == "observe"]
     assert len(observations) > 0
@@ -120,13 +120,15 @@ def test_field_index_identifies_the_sky_grid_row(run_scheduler):
     grid = mission.skygrid
     if isinstance(grid, dict):
         grid = grid[table.meta["args"]["skygrid"]]
-    indices = np.asarray(observations["field_index"])
-    assert np.all(indices >= 0)
-    separation = grid[indices].separation(observations["target_coord"])
-    np.testing.assert_allclose(separation.deg, 0, atol=1e-9)
+    field_ids = np.asarray(observations["field_id"])
+    assert np.all(field_ids >= 0)
+    # The identifier indexes the grid, so no translation is needed.
+    pointing = grid[field_ids]
+    separation = pointing.separation(observations["target_coord"])
+    np.testing.assert_allclose(np.asarray(separation.deg), 0, atol=1e-9)
 
     # A slew belongs to no field.
-    assert np.all(np.asarray(table[table["action"] == "slew"]["field_index"]) == -1)
+    assert np.all(np.asarray(table[table["action"] == "slew"]["field_id"]) == -1)
 
 
 def test_fixed_exptime_with_appmag_dist(fits_path, ecsv_path, run_cli, mission_args):

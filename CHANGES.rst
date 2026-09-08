@@ -53,10 +53,10 @@ Changes
 - Add ``intersect1d``, an accelerated version of ``numpy.intersect1d``.
 
 - Name the field that each observation points at. Schedules gain a
-  ``field_index`` column giving the row in the mission's sky grid, and a
-  ``field_id`` column giving the mission's own identifier for missions that
-  name their fields. ZTF's identifiers are read from its field list; they run
-  from 1 to 1897 with gaps, so they cannot be inferred from position.
+  ``field_id`` column holding the row of the mission's sky grid, which for a
+  mission that numbers its own fields is the number it uses. ZTF's grid is
+  indexed by its field identifiers, which run from 1 to 1897 across 1778
+  fields; the numbers it does not use are masked out of the grid.
 
 2.12.0 (2026-08-28)
 ===================
