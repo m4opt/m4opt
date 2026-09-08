@@ -14,7 +14,7 @@ from ...constraints import (
     AtNightConstraint,
     MoonSeparationConstraint,
 )
-from ...dynamics import EigenAxisSlew
+from ...dynamics import AltAzSlew, SlewComponent
 from ...observer import EarthFixedObserverLocation
 from ...synphot import Detector, bandpass_from_svo
 from ...synphot.background import SkyBackground, ZodiacalBackground
@@ -42,6 +42,34 @@ def _make_fov():
     )
 
 
+# Initialize Components for Rubin's Slew Model
+rubin_loc = EarthLocation(
+    lat=-30.244633 * u.deg, lon=-70.749417 * u.deg, height=2647 * u.m
+)
+mount_alt = SlewComponent(
+    max_angular_velocity=3.5 * u.deg / u.s,
+    max_angular_acceleration=3.5 * u.deg / u.s**2,
+    max_angular_jerk=14.0 * u.deg / u.s**3,
+    settling_time=3 * u.s,
+)
+mount_az = SlewComponent(
+    max_angular_velocity=7 * u.deg / u.s,
+    max_angular_acceleration=7 * u.deg / u.s**2,
+    max_angular_jerk=28 * u.deg / u.s**3,
+    settling_time=3 * u.s,
+)
+dome_alt = SlewComponent(
+    max_angular_velocity=1.75 * u.deg / u.s,
+    max_angular_acceleration=0.75 * u.deg / u.s**2,
+    max_angular_jerk=3 * u.deg / u.s**3,
+)
+dome_az = SlewComponent(
+    max_angular_velocity=1.5 * u.deg / u.s,
+    max_angular_acceleration=0.875 * u.deg / u.s**2,
+    max_angular_jerk=3.5 * u.deg / u.s**3,
+    settling_time=1 * u.s,
+)
+
 rubin = Mission(
     name="rubin",
     fov=_make_fov(),
@@ -54,13 +82,12 @@ rubin = Mission(
     observer_location=EarthFixedObserverLocation(EarthLocation.of_site("LSST")),
     # Sky grid optimized for LSST’s large field of view.
     skygrid=skygrid.geodesic(3.5 * u.deg**2, class_="III", base="icosahedron"),
-    # FIXME: The Telescope Mount Assembly is faster than the dome for long slews.
-    # Therefore, we use the dome setup instead of the slew model
-    # https://github.com/lsst/rubin_scheduler/blob/main/rubin_scheduler/scheduler/model_observatory/kinem_model.py#L232-L233
-    slew=EigenAxisSlew(
-        max_angular_velocity=1.5 * u.deg / u.s,
-        max_angular_acceleration=0.75 * u.deg / u.s**2,
-        settling_time=1 * u.s,
+    slew=AltAzSlew(
+        comp1=mount_alt,
+        comp2=mount_az,
+        comp3=dome_alt,
+        comp4=dome_az,
+        location=rubin_loc,
     ),
     # Parameters from SMTN-002: https://smtn-002.lsst.io/
     detector=Detector(
