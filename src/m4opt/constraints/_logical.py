@@ -41,6 +41,12 @@ class LogicalAndConstraint(LogicalReductionConstraint):
 
     _operator = np.logical_and
 
+    def __and__(self, rhs):
+        if isinstance(rhs, __class__):
+            return __class__(*self._operands, *rhs._operands)
+        else:
+            return __class__(*self._operands, rhs)
+
 
 class LogicalOrConstraint(LogicalReductionConstraint):
     """Combine two or more constraints using a logical "or" operation.
@@ -67,6 +73,12 @@ class LogicalOrConstraint(LogicalReductionConstraint):
     """
 
     _operator = np.logical_or
+
+    def __or__(self, rhs):
+        if isinstance(rhs, __class__):
+            return __class__(*self._operands, *rhs._operands)
+        else:
+            return __class__(*self._operands, rhs)
 
 
 class LogicalNotConstraint(Constraint):
