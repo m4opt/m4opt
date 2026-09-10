@@ -18,6 +18,9 @@ Changes
   which run from 1 to 1897 across 1778 fields, with the numbers it does not
   use masked out. A slew points at no field, so its identifier is masked.
 
+- Speed up evaluation of composite, logical "and" or logical "or", constraints
+  using short-circuit evaluation.
+
 2.13.0 (2026-09-08)
 ===================
 

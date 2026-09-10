@@ -1,9 +1,9 @@
-from functools import reduce
 from typing import override
 
 import numpy as np
 
 from ._core import Constraint
+from ._short_circuit import logical_and_short_circuit, logical_or_short_circuit
 
 
 class LogicalReductionConstraint(Constraint):
@@ -12,7 +12,11 @@ class LogicalReductionConstraint(Constraint):
 
     @override
     def __call__(self, *args):
-        return reduce(self._operator, (operand(*args) for operand in self._operands))
+        first, *rest = self._operands
+        result = first(*args)
+        for operand in rest:
+            result = self._short_circuit(result, operand, *args)
+        return result
 
 
 class LogicalAndConstraint(LogicalReductionConstraint):
@@ -21,6 +25,11 @@ class LogicalAndConstraint(LogicalReductionConstraint):
     See Also
     --------
     LogicalOrConstraint, LogicalNotConstraint
+
+    Notes
+    -----
+    The order of the operands may affect performance because short-circuit
+    evaluation is employed.
 
     Examples
     --------
@@ -39,7 +48,7 @@ class LogicalAndConstraint(LogicalReductionConstraint):
     np.True_
     """
 
-    _operator = np.logical_and
+    _short_circuit = staticmethod(logical_and_short_circuit)
 
 
 class LogicalOrConstraint(LogicalReductionConstraint):
@@ -48,6 +57,11 @@ class LogicalOrConstraint(LogicalReductionConstraint):
     See Also
     --------
     LogicalAndConstraint, LogicalNotConstraint
+
+    Notes
+    -----
+    The order of the operands may affect performance because short-circuit
+    evaluation is employed.
 
     Examples
     --------
@@ -66,7 +80,7 @@ class LogicalOrConstraint(LogicalReductionConstraint):
     np.True_
     """
 
-    _operator = np.logical_or
+    _short_circuit = staticmethod(logical_or_short_circuit)
 
 
 class LogicalNotConstraint(Constraint):
