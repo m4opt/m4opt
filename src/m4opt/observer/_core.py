@@ -9,7 +9,8 @@ class ObserverLocation(ABC):
 
     @abstractmethod
     def __call__(self, time: Time) -> EarthLocation:
-        """Get the position and velocity of the satellite.
+        """
+        Get the position and velocity of the satellite.
 
         Parameters
         ----------

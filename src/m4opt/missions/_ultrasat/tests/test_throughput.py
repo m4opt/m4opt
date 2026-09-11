@@ -32,7 +32,8 @@ def downsample(wavelength, transmission):
 
 @pytest.mark.remote_data
 def test_throughput_matches_upstream():
-    """The vendored table is the on-axis column of the upstream ULTRASAT data.
+    """
+    The vendored table is the on-axis column of the upstream ULTRASAT data.
 
     Regenerate it by writing the result of :func:`downsample` over
     ``data/throughput.ecsv`` in ``ascii.ecsv`` format.

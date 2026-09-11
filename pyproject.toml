@@ -183,3 +183,16 @@ CC = "$(brew --prefix llvm@15)/bin/clang"
 CXX = "$(brew --prefix llvm@15)/bin/clang++"
 CPPFLAGS = "-I$(brew --prefix libomp)/include"
 LDFLAGS = "-L$(brew --prefix libomp)/lib"
+
+[tool.numpydoc_validation]
+checks = [
+    "all",
+    "ES01",
+    "EX01",
+    "GL08",
+    "PR01",
+    "PR04",
+    "RT01",
+    "SA01",
+    "SA04",
+]

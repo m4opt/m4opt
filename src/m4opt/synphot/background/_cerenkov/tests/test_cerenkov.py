@@ -57,14 +57,14 @@ def test_cerenkov_reference_regression():
 
 
 def test_cerenkov_energy_above_ae8_range():
-    """Energies beyond the AE8 tabulation, where aep8 returns non-finite flux."""
+    """Test energies beyond the AE8 tabulation, where aep8 returns non-finite flux."""
     spec = CerenkovBackground.reference(factor=21, energy=(0.05 * u.MeV, 20 * u.MeV))
     val = spec(2600 * u.AA).value
     assert np.isfinite(val) and val > 0
 
 
 def test_cerenkov_uv_brighter():
-    """UV emission is brighter than visible (Cerenkov ~ 1/lambda^2)."""
+    """Test that UV emission is brighter than visible (Cerenkov ~ 1/lambda^2)."""
     spec = CerenkovBackground.reference(factor=21)
     uv = spec(2500 * u.AA).value
     vis = spec(5500 * u.AA).value
@@ -74,7 +74,7 @@ def test_cerenkov_uv_brighter():
 
 
 def test_scale_factor_at_reference():
-    """CerenkovScaleFactor returns 1.0 at reference location."""
+    """Test that CerenkovScaleFactor returns 1.0 at reference location."""
     sf = CerenkovScaleFactor(particle="e", solar="max")
     val = sf.at(
         _REFERENCE_LOCATION,
@@ -99,7 +99,8 @@ def test_cerenkov_in_context():
 
 
 def test_cerenkov_vs_matlab():
-    """Python Cerenkov spectral shape matches MATLAB reference.
+    """
+    Python Cerenkov spectral shape matches MATLAB reference.
 
     The production code uses AE8 radiation belt fluxes (via ``aep8``), while
     the MATLAB reference was computed with hardcoded AE9 flux data.  The

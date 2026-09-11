@@ -113,7 +113,8 @@ class Detector:
         source_spectrum: Model,
         bandpass: Hashable | None = None,
     ):
-        """Get the limiting magnitude for a given SNR and exposure time.
+        """
+        Get the limiting magnitude for a given SNR and exposure time.
 
         Note that the limiting magnitude is relative to the source spectrum,
         so you should pass a source spectrum that has an apparent magnitude of

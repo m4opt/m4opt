@@ -19,7 +19,8 @@ BATCH = 50
 
 
 def test_dust_interpolation_matches_direct_integration():
-    """Dust extinction interpolated over a grid matches integrating every target.
+    """
+    Dust extinction interpolated over a grid matches integrating every target.
 
     Above a threshold number of targets the spectrum is integrated over a grid
     of reddenings and interpolated onto the targets, rather than integrated
@@ -60,7 +61,8 @@ def test_dust_interpolation_matches_direct_integration():
 
 
 def test_dust_interpolation_ignores_the_other_targets():
-    """A sightline's count rate does not depend on what else is evaluated with it.
+    """
+    A sightline's count rate does not depend on what else is evaluated with it.
 
     The reddening grid is fixed rather than spanning the reddenings that happen
     to be present, so the same sightline gives the same count rate whichever

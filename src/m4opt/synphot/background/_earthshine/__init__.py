@@ -1,4 +1,5 @@
-"""Earthshine (stray light) background model.
+"""
+Earthshine (stray light) background model.
 
 See :class:`m4opt.synphot.background.EarthshineBackground`.
 """
@@ -61,7 +62,8 @@ _EARTH_SURFACE = _fibonacci_sphere(_SURFACE_SAMPLES)
 
 
 def _stray_light(distance, observer, target, sun):
-    """Earthshine scattered into the line of sight, in arbitrary units.
+    """
+    Earthshine scattered into the line of sight, in arbitrary units.
 
     Integrates the sunlit, visible part of the Earth, taking each surface
     element to reflect sunlight diffusely, and weighting it by the point source
@@ -101,7 +103,8 @@ def _stray_light(distance, observer, target, sun):
 
 
 def _reference_stray_light():
-    """The same integral for HST, 38 degrees from the limb of a full Earth.
+    """
+    The same integral for HST, 38 degrees from the limb of a full Earth.
 
     Dividing by this anchors the model to the spectrum, which is a measurement
     made in exactly that configuration.
@@ -117,7 +120,8 @@ _REFERENCE_STRAY_LIGHT = _reference_stray_light()
 
 
 class EarthshineBackgroundScaleFactor(ExtrinsicScaleFactor):
-    """Scale factor for earthshine that depends on the Earth limb angle.
+    """
+    Scale factor for earthshine that depends on the Earth limb angle.
 
     The scale factor is interpolated in log2-space between calibration points
     from the HST STIS Instrument Handbook. Targets below the Earth's limb
@@ -150,7 +154,8 @@ class EarthshineBackgroundScaleFactor(ExtrinsicScaleFactor):
 
 
 class EarthshineBackground:
-    r"""Earthshine sky background: sunlight reflected off Earth.
+    r"""
+    Earthshine sky background: sunlight reflected off Earth.
 
     This is the earthshine spectrum from the HST STIS Instrument Handbook
     [1]_, `Table 6.4`_, measured 38 degrees from the Earth's limb, scaled to
@@ -471,7 +476,6 @@ class EarthshineBackground:
 
     Examples
     --------
-
     Constant "high" earthshine spectrum (no spatial dependence):
 
     >>> from astropy import units as u
@@ -479,8 +483,7 @@ class EarthshineBackground:
     >>> background = EarthshineBackground.high()
     >>> float(background(5000 * u.angstrom).value)
     6.619863286318664e-07
-
-    """
+    """  # numpydoc ignore=GL03,PR02
 
     def __new__(cls, factor: float = 1):
         return factor * cls.high() * SpectralElement(EarthshineBackgroundScaleFactor())

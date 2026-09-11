@@ -1,18 +1,4 @@
-"""Cerenkov particle-induced background radiation model.
-
-This module models the background due to Cerenkov radiation emitted by charged
-particles (primarily electrons) from Earth's radiation belts passing through
-telescope optics. It uses the NASA AE8/AP8 trapped particle model
-:footcite:`2016PASP..128c5005K` to estimate the flux of charged particles.
-
-The implementation follows the conservative noise modeling approach from the
-ULTRASAT design :footcite:`2024ApJ...964...74S`.
-
-This is a Python adaptation of the MATLAB ``Cerenkov`` function from the
-`MAATv2 AstroPack <https://github.com/EranOfek/AstroPack>`_.
-
-.. footbibliography::
-"""
+"""Cerenkov particle-induced background radiation model."""
 
 from typing import Literal, override
 
@@ -46,7 +32,8 @@ _MATERIAL_PROPERTIES = {
 
 
 class CerenkovScaleFactor(ExtrinsicScaleFactor):
-    """Scale factor for Cerenkov background based on radiation belt flux.
+    """
+    Scale factor for Cerenkov background based on radiation belt flux.
 
     The scale factor is the ratio of the AE8 integral flux at the observer's
     location to the flux at a reference geostationary orbit location (at 1 MeV).
@@ -79,11 +66,19 @@ class CerenkovScaleFactor(ExtrinsicScaleFactor):
 
 
 class CerenkovBackground:
-    """Cerenkov particle-induced background radiation.
+    """
+    Cerenkov particle-induced background radiation.
 
     This model estimates the background due to Cerenkov radiation from charged
     particles (electrons or protons) in Earth's radiation belts interacting
-    with telescope optics.
+    with telescope optics. It uses the NASA AE8/AP8 trapped particle model
+    :footcite:`2016PASP..128c5005K` to estimate the flux of charged particles.
+
+    The implementation follows the conservative noise modeling approach from the
+    ULTRASAT design :footcite:`2024ApJ...964...74S`.
+
+    This is a Python adaptation of the MATLAB ``Cerenkov`` function from the
+    `MAATv2 AstroPack <https://github.com/EranOfek/AstroPack>`_.
 
     The spectral shape is computed at a reference geostationary orbit location,
     and then scaled by a :class:`CerenkovScaleFactor` that adjusts the
@@ -92,13 +87,17 @@ class CerenkovBackground:
 
     Parameters
     ----------
-    factor : float
+    factor
         Geometric suppression factor accounting for baffle suppression and
         shielding (default: 21 for ULTRASAT).
-    particle : {'e', 'p'}
-        Particle type (default: ``'e'``).
-    solar : {'max', 'min'}
-        Solar activity condition (default: ``'max'``).
+    particle
+        Particle type.
+    solar
+        Solar activity condition.
+
+    References
+    ----------
+    .. footbibliography::
 
     Examples
     --------
@@ -156,11 +155,7 @@ class CerenkovBackground:
         ax.set_xlabel(r"Wavelength [$\\AA$]")
         ax.set_ylabel("Refractive index")
         ax.grid(True)
-
-    References
-    ----------
-    .. footbibliography::
-    """
+    """  # numpydoc ignore=PR02
 
     def __new__(
         cls,
@@ -181,7 +176,8 @@ class CerenkovBackground:
         energy: tuple[u.Quantity, u.Quantity] = (0.05 * u.MeV, 8.5 * u.MeV),
         nbins: int = 1000,
     ) -> SourceSpectrum:
-        """Cerenkov background spectrum at the reference GEO location.
+        """
+        Cerenkov background spectrum at the reference GEO location.
 
         Parameters
         ----------

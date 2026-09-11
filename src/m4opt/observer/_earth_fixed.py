@@ -9,7 +9,8 @@ from ._core import ObserverLocation
 
 @dataclass
 class EarthFixedObserverLocation(ObserverLocation):
-    """An observer at a fixed location on the surface of the Earth.
+    """
+    An observer at a fixed location on the surface of the Earth.
 
     >>> from astropy.coordinates import EarthLocation
     >>> from astropy.time import Time

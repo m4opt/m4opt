@@ -31,14 +31,14 @@ _SUN_RA_DEG = 281.0
 
 
 def test_earthshine_high_positive():
-    """EarthshineBackground.high() returns positive flux across its wavelength range."""
+    """Test that EarthshineBackground.high() returns positive flux across its wavelength range."""
     spec = EarthshineBackground.high()
     wave = np.arange(1500, 10001) * u.AA
     assert np.all(spec(wave).value > 0)
 
 
 def test_earthshine_high_regression():
-    """Flux at specific wavelengths matches frozen values from the ECSV data."""
+    """Test that flux at specific wavelengths match frozen values from the ECSV data."""
     spec = EarthshineBackground.high()
     np.testing.assert_almost_equal(
         spec(2600 * u.AA).value, 7.355851128493407e-11, decimal=16
@@ -57,7 +57,7 @@ def test_earthshine_high_uv_fainter_than_visible():
 
 
 def test_earthshine_in_context():
-    """Works within observing() context."""
+    """Test that earthshine background works within observing() context."""
     loc = EarthLocation.from_geodetic(
         lon=15 * u.deg, lat=0 * u.deg, height=35786 * u.km
     )
@@ -72,7 +72,7 @@ def test_earthshine_in_context():
 
 
 def test_earthshine_requires_context():
-    """EarthshineBackground() raises ValueError without observing() context."""
+    """Test that EarthshineBackground() raises ValueError without observing() context."""
     bg = EarthshineBackground()
     with pytest.raises(ValueError, match="Unknown target"):
         bg(5000 * u.AA)
@@ -82,7 +82,8 @@ def test_earthshine_requires_context():
     "limb_angle_deg,expected_scale", [(24, 2.0), (38, 1.0), (50, 0.5)]
 )
 def test_stray_light_reproduces_calibration_points(limb_angle_deg, expected_scale):
-    """The integral reproduces the STIS levels for the geometry they describe.
+    """
+    The integral reproduces the STIS levels for the geometry they describe.
 
     Those are measurements from HST looking past a fully sunlit Earth, so they
     fix the exponent of the point source transmittance; anything else is a
@@ -148,7 +149,8 @@ def test_earthshine_illumination_sunlit_vs_dark():
 
 
 def test_earthshine_depends_on_observer():
-    """Two observers on opposite sides of the Earth see different earthshine.
+    """
+    Two observers on opposite sides of the Earth see different earthshine.
 
     They look past opposite parts of the Earth, one of which is better lit.
     """
@@ -180,7 +182,8 @@ def nadir_at(observer_location, obstime):
 
 @pytest.mark.parametrize("distance", [2, 5, 6.6, 20, 100] * u.Rearth)
 def test_earthshine_occultation_shrinks_with_distance(distance):
-    """The occulted region is the Earth's disk, which shrinks with distance.
+    """
+    The occulted region is the Earth's disk, which shrinks with distance.
 
     Restricted to distances where an :class:`~astropy.coordinates.EarthLocation`
     still describes the observer well; see the warning in
@@ -207,7 +210,8 @@ def test_earthshine_occultation_shrinks_with_distance(distance):
 
 @pytest.mark.parametrize("distance", [2, 5, 6.6, 20, 100, 1000] * u.Rearth)
 def test_earthshine_finite_at_all_distances(distance):
-    """The scale factor stays finite however small the Earth appears.
+    """
+    The scale factor stays finite however small the Earth appears.
 
     The weights that average the illumination around the limb must not
     underflow for a distant observer, where the whole limb subtends a tiny
@@ -225,7 +229,7 @@ def test_earthshine_finite_at_all_distances(distance):
 
 
 def test_earthshine_broadcasts_over_observers():
-    """Arrays of observers and of targets broadcast against each other."""
+    """Test arrays of observers and of targets broadcast against each other."""
     sf = EarthshineBackgroundScaleFactor()
     distance = [2, 5, 20] * u.Rearth
     observer_location = EarthLocation(
@@ -248,7 +252,8 @@ def test_earthshine_broadcasts_over_observers():
 
 
 def test_stray_light_bounded_at_the_limb():
-    """The scale factor stays bounded for a line of sight grazing the limb.
+    """
+    The scale factor stays bounded for a line of sight grazing the limb.
 
     The point source transmittance diverges on axis, so without holding it
     fixed inside the calibrated range a line of sight that grazes the limb

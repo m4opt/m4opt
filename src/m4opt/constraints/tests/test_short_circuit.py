@@ -31,7 +31,8 @@ def logical_or_short_circuit_slow(
 
 
 def stable_hash(arg):
-    """A version of :func:`hash` that is stable for NaN values.
+    """
+    A version of :func:`hash` that is stable for NaN values.
 
     The builtin :func:`hash` function does not return a stable value for NaN.
     """

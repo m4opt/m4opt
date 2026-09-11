@@ -1,4 +1,5 @@
-"""Spacecraft dynamics functions.
+"""
+Spacecraft dynamics functions.
 
 Notes
 -----

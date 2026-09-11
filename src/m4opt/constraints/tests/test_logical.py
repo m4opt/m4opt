@@ -24,7 +24,8 @@ def test_logical(observer_location, target_coord, obstime, min_deg, max_deg):
 
 
 def test_logical_not_is_elementwise():
-    """Test that a logical "not" is evaluated for each target.
+    """
+    Test that a logical "not" is evaluated for each target.
 
     This is a regression test to ensure that the operand is actually
     evaluated, rather than being silently replaced by a scalar.

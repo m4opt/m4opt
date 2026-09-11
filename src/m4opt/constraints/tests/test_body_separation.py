@@ -44,8 +44,7 @@ def test_astroplan(
 @settings(deadline=None)
 @given(earth_locations, skycoords, obstimes, st.floats(0, 180))
 def test_anti_solar_separation(observer_location, target_coord, obstime, min_sep_deg):
-    """Test that AntiSolarSeparationConstraint agrees with 180° minus the
-    solar elongation."""
+    """Test that AntiSolarSeparationConstraint agrees with 180° - solar elongation."""
     min_sep = min_sep_deg * u.deg
     with catch_warnings(action="ignore", category=NonRotationTransformationWarning):
         sun_separation = get_body(

@@ -16,7 +16,8 @@ def _logical_short_circuit(
     rhs_func: BoolGenericFunction,
     args: tuple[np.ndarray, ...],
 ) -> BoolNDArray:
-    """Shared implementation of `logical_and_short_circuit` and `logical_or_short_circuit`.
+    """
+    Shared implementation of `logical_and_short_circuit` and `logical_or_short_circuit`.
 
     `decisive` is the value of `lhs` that alone determines the result of
     `combine`, without needing to evaluate `rhs_func`: `False` for `&`,
@@ -70,7 +71,8 @@ def _logical_short_circuit(
 def logical_and_short_circuit(
     lhs: BoolNDArray, rhs_func: BoolGenericFunction, *args: np.ndarray
 ) -> BoolNDArray:
-    """Compute logical and on Numpy arrays employing short circuit evaluation.
+    """
+    Compute logical and on Numpy arrays employing short circuit evaluation.
 
     The function call `logical_and_short_circuit(lhs, rhs_func, args)` is
     equivalent to, but potentially faster than, `lhs & rhs_func(*args)`.
@@ -85,7 +87,8 @@ def logical_and_short_circuit(
 def logical_or_short_circuit(
     lhs: BoolNDArray, rhs_func: BoolGenericFunction, *args: np.ndarray
 ) -> BoolNDArray:
-    """Compute logical or on Numpy arrays employing short circuit evaluation.
+    """
+    Compute logical or on Numpy arrays employing short circuit evaluation.
 
     The function call `logical_or_short_circuit(lhs, rhs_func, args)` is
     equivalent to, but potentially faster than, `lhs | rhs_func(*args)`.
