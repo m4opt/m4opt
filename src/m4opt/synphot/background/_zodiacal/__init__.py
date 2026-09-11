@@ -72,9 +72,9 @@ class ZodiacalBackground:
     they have visual surface brightness of 22.1, 22.7, and 23.3 magnitudes per
     square arcsecond.
 
-    The dependence on sky position is taken from Table 16 of [2]_, which is a
+    The dependence on sky position is taken from Table 16 of :footcite:`1998A&AS..127....1L`, which is a
     higher-resolution version of `Table 6.2`_ from the HST STIS Instrument
-    Handbook.
+    Handbook :footcite:`2025stii.book...25R`.
 
     .. _`Table 6.2`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-5-detector-and-sky-backgrounds#id-6.5DetectorandSkyBackgrounds-Table6.2
     .. _`Table 6.4`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-6-tabular-sky-backgrounds#id-6.6TabularSkyBackgrounds-Table6.4
@@ -88,11 +88,7 @@ class ZodiacalBackground:
 
     References
     ----------
-    .. [1] Prichard, L., Welty, D. and Jones, A., et al. 2022 "STIS Instrument
-           Handbook," Version 21.0, (Baltimore: STScI)
-    .. [2] Leinert, Ch., Bowyer, S., and Haikala, L. K., et al. 1998 "The 1997
-           reference of diffuse night sky brightness", Astron. Astrophys.
-           Suppl. Ser. 127, 1-99. https://doi.org/10.1051/aas:1998105
+    .. footbibliography::
 
     Examples
     --------
