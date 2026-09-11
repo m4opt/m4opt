@@ -40,8 +40,7 @@ class ZodiacalBackgroundScaleFactor(ExtrinsicScaleFactor):
         sb = 10 - 2.5 * np.log10(s10 / 60**4)
         self._interp = RegularGridInterpolator([lon, lat], sb)
 
-    @override
-    def at(self, observer_location, target_coord, obstime):
+    def _mag_at(self, observer_location, target_coord, obstime):
         frame = GeocentricTrueEcliptic(equinox=obstime)
         obj = SkyCoord(target_coord).transform_to(frame)
         sun = get_sun(obstime).transform_to(frame)
@@ -57,9 +56,13 @@ class ZodiacalBackgroundScaleFactor(ExtrinsicScaleFactor):
         # Fix up shape
         if obj.isscalar:
             mag = mag.item()
+        return mag
 
-        mag -= mag_high
-        return mag_to_scale(mag)
+    @override
+    def at(self, observer_location, target_coord, obstime):
+        return mag_to_scale(
+            self._mag_at(observer_location, target_coord, obstime) - mag_high
+        )
 
 
 class ZodiacalBackground:
@@ -85,6 +88,10 @@ class ZodiacalBackground:
     as Hubble is, or on the Earth, or even on the Moon or in cislunar space. It
     should NOT be used for observers in orbits around other planets, or in
     distant solar orbits, or at Earth-Sun Lagrange points.
+
+    See Also
+    --------
+    m4opt.constraints.ZodiacalBackgroundConstraint
 
     References
     ----------
