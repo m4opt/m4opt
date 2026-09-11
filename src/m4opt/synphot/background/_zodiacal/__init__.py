@@ -195,7 +195,6 @@ class ZodiacalBackground:
         ax.text(sun.ra, sun.dec, '  Sun', color='red', transform=transform)
 
         ax.grid()
-
      """
 
     def __new__(cls):
@@ -203,7 +202,8 @@ class ZodiacalBackground:
 
     @classmethod
     def low(cls):
-        """Zodiacal background for typical "low" background conditions.
+        """
+        Zodiacal background for typical "low" background conditions.
 
         Following the conventions in the HST STIS manual, this is
         1.2 mag / arcsec2 fainter than the "high" model at all frequencies.
@@ -212,7 +212,8 @@ class ZodiacalBackground:
 
     @classmethod
     def mid(cls):
-        """Zodiacal background for "average" background conditions.
+        """
+        Zodiacal background for "average" background conditions.
 
         Following the conventions in the HST STIS manual, this is
         0.6 mag / arcsec2 fainter than the "high" model at all frequencies.

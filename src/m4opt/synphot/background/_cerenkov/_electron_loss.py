@@ -1,4 +1,5 @@
-"""Electron energy loss per unit mass thickness (dE/dX) in materials.
+"""
+Electron energy loss per unit mass thickness (dE/dX) in materials.
 
 Python conversion of the MATLAB script ``dEdX_calc.m`` by Eran Ofek,
 available at https://github.com/EranOfek/AstroPack.
@@ -20,7 +21,8 @@ _MATERIALS = {
 
 
 def _calc_dEdX(Z, A, Ek, g, b):
-    """Calculate energy loss per unit mass thickness for a single element.
+    """
+    Calculate energy loss per unit mass thickness for a single element.
 
     Parameters
     ----------
@@ -71,7 +73,8 @@ def _calc_dEdX(Z, A, Ek, g, b):
 
 
 def get_electron_energy_loss(material="sio2_suprasil_2a"):
-    """Calculate energy loss per unit mass thickness of electrons in a material.
+    """
+    Calculate energy loss per unit mass thickness of electrons in a material.
 
     Parameters
     ----------

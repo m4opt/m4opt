@@ -121,7 +121,7 @@ class AntiSolarSeparationConstraint(SunSeparationConstraint):
     >>> constraint = AntiSolarSeparationConstraint(20 * u.deg)
     >>> constraint(location, target, time)
     np.True_
-    """
+    """  # numpydoc ignore=PR02
 
     @override
     def _separation(self, observer_location, target_coord, obstime):

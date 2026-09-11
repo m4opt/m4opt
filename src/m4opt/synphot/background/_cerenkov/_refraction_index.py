@@ -1,4 +1,5 @@
-"""Refractive index and transmission for optical materials.
+"""
+Refractive index and transmission for optical materials.
 
 Python conversion of the MATLAB script ``refraction_index.m`` by Eran Ofek,
 available at https://github.com/EranOfek/AstroPack.

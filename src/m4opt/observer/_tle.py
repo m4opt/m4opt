@@ -14,7 +14,8 @@ if not accelerated:
 
 
 class TleObserverLocation(ObserverLocation):
-    """An Earth satellite whose orbit is specified by its `two-line element (TLE) <https://www.space-track.org/documentation#tle>`_.
+    """
+    An Earth satellite whose orbit is specified by its `two-line element (TLE) <https://www.space-track.org/documentation#tle>`_.
 
     Notes
     -----
@@ -54,7 +55,6 @@ class TleObserverLocation(ObserverLocation):
     Traceback (most recent call last):
       ...
     RuntimeError: mrt is less than 1.0 which indicates the satellite has decayed
-
     """
 
     def __init__(self, line1: str, line2: str):
@@ -63,7 +63,8 @@ class TleObserverLocation(ObserverLocation):
 
     @classmethod
     def from_id(cls, norad_id: int) -> "TleObserverLocation":
-        """Get the latest TLE for a satellite from Celestrak.
+        """
+        Get the latest TLE for a satellite from Celestrak.
 
         Examples
         --------

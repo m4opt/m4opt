@@ -12,14 +12,15 @@ __all__ = ("pack_boxes", "partition_graph", "partition_graph_color", "solve_tsp"
 
 
 def pack_boxes(wh: np.ndarray, **kwargs) -> tuple[np.ndarray, np.ndarray]:
-    """Pack non-overlapping hypercubes into the smallest possible hypercube.
+    """
+    Pack non-overlapping hypercubes into the smallest possible hypercube.
 
     Parameters
     ----------
     wh
         A Numpy array of shape `(n, m)` containing the dimensions of `n`
         hypercubes in `m` dimensions.
-    kwargs
+    **kwargs
         Additional arguments passed to :class:`m4opt.milp.Model`.
 
     Returns
@@ -73,7 +74,8 @@ def partition_graph(
     edge_weight: str = "weight",
     **kwargs,
 ) -> np.ndarray:
-    """Partition a graph into contiguous subgraphs.
+    """
+    Partition a graph into contiguous subgraphs.
 
     Partition a graph into subgraphs using
     `METIS <https://github.com/KarypisLab/METIS>`_.
@@ -92,7 +94,7 @@ def partition_graph(
         Optional key for node weights.
     edge_weight
         Optional key for edge weights.
-    kwargs
+    **kwargs
         Additional arguments passed to :class:`pymetis.Options`.
 
     Returns
@@ -100,16 +102,16 @@ def partition_graph(
     :
         Partition assignments for all nodes.
 
-    References
-    ----------
-    .. footbibliography::
-
     Notes
     -----
     If the graph has edge weights, then the weights must be integer-valued.
 
-    Example
-    -------
+    References
+    ----------
+    .. footbibliography::
+
+    Examples
+    --------
     .. plot::
         :caption: Basic example of graph partitioning.
 
@@ -174,7 +176,8 @@ def partition_graph(
 def partition_graph_color(
     graph: nx.Graph, partition: np.ndarray, **kwargs
 ) -> np.ndarray:
-    """Find a coloring for a partition of a graph.
+    """
+    Find a coloring for a partition of a graph.
 
     Parameters
     ----------
@@ -193,8 +196,8 @@ def partition_graph_color(
         An integer-valued array of color assignments for each partition.
         The color for node `i` in the original graph is `color[partition[i]]`.
 
-    Example
-    -------
+    Examples
+    --------
     .. plot::
 
         from matplotlib import pyplot as plt
@@ -245,14 +248,15 @@ def partition_graph_color(
 
 
 def solve_tsp(distances: np.ndarray, **kwargs) -> tuple[np.ndarray, float]:
-    """Solve the Traveling Salesman problem.
+    """
+    Solve the Traveling Salesman problem.
 
     Parameters
     ----------
     distances
         A square matrix of size (2, 2) or greater representing the distances
         between each pair of nodes.
-    kwargs
+    **kwargs
         Additional arguments passed to :class:`m4opt.milp.Model`.
 
     Returns

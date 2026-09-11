@@ -13,7 +13,8 @@ def _get_maxrss_raw():
 
 
 def _get_bytes_per_maxrss_unit_func():
-    """Measure the units in bytes of maxrss.
+    """
+    Measure the units in bytes of maxrss.
 
     The units are different on macOS/BSD and Linux. See
     https://github.com/python/cpython/issues/64667.

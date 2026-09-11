@@ -20,7 +20,8 @@ class LogicalReductionConstraint(Constraint):
 
 
 class LogicalAndConstraint(LogicalReductionConstraint):
-    """Combine two or more constraints using a logical "and" operation.
+    """
+    Combine two or more constraints using a logical "and" operation.
 
     See Also
     --------
@@ -58,7 +59,8 @@ class LogicalAndConstraint(LogicalReductionConstraint):
 
 
 class LogicalOrConstraint(LogicalReductionConstraint):
-    """Combine two or more constraints using a logical "or" operation.
+    """
+    Combine two or more constraints using a logical "or" operation.
 
     See Also
     --------
@@ -96,7 +98,8 @@ class LogicalOrConstraint(LogicalReductionConstraint):
 
 
 class LogicalNotConstraint(Constraint):
-    """Perform a logical "not" on a constraint.
+    """
+    Perform a logical "not" on a constraint.
 
     See Also
     --------

@@ -155,7 +155,7 @@ def GalacticBackground():
         )
 
         fig.tight_layout()
-    """
+    """  # numpydoc ignore=GL03
     flux_values = [
         GalacticBackgroundScaleFactor(
             north_slope=185.1,

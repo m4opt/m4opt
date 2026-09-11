@@ -3,7 +3,8 @@ from astroquery.svo_fps import SvoFps
 
 
 def bandpass_from_svo(filter_id: str) -> synphot.SpectralElement:
-    """Look up a filter bandpass from the `SVO Filter Profile Service <http://svo2.cab.inta-csic.es/theory/fps/>`_.
+    """
+    Look up a filter bandpass from the `SVO Filter Profile Service <http://svo2.cab.inta-csic.es/theory/fps/>`_.
 
     Parameters
     ----------

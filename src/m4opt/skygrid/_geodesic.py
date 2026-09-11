@@ -106,7 +106,8 @@ def geodesic(
     base: Literal["icosahedron", "octahedron", "tetrahedron"] | str = "icosahedron",
     class_: Literal["I", "II", "III"] | str = "I",
 ):
-    """Generate a geodesic polyhedron with the fewest vertices >= `n`.
+    """
+    Generate a geodesic polyhedron with the fewest vertices >= `n`.
 
     Parameters
     ----------
@@ -177,7 +178,6 @@ def geodesic(
         ax.set_title(f'{n_vertices} vertices (goal was {n_vertices_target})')
         ax.plot_coord(vertices, '.')
         ax.grid()
-
     """
     n = int(np.ceil(1 / area.to_value(u.spat)))
     n, b, c = solve_number_of_vertices(n, base, class_)

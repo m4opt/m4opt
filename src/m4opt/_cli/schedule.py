@@ -31,6 +31,8 @@ from .core import app
 
 def invert_footprints(footprints, n_pixels):
     """
+    Construct a map from pixel index to footprints containing those pixels.
+
     Examples
     --------
     >>> from m4opt._cli.schedule import invert_footprints
@@ -46,6 +48,8 @@ def invert_footprints(footprints, n_pixels):
 
 def invert_footprints_to_regions(footprints, n_pixels):
     """
+    Construct a map from pixel index to disjoint regions.
+
     Examples
     --------
     >>> from m4opt._cli.schedule import invert_footprints_to_regions
@@ -222,7 +226,8 @@ def schedule(
         ),
     ] = None,
 ):
-    """Generate an observing plan for a GW sky map.
+    """
+    Generate an observing plan for a GW sky map.
 
     \b
     The scheduler has three modes:
@@ -248,7 +253,6 @@ def schedule(
     """
     adaptive_exptime = absmag_mean is not None
 
-    """Schedule a target of opportunity observation."""
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
         skymap_moc = read_sky_map(skymap, moc=True)

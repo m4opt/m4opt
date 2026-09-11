@@ -25,6 +25,10 @@ def countrate(
     spectrum: SourceSpectrum, bandpass: SpectralElement
 ) -> u.Quantity[1 / (u.s * u.cm**2)]:
     """
+    Calculate the integrated count rate of a spectrum observed through a bandpass.
+
+    Examples
+    --------
     >>> from astropy.coordinates import EarthLocation, SkyCoord
     >>> from astropy.time import Time
     >>> from m4opt.synphot.background import ZodiacalBackground

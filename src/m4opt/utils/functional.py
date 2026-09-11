@@ -14,7 +14,8 @@ second = itemgetter(1)
 
 
 def apply[*Ts, R](func: Callable[[*Ts], R], args: tuple[*Ts]) -> R:
-    """Invoke a function, unpacking arguments.
+    """
+    Invoke a function, unpacking arguments.
 
     The function is called such that ``apply(foo, (bar, bat))`` is equivalent
     to ``foo(bar, bat)``.

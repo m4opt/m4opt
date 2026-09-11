@@ -1,4 +1,5 @@
-"""Utilities for console applications and text user interfaces.
+"""
+Utilities for console applications and text user interfaces.
 
 Use the :meth:`progress` and :meth:`status` methods to create live feedback
 for a nested series of tasks. The elapsed time is shown for each task, along
@@ -72,7 +73,8 @@ _is_jupyter = rich.console._is_jupyter()
 
 @contextmanager
 def progress():
-    """Context manager to create a live display for showing status of tasks.
+    """
+    Context manager to create a live display for showing status of tasks.
 
     If there is already an active progress display, this method will return it
     instead of creating a new one.

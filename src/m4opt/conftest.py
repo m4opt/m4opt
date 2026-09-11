@@ -1,10 +1,10 @@
-"""Configure Test Suite.
+"""
+Configure test suite.
 
 This file is used to configure the behavior of pytest when using the Astropy
 test infrastructure. It needs to live inside the package in order for it to
 get picked up when running the tests inside an interpreter using
 packagename.test
-
 """
 
 import os
@@ -21,14 +21,8 @@ from .tests.plugins.problem_size_limits import (  # noqa: F401
 pytest_plugins = ["sphinx.testing.fixtures", "pytester"]
 
 
-def pytest_configure(config):
-    """Configure Pytest with Astropy.
-
-    Parameters
-    ----------
-    config : pytest configuration
-
-    """
+def pytest_configure(config: pytest.Config):
+    """Configure Pytest with Astropy."""
     config.option.astropy_header = True
 
     # Customize the following lines to add/remove entries from the list of
@@ -45,13 +39,16 @@ def pytest_configure(config):
 
 @pytest.fixture(autouse=True)
 def numpy_printoptions():
-    """DOcplex messes globally with Numpy's print options in a way that breaks
-    pytest-doctestplus. Save and restore the Numpy print options before and
-    after each test.
+    """
+    Save and restore the Numpy print options before and after each test.
 
-    See also
+    DOcplex messes globally with Numpy's print options in a way that breaks
+    pytest-doctestplus.
+
+    See Also
     --------
-    docplex.mp.model.Model.init_numpy, docplex.mp.model.Model.restore_numpy
+    docplex.mp.model.Model.init_numpy, docplex.mp.model.Model.restore_numpy :
+        The DOcplex functions that mess with Numpy's print options.
     """
     with np.printoptions():
         yield

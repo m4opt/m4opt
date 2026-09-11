@@ -127,7 +127,8 @@ def test_end_to_end_solution(run_scheduler):
 
 
 def test_fixed_exptime_with_appmag_dist(fits_path, ecsv_path, run_cli, mission_args):
-    """Fixed exposure time mode should work when appmag_dist is True (default).
+    """
+    Fixed exposure time mode should work when appmag_dist is True (default).
 
     Regression test for https://github.com/m4opt/m4opt/issues/XXX:
     When --absmag-mean is not provided (fixed exposure time) but appmag_dist

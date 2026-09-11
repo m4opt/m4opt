@@ -1,4 +1,4 @@
-"""Mixed integer linear programs (MILP)"""
+"""Mixed integer linear programs (MILP)."""
 
 import operator
 from collections.abc import Callable
@@ -58,7 +58,8 @@ class Model(_Model):
         lowercutoff: float | None = None,
         verbose=True,
     ):
-        """Initialize a model with default `CPLEX parameters`_ for M4OPT.
+        """
+        Initialize a model with default `CPLEX parameters`_ for M4OPT.
 
         Parameters
         ----------
@@ -144,7 +145,8 @@ class Model(_Model):
     # https://github.com/IBMDecisionOptimization/docplex/issues/17 is fixed.
     @property
     def best_bound(self) -> float:
-        """Get best bound for the last solve.
+        """
+        Get best bound for the last solve.
 
         Notes
         -----
@@ -156,7 +158,8 @@ class Model(_Model):
         return self.cplex.solution.MIP.get_best_objective()
 
     def add_constraints_(self, cts, names=None):
-        """Add any number of constraints to the model.
+        """
+        Add any number of constraints to the model.
 
         Examples
         --------
@@ -174,7 +177,8 @@ class Model(_Model):
         return super().add_constraints_(_prep_1d(cts), names)
 
     def add_indicators(self, binary_vars, cts, true_values=1, names=None):
-        """Add any number of indicator constraints to the model.
+        """
+        Add any number of indicator constraints to the model.
 
         Examples
         --------
@@ -222,7 +226,8 @@ class Model(_Model):
         return np.asarray(super().max(*args)).view(VariableArray)
 
     def to_stream(self, out_file: BufferedWriter):
-        """Write the model to a stream.
+        """
+        Write the model to a stream.
 
         The filename should end in `.lp`, `.mps`, `.sav`, `.lp.gz`, `.mps.gz`,
         or `.sav.gz`.
@@ -261,7 +266,8 @@ class Model(_Model):
 
 class SolveSolution(_SolveSolution):
     def get_values(self, var_seq):
-        """Get solution values for multidimensional arrays of variables.
+        """
+        Get solution values for multidimensional arrays of variables.
 
         Examples
         --------

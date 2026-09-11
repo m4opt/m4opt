@@ -34,7 +34,7 @@ class AngleConstraint(Constraint):
 
     @abstractmethod
     def _frame(self, observer_location: EarthLocation, obstime: Time):
-        """Frame for this constraint"""
+        """Frame for this constraint."""
         raise NotImplementedError
 
     def _get_angle(
@@ -86,7 +86,8 @@ class ICRSConstraint(AngleConstraint):
 
 
 class LongitudeConstraint(AngleConstraint):
-    """Constrain a generic longitude-like angle.
+    """
+    Constrain a generic longitude-like angle.
 
     Notes
     -----
@@ -109,7 +110,8 @@ class LongitudeConstraint(AngleConstraint):
 
 
 class LatitudeConstraint(AngleConstraint):
-    """Constrain a generic latitude-like angle.
+    """
+    Constrain a generic latitude-like angle.
 
     Notes
     -----
@@ -124,7 +126,8 @@ class LatitudeConstraint(AngleConstraint):
 
 
 class AltitudeConstraint(LatitudeConstraint, AltAzConstraint):
-    """Constrain the altitude of the target.
+    """
+    Constrain the altitude of the target.
 
     See Also
     --------
@@ -133,7 +136,8 @@ class AltitudeConstraint(LatitudeConstraint, AltAzConstraint):
 
 
 class AzimuthConstraint(LongitudeConstraint, AltAzConstraint):
-    """Constrain the azimuth of the target.
+    """
+    Constrain the azimuth of the target.
 
     See Also
     --------
@@ -142,7 +146,8 @@ class AzimuthConstraint(LongitudeConstraint, AltAzConstraint):
 
 
 class RightAscensionConstraint(LongitudeConstraint, ICRSConstraint):
-    """Constrain the ICRS right ascension of the target.
+    """
+    Constrain the ICRS right ascension of the target.
 
     See Also
     --------
@@ -151,20 +156,22 @@ class RightAscensionConstraint(LongitudeConstraint, ICRSConstraint):
 
 
 class DeclinationConstraint(LatitudeConstraint, ICRSConstraint):
-    """Constrain the ICRS declination of the target.
-
-    Notes
-    -----
-    If the maximum angle is less than the minimum angle, then they are swapped.
+    """
+    Constrain the ICRS declination of the target.
 
     See Also
     --------
     RightAscensionConstraint
+
+    Notes
+    -----
+    If the maximum angle is less than the minimum angle, then they are swapped.
     """
 
 
 class HourAngleConstraint(LongitudeConstraint, HADecConstraint):
-    """Constrain the hour angle of the target.
+    """
+    Constrain the hour angle of the target.
 
     See Also
     --------
@@ -173,18 +180,19 @@ class HourAngleConstraint(LongitudeConstraint, HADecConstraint):
 
 
 class EclipticLatitudeConstraint(LatitudeConstraint, GeocentricTrueEclipticConstraint):
-    """Constrain the ecliptic latitude of the target.
+    """
+    Constrain the ecliptic latitude of the target.
 
     This is the angle :math:`β` of Leinert et al. (1998), Fig. 2
     :footcite:`1998A&AS..127....1L`.
 
-    Notes
-    -----
-    If the maximum angle is less than the minimum angle, then they are swapped.
-
     See Also
     --------
     HelioeclipticLongitudeConstraint, SunSeparationConstraint
+
+    Notes
+    -----
+    If the maximum angle is less than the minimum angle, then they are swapped.
 
     References
     ----------
@@ -193,12 +201,20 @@ class EclipticLatitudeConstraint(LatitudeConstraint, GeocentricTrueEclipticConst
 
 
 class HelioeclipticLongitudeConstraint(GeocentricTrueEclipticConstraint):
-    """Constrain the helioecliptic longitude of the target.
+    """
+    Constrain the helioecliptic longitude of the target.
 
     This places a constraint on the absolute value, between 0° and 180°, of the
     ecliptic longitude of the target minus the ecliptic longitude of the sun.
     This is the angle :math:`|λ - λ_⊙|` of Leinert et al. (1998), Fig. 2
     :footcite:`1998A&AS..127....1L`.
+
+    Warnings
+    --------
+    This model should only be used for observers near Earth --- in Earth orbit,
+    as Hubble is, or on the Earth, or even on the Moon or in cislunar space. It
+    should NOT be used for observers in orbits around other planets, or in
+    distant solar orbits, or at Earth-Sun Lagrange points.
 
     See Also
     --------
@@ -207,13 +223,6 @@ class HelioeclipticLongitudeConstraint(GeocentricTrueEclipticConstraint):
     References
     ----------
     .. footbibliography::
-
-    Warnings
-    --------
-    This model should only be used for observers near Earth --- in Earth orbit,
-    as Hubble is, or on the Earth, or even on the Moon or in cislunar space. It
-    should NOT be used for observers in orbits around other planets, or in
-    distant solar orbits, or at Earth-Sun Lagrange points.
     """
 
     @override

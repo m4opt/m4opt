@@ -12,7 +12,8 @@ from astropy.time import Time
 def nominal_roll(
     observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
 ) -> u.Quantity[u.physical.angle]:
-    """Determine the nominal roll angle for a space telescope.
+    """
+    Determine the nominal roll angle for a space telescope.
 
     This function determines the nominal roll angle for a spacecraft at a given
     location, observing a given target at a given time.
@@ -38,11 +39,11 @@ def nominal_roll(
 
     Parameters
     ----------
-    observer_location:
+    observer_location
         Location of the spacecraft.
-    target_coord:
+    target_coord
         Orientation of the boresight of the telescope.
-    obstime:
+    obstime
         The time of the observation.
 
     Returns
@@ -148,7 +149,6 @@ def nominal_roll(
     >>> spacecraft_frame = target_coord.transform_to(
     ...     GCRS(obstime=obstime, obsgeoloc=obsgeoloc, obsgeovel=obsgeovel)
     ... ).skyoffset_frame(roll)
-
     """
     sun = get_body("sun", obstime, observer_location)
 

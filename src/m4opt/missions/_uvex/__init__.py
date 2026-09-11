@@ -229,7 +229,7 @@ def uvex_downlink_orientation(
 
     Parameters
     ----------
-    time:
+    time
         Time of the downlink.
 
     Returns

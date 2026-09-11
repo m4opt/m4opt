@@ -85,8 +85,12 @@ def polynomial_sample_data(
 
 @given(polynomial_sample_data(order=3, regular=True))
 def test_athena_interp(data):
-    """Test the interpolation scheme using data from a multivariate polynomial
-    of degree that matches the order of the interpolation scheme."""
+    """
+    Test multivariate interpolation.
+
+    Test the interpolation scheme using data from a multivariate polynomial
+    of degree that matches the order of the interpolation scheme.
+    """
     lo = np.asarray([pt.min() for pt in data.points])
     hi = np.asarray([pt.max() for pt in data.points])
     delta = np.asarray([pt[1] - pt[0] for pt in data.points])
