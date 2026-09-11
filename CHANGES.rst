@@ -2,7 +2,7 @@
 Changes
 *******
 
-2.14.0 (unreleased)
+2.14.0 (2026-09-11)
 ===================
 
 - Fix the interpolation of dust extinction. The count rate was sampled on a
