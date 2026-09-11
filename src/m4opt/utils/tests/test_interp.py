@@ -67,7 +67,7 @@ def polynomial_sample_data(
     poly = draw(
         arrays(
             dtype=np.float64,
-            shape=[order] * ndim,
+            shape=tuple([order] * ndim),
             elements=floats(
                 allow_nan=False, allow_infinity=False, min_value=-100, max_value=100
             ),

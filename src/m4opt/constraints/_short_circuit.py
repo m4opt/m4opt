@@ -2,7 +2,7 @@ from typing import Any, Protocol
 
 import numpy as np
 
-type BoolNDArray = np.ndarray[tuple[Any, ...], np.dtype[bool]]
+type BoolNDArray = np.ndarray[tuple[Any, ...], np.dtype[np.bool]]
 
 
 class BoolGenericFunction(Protocol):
@@ -11,7 +11,7 @@ class BoolGenericFunction(Protocol):
 
 def _logical_short_circuit(
     decisive: bool,
-    combine: BoolGenericFunction,
+    combine: np.ufunc,
     lhs: BoolNDArray,
     rhs_func: BoolGenericFunction,
     args: tuple[np.ndarray, ...],
