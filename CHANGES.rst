@@ -21,6 +21,9 @@ Changes
 - Speed up evaluation of composite, logical "and" or logical "or", constraints
   using short-circuit evaluation.
 
+- Add `ZodiacalBackgroundConstraint`, a field of regard constraint that places
+  a maximum value on the modeled surface brightness due to zodiacal light.
+
 2.13.0 (2026-09-08)
 ===================
 

@@ -19,6 +19,7 @@ from ._positional import (
     RightAscensionConstraint,
 )
 from ._radiation import RadiationBeltConstraint
+from ._zodiacal import ZodiacalBackgroundConstraint
 
 __all__ = (
     "AirmassConstraint",
@@ -40,4 +41,5 @@ __all__ = (
     "RadiationBeltConstraint",
     "RightAscensionConstraint",
     "SunSeparationConstraint",
+    "ZodiacalBackgroundConstraint",
 )
