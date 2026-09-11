@@ -16,8 +16,8 @@ This is a Python adaptation of the MATLAB ``Cerenkov`` function from the
 
 from typing import Literal, override
 
+import aep8
 import numpy as np
-from aep8 import flux as aep8_flux
 from astropy import units as u
 from astropy.constants import alpha, c, m_e, m_p
 from astropy.coordinates import EarthLocation
@@ -61,26 +61,15 @@ class CerenkovScaleFactor(ExtrinsicScaleFactor):
 
     def __init__(self, particle="e", solar="max", *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._particle = particle
-        self._solar = solar
-        self._reference_flux = aep8_flux(
-            _REFERENCE_LOCATION,
-            _REFERENCE_OBSTIME,
-            _REFERENCE_ENERGY,
-            kind="integral",
-            particle=particle,
-            solar=solar,
+        self._aep8 = aep8.model(particle=particle, solar=solar)
+        self._reference_flux = self._aep8.integral_flux(
+            _REFERENCE_LOCATION, _REFERENCE_OBSTIME, _REFERENCE_ENERGY
         )
 
     @override
     def at(self, observer_location, target_coord, obstime):
-        current_flux = aep8_flux(
-            observer_location,
-            obstime,
-            _REFERENCE_ENERGY,
-            kind="integral",
-            particle=self._particle,
-            solar=self._solar,
+        current_flux = self._aep8.integral_flux(
+            observer_location, obstime, _REFERENCE_ENERGY
         )
         ref = self._reference_flux
         # Guard against zero reference flux
@@ -217,13 +206,8 @@ class CerenkovBackground:
         # Build radiation belt flux table.
         emin, emax = energy
         ee = np.geomspace(emin, emax, num=nbins)
-        Fe = aep8_flux(
-            _REFERENCE_LOCATION,
-            _REFERENCE_OBSTIME,
-            ee,
-            kind="integral",
-            solar=solar,
-            particle=particle,
+        Fe = aep8.model(solar=solar, particle=particle).integral_flux(
+            _REFERENCE_LOCATION, _REFERENCE_OBSTIME, ee
         )
 
         # Above the maximum energy tabulated by AE8/AP8 (about 7 MeV for
