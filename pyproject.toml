@@ -12,7 +12,7 @@ dependencies = [
     "astropy >= 7.1.0",
     "astropy-healpix",
     "astroquery",
-    "cplex ~= 22.1.2.0",
+    "cplex ~= 22.2.0.0",
     "docplex",
     "dust-extinction >= 1.7",
     "dustmaps",
