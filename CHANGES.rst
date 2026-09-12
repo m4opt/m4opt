@@ -2,6 +2,12 @@
 Changes
 *******
 
+2.15.0 (unreleased)
+===================
+
+- Update CPLEX to version 22.2.0. Academic users who are upgrading will need to
+  follow the instructions for downloading and installing CPLEX.
+
 2.14.0 (2026-09-11)
 ===================
 
