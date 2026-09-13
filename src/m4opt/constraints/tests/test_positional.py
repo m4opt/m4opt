@@ -49,7 +49,7 @@ def angle_bounds(min, max):
     earth_locations,
     skycoords,
     obstimes,
-    angle_bounds(0, 360).filter(interval_is_proper),
+    angle_bounds(0, 360).filter(interval_is_distinct),
     angle_bounds(-90, 90).filter(interval_is_proper),
 )
 def test_positional(observer_location, target_coord, obstime, lon_bounds, lat_bounds):
@@ -83,17 +83,30 @@ def test_positional(observer_location, target_coord, obstime, lon_bounds, lat_bo
     assert (lon_lo <= lon) & (lon <= lon_hi) == HourAngleConstraint(*lon_bounds)(*args)
 
     frame = target_coord.transform_to(GeocentricTrueEcliptic(obstime=obstime))
+    lat = frame.lat
+    assert (lat_lo <= lat) & (lat <= lat_hi) == EclipticLatitudeConstraint(*lat_bounds)(
+        *args
+    )
+
+
+@settings(deadline=None)
+@given(
+    earth_locations,
+    skycoords,
+    obstimes,
+    angle_bounds(0, 180).filter(interval_is_proper),
+)
+def test_helioecliptic_longitude(observer_location, target_coord, obstime, lon_bounds):
+    lon_lo, lon_hi = lon_bounds
+    args = observer_location, target_coord, obstime
+
+    frame = target_coord.transform_to(GeocentricTrueEcliptic(obstime=obstime))
     lon_target = frame.lon
     lon0 = get_sun(obstime).transform_to(frame).lon
     lon = np.abs((lon_target - lon0).wrap_at(180 * u.deg))
     assert (lon_lo <= lon) & (lon <= lon_hi) == HelioeclipticLongitudeConstraint(
         *lon_bounds
     )(*args)
-
-    lat = frame.lat
-    assert (lat_lo <= lat) & (lat <= lat_hi) == EclipticLatitudeConstraint(*lat_bounds)(
-        *args
-    )
 
 
 @settings(deadline=None)
