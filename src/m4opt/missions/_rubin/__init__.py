@@ -56,7 +56,7 @@ mount_alt = SlewComponent(
     max_angular_jerk=14.0 * u.deg / u.s**3,
     settling_time=3 * u.s,
     frame=AltAz,
-    axis='alt',
+    axis="alt",
 )
 mount_az = SlewComponent(
     max_angular_velocity=7 * u.deg / u.s,
@@ -64,14 +64,14 @@ mount_az = SlewComponent(
     max_angular_jerk=28 * u.deg / u.s**3,
     settling_time=3 * u.s,
     frame=AltAz,
-    axis='az',    
+    axis="az",
 )
 dome_alt = SlewComponent(
     max_angular_velocity=1.75 * u.deg / u.s,
     max_angular_acceleration=0.75 * u.deg / u.s**2,
     max_angular_jerk=3 * u.deg / u.s**3,
     frame=AltAz,
-    axis='alt',
+    axis="alt",
 )
 dome_az = SlewComponent(
     max_angular_velocity=1.5 * u.deg / u.s,
@@ -79,7 +79,7 @@ dome_az = SlewComponent(
     max_angular_jerk=3.5 * u.deg / u.s**3,
     settling_time=1 * u.s,
     frame=AltAz,
-    axis='az',
+    axis="az",
 )
 
 rubin = Mission(
