@@ -70,14 +70,15 @@ class ZodiacalBackground:
     Zodiacal light sky background: sunlight scattered by interplanetary dust.
 
     This is the zodiacal light model that is described in the HST STIS
-    Instrument Handbook [1]_. The "high" zodiacal light spectrum is taken from
-    `Table 6.4`_ and the "average" and "low" spectra are scaled from it so that
-    they have visual surface brightness of 22.1, 22.7, and 23.3 magnitudes per
-    square arcsecond.
+    Instrument Handbook :footcite:`2025stii.book...25R`. The "high" zodiacal
+    light spectrum is taken from `Table 6.4`_ and the "average" and "low"
+    spectra are scaled from it so that they have visual surface brightness of
+    22.1, 22.7, and 23.3 magnitudes per square arcsecond.
 
-    The dependence on sky position is taken from Table 16 of :footcite:`1998A&AS..127....1L`, which is a
-    higher-resolution version of `Table 6.2`_ from the HST STIS Instrument
-    Handbook :footcite:`2025stii.book...25R`.
+    The dependence on sky position is taken from Table 16 of
+    :footcite:`1998A&AS..127....1L`, which is a higher-resolution version of
+    `Table 6.2`_ from the HST STIS Instrument Handbook
+    :footcite:`2025stii.book...25R`.
 
     .. _`Table 6.2`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-5-detector-and-sky-backgrounds#id-6.5DetectorandSkyBackgrounds-Table6.2
     .. _`Table 6.4`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-6-tabular-sky-backgrounds#id-6.6TabularSkyBackgrounds-Table6.4
