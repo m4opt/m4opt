@@ -43,6 +43,10 @@ def _make_fov():
 
 
 # Initialize Components for Rubin's Slew Model
+# Location is from https://rubinobservatory.org/explore/how-rubin-works/numbers
+# Kinematic values are taken from https://rubinobservatory.org/for-scientists/rubin-101/telescopes
+# Settling times are taken from https://github.com/lsst-ts/ts_observatory_model/blob/develop/python/lsst/ts/observatory/model/observatory_model.conf
+
 rubin_loc = EarthLocation(
     lat=-30.244633 * u.deg, lon=-70.749417 * u.deg, height=2647 * u.m
 )
@@ -51,23 +55,31 @@ mount_alt = SlewComponent(
     max_angular_acceleration=3.5 * u.deg / u.s**2,
     max_angular_jerk=14.0 * u.deg / u.s**3,
     settling_time=3 * u.s,
+    frame=AltAz,
+    axis='alt',
 )
 mount_az = SlewComponent(
     max_angular_velocity=7 * u.deg / u.s,
     max_angular_acceleration=7 * u.deg / u.s**2,
     max_angular_jerk=28 * u.deg / u.s**3,
     settling_time=3 * u.s,
+    frame=AltAz,
+    axis='az',    
 )
 dome_alt = SlewComponent(
     max_angular_velocity=1.75 * u.deg / u.s,
     max_angular_acceleration=0.75 * u.deg / u.s**2,
     max_angular_jerk=3 * u.deg / u.s**3,
+    frame=AltAz,
+    axis='alt',
 )
 dome_az = SlewComponent(
     max_angular_velocity=1.5 * u.deg / u.s,
     max_angular_acceleration=0.875 * u.deg / u.s**2,
     max_angular_jerk=3.5 * u.deg / u.s**3,
     settling_time=1 * u.s,
+    frame=AltAz,
+    axis='az',
 )
 
 rubin = Mission(
