@@ -8,6 +8,9 @@ Changes
 - Update CPLEX to version 22.2.0. Academic users who are upgrading will need to
   follow the instructions for downloading and installing CPLEX.
 
+- Add NominalRollConstraint, necessary for space-based spectroscopy with
+  requirements on the position angle of a slit.
+
 2.14.0 (2026-09-11)
 ===================
 

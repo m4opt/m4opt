@@ -51,6 +51,10 @@ def nominal_roll(
     :
         The nominal roll angle for the observation.
 
+    See Also
+    --------
+    m4opt.constraints.NominalRollConstraint
+
     Notes
     -----
     The roll angle is degenerate and undefined when the telescope is pointed
