@@ -322,6 +322,11 @@ class SlewComponent(AngularMotionProfile):
     """
 
     frame: GCRS | AltAz | None = None
+    """Coordinate frame of the slew component."""
+
+    axis: str = "ra"
+    """Coordinate axis of the slew component. Must be 'ra', 'dec', 'alt',
+    or 'az'. """
 
     def separation(
         self,
@@ -390,9 +395,7 @@ class GroundSlew:
     comp4: SlewComponent | None = None
     """Components of the telescope separated by part and axis (e.g. mount 
     in altitude, mount in azimuth, dome in altitude, and dome in azimuth 
-    may make up the four components). Only two are required. Odd 
-    components must be along the RA or Alt axes while even components 
-    must be along the Dec or Az axes."""
+    may make up the four components). Only two are required."""
 
 
 class AltAzSlew(GroundSlew):
@@ -424,15 +427,27 @@ class AltAzSlew(GroundSlew):
         altaz_frame = AltAz(obstime=time_obs, location=self.location)
         altaz_coord1 = coord1.transform_to(altaz_frame)
         altaz_coord2 = coord2.transform_to(altaz_frame)
-        time1 = self.comp1.time(altaz_coord1.alt, altaz_coord2.alt)
-        time2 = self.comp2.time(altaz_coord1.az, altaz_coord2.az)
+        time1 = self.comp1.time(
+            getattr(altaz_coord1, self.comp1.axis),
+            getattr(altaz_coord2, self.comp1.axis),
+        )
+        time2 = self.comp2.time(
+            getattr(altaz_coord1, self.comp2.axis),
+            getattr(altaz_coord2, self.comp2.axis),
+        )
         time3 = (
-            self.comp3.time(altaz_coord1.alt, altaz_coord2.alt)
+            self.comp3.time(
+                getattr(altaz_coord1, self.comp3.axis),
+                getattr(altaz_coord2, self.comp3.axis),
+            )
             if self.comp3
             else (0 * u.s)
         )
         time4 = (
-            self.comp4.time(altaz_coord1.az, altaz_coord2.az)
+            self.comp4.time(
+                getattr(altaz_coord1, self.comp4.axis),
+                getattr(altaz_coord2, self.comp4.axis),
+            )
             if self.comp4
             else (0 * u.s)
         )
@@ -470,13 +485,25 @@ class EquatorialSlew(GroundSlew):
         gcrs_frame = GCRS(obsgeoloc=obsgeoloc, obsgeovel=obsgeovel)
         gcrs_coord1 = coord1.transform_to(gcrs_frame)
         gcrs_coord2 = coord2.transform_to(gcrs_frame)
-        time1 = self.comp1.time(gcrs_coord1.ra, gcrs_coord2.ra)
-        time2 = self.comp2.time(gcrs_coord1.dec, gcrs_coord2.dec)
+        time1 = self.comp1.time(
+            getattr(gcrs_coord1, self.comp1.axis), getattr(gcrs_coord2, self.comp1.axis)
+        )
+        time2 = self.comp2.time(
+            getattr(gcrs_coord1, self.comp2.axis), getattr(gcrs_coord2, self.comp2.axis)
+        )
         time3 = (
-            self.comp3.time(gcrs_coord1.ra, gcrs_coord2.ra) if self.comp3 else (0 * u.s)
+            self.comp3.time(
+                getattr(gcrs_coord1, self.comp3.axis),
+                getattr(gcrs_coord2, self.comp3.axis),
+            )
+            if self.comp3
+            else (0 * u.s)
         )
         time4 = (
-            self.comp4.time(gcrs_coord1.dec, gcrs_coord2.dec)
+            self.comp4.time(
+                getattr(gcrs_coord1, self.comp4.axis),
+                getattr(gcrs_coord2, self.comp4.axis),
+            )
             if self.comp4
             else (0 * u.s)
         )
@@ -521,18 +548,16 @@ class MixedCoordSlew(GroundSlew):
         altaz_coord2 = coord2.transform_to(altaz_frame)
         times = []
         components = [self.comp1, self.comp2, self.comp3, self.comp4]
-        for i, comp in enumerate(components):
+        for comp in components:
             time = 0 * u.s
             if comp and comp.frame is AltAz:
-                if (i == 0) or (i == 2):
-                    time = comp.time(altaz_coord1.alt, altaz_coord2.alt)
-                if (i == 1) or (i == 3):
-                    time = comp.time(altaz_coord1.az, altaz_coord2.az)
+                time = comp.time(
+                    getattr(altaz_coord1, comp.axis), getattr(altaz_coord2, comp.axis)
+                )
             if comp and comp.frame is GCRS:
-                if (i == 0) or (i == 2):
-                    time = comp.time(gcrs_coord1.ra, gcrs_coord2.ra)
-                if (i == 1) or (i == 3):
-                    time = comp.time(gcrs_coord1.dec, gcrs_coord2.dec)
+                time = comp.time(
+                    getattr(gcrs_coord1, comp.axis), getattr(gcrs_coord2, comp.axis)
+                )
             times.append(time)
         slew_time = np.maximum(
             np.maximum(times[0], times[1]), np.maximum(times[2], times[3])
