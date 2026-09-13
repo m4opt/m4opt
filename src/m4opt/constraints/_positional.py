@@ -1,6 +1,7 @@
 """Basic positional astronomy constraints."""
 
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import override
 
 import numpy as np
@@ -18,25 +19,50 @@ from astropy.coordinates import (
 )
 from astropy.time import Time
 
+from ..dynamics._roll import nominal_roll
 from ._core import Constraint
 
 
+@dataclass
 class AngleConstraint(Constraint):
-    _key: str
+    min: u.Quantity[u.physical.angle] | Angle
+    """Minimum angle."""
 
-    def __init__(
-        self,
-        min: u.Quantity[u.physical.angle] | Angle,
-        max: u.Quantity[u.physical.angle] | Angle,
-    ):
-        self._min = min
-        self._max = max
+    max: u.Quantity[u.physical.angle] | Angle
+    """Maximum angle."""
+
+    @abstractmethod
+    def _get_angle(
+        self, observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
+    ) -> u.Quantity[u.physical.angle] | Angle:
+        """Calculate the angle that is bounded by this constraint."""
+        raise NotImplementedError
+
+    @override
+    def __call__(self, *args):
+        angle = self._get_angle(*args)
+        return (self.min <= angle) & (angle <= self.max)
+
+
+class WrappedAngleConstraint(AngleConstraint):
+    def __post_init__(self):
+        self.min = Angle(self.min).wrap_at(self.max)
+
+    @override
+    def __call__(self, *args):
+        angle = Angle(self._get_angle(*args)).wrap_at(self.max)
+        return (self.min <= angle) & (angle <= self.max)
+
+
+class FrameAngleConstraint(AngleConstraint):
+    _key: str
 
     @abstractmethod
     def _frame(self, observer_location: EarthLocation, obstime: Time):
         """Frame for this constraint."""
         raise NotImplementedError
 
+    @override
     def _get_angle(
         self, observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
     ):
@@ -47,13 +73,8 @@ class AngleConstraint(Constraint):
             self._key,
         )
 
-    @override
-    def __call__(self, *args):
-        angle = self._get_angle(*args)
-        return (self._min <= angle) & (angle <= self._max)
 
-
-class AltAzConstraint(AngleConstraint):
+class AltAzConstraint(FrameAngleConstraint):
     """Constrain an angle in the :class:`~astropy.coordinates.AltAz` frame."""
 
     @override
@@ -61,7 +82,7 @@ class AltAzConstraint(AngleConstraint):
         return AltAz(obstime=obstime, location=observer_location)
 
 
-class HADecConstraint(AngleConstraint):
+class HADecConstraint(FrameAngleConstraint):
     """Constrain an angle in the :class:`~astropy.coordinates.HADec` frame."""
 
     @override
@@ -69,7 +90,7 @@ class HADecConstraint(AngleConstraint):
         return HADec(obstime=obstime, location=observer_location)
 
 
-class GeocentricTrueEclipticConstraint(AngleConstraint):
+class GeocentricTrueEclipticConstraint(FrameAngleConstraint):
     """Constrain an angle in the :class:`~astropy.coordinates.GeocentricTrueEclipticConstraint` frame."""
 
     @override
@@ -77,7 +98,7 @@ class GeocentricTrueEclipticConstraint(AngleConstraint):
         return GeocentricTrueEcliptic(obstime=obstime)
 
 
-class ICRSConstraint(AngleConstraint):
+class ICRSConstraint(FrameAngleConstraint):
     """Constrain an angle in the :class:`~astropy.coordinates.ICRS` frame."""
 
     @override
@@ -85,7 +106,8 @@ class ICRSConstraint(AngleConstraint):
         return ICRS()
 
 
-class LongitudeConstraint(AngleConstraint):
+@dataclass
+class LongitudeConstraint(FrameAngleConstraint, WrappedAngleConstraint):
     """
     Constrain a generic longitude-like angle.
 
@@ -100,16 +122,8 @@ class LongitudeConstraint(AngleConstraint):
 
     _key = "lon"
 
-    @override
-    def __init__(self, min, max):
-        super().__init__(Angle(min).wrap_at(max), max)
 
-    @override
-    def _get_angle(self, *args):
-        return super()._get_angle(*args).wrap_at(self._max)
-
-
-class LatitudeConstraint(AngleConstraint):
+class LatitudeConstraint(FrameAngleConstraint):
     """
     Constrain a generic latitude-like angle.
 
@@ -236,3 +250,70 @@ class HelioeclipticLongitudeConstraint(GeocentricTrueEclipticConstraint):
         )
         lon0 = sun.transform_to(frame).represent_as(UnitSphericalRepresentation).lon
         return np.abs((lon - lon0).wrap_at(180 * u.deg))
+
+
+@dataclass
+class NominalRollConstraint(WrappedAngleConstraint):
+    """
+    Constrain the nominal roll angle due to solar panel constraints.
+
+    See Also
+    --------
+    m4opt.dynamics.nominal_roll
+
+    Examples
+    --------
+    .. plot::
+
+        import numpy as np
+        from astropy import units as u
+        from astropy.coordinates import EarthLocation, SkyCoord
+        from astropy.time import Time
+        from matplotlib import pyplot as plt
+
+        from m4opt.constraints import NominalRollConstraint
+        from m4opt.dynamics import nominal_roll
+
+        observer_location = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 0 * u.m)
+        target_coord = SkyCoord.from_name('LMC')
+        obstime = Time('2026-01-01') + np.linspace(0, 1, 180, endpoint=False) * u.year
+        rolls = nominal_roll(observer_location, target_coord, obstime)
+
+        def plot_roll_constraint(min, max, symmetry):
+            constraint = NominalRollConstraint(min=min, max=max, symmetry=symmetry)
+            keep = constraint(observer_location, target_coord, obstime)
+
+            fig_width, _ = plt.rcParams['figure.figsize']
+            fig = plt.figure(figsize=(fig_width, fig_width))
+            ax = plt.axes(aspect=1)
+            fig.suptitle(f'{min=:latex} {max=:latex} {symmetry=}')
+            angles = rolls[keep].to_value(u.deg)
+            x = np.zeros(len(angles))
+            ax.set_xlim(-1, 1)
+            ax.set_ylim(-1, 1)
+            ax.quiver(x, x, 1, 1, angles=angles, scale=3)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            fig.tight_layout()
+
+        plot_roll_constraint(20 * u.deg, 30 * u.deg, 4)
+        plot_roll_constraint(170 * u.deg, -170 * u.deg, 1)
+        plot_roll_constraint(180 * u.deg, 90 * u.deg, 1)
+    """
+
+    symmetry: int = 1
+    """
+    Rotational symmetry.
+
+    For example, for the value 2, the either the roll angle or 180° plus the
+    roll angle must be within the given limits.
+    """
+
+    @override
+    def _get_angle(self, *args, **kwargs):
+        step = np.linspace(0, 360, self.symmetry, endpoint=False) * u.deg
+        return nominal_roll(*args, **kwargs)[..., np.newaxis] + step
+
+    @override
+    def __call__(self, *args, **kwargs):
+        return super().__call__(*args, **kwargs).any(axis=-1)

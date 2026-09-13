@@ -4,6 +4,7 @@ from astropy.coordinates import AltAz, Angle, GeocentricTrueEcliptic, HADec, get
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from ...dynamics import nominal_roll
 from ...tests.hypothesis import (
     earth_locations,
     obstimes,
@@ -16,6 +17,7 @@ from .._positional import (
     EclipticLatitudeConstraint,
     HelioeclipticLongitudeConstraint,
     HourAngleConstraint,
+    NominalRollConstraint,
     RightAscensionConstraint,
 )
 
@@ -29,17 +31,26 @@ def interval_is_proper(min_max):
     return min < max
 
 
+def interval_is_distinct(min_max):
+    min, max = min_max
+    return min != max
+
+
 def angle_bounds(min, max):
     return st.lists(
         st.floats(min, max, allow_nan=False, allow_subnormal=False).map(angle_deg),
         min_size=2,
         max_size=2,
-    ).filter(interval_is_proper)
+    )
 
 
 @settings(deadline=None)
 @given(
-    earth_locations, skycoords, obstimes, angle_bounds(0, 360), angle_bounds(-90, 90)
+    earth_locations,
+    skycoords,
+    obstimes,
+    angle_bounds(0, 360).filter(interval_is_proper),
+    angle_bounds(-90, 90).filter(interval_is_proper),
 )
 def test_positional(observer_location, target_coord, obstime, lon_bounds, lat_bounds):
     lon_lo, lon_hi = lon_bounds
@@ -83,3 +94,35 @@ def test_positional(observer_location, target_coord, obstime, lon_bounds, lat_bo
     assert (lat_lo <= lat) & (lat <= lat_hi) == EclipticLatitudeConstraint(*lat_bounds)(
         *args
     )
+
+
+@settings(deadline=None)
+@given(
+    earth_locations,
+    skycoords,
+    obstimes,
+    angle_bounds(-180, 180).filter(interval_is_distinct),
+    st.integers(1, 20),
+)
+def test_nominal_roll(observer_location, target_coord, obstime, bounds, symmetry):
+    min, max = bounds
+
+    constraint = NominalRollConstraint(min, max, symmetry)
+    result = constraint(observer_location, target_coord, obstime)
+
+    roll = (
+        nominal_roll(observer_location, target_coord, obstime)[..., np.newaxis]
+        + np.linspace(0, 360, symmetry, endpoint=False) * u.deg
+    )
+    while (roll > 180 * u.deg).any():
+        roll[roll > 180 * u.deg] -= 360 * u.deg
+    turn = 360 * u.deg
+    roll_wrapped = np.where(roll > max, roll - turn, roll)
+    constraint = NominalRollConstraint(min, max, symmetry)
+    expected = np.where(
+        min < max,
+        (min <= roll) & (roll <= max),
+        (min - turn <= roll_wrapped) & (roll_wrapped <= max),
+    ).any(axis=-1)
+
+    np.testing.assert_array_equal(result, expected)

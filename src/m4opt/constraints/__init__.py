@@ -16,6 +16,7 @@ from ._positional import (
     EclipticLatitudeConstraint,
     HelioeclipticLongitudeConstraint,
     HourAngleConstraint,
+    NominalRollConstraint,
     RightAscensionConstraint,
 )
 from ._radiation import RadiationBeltConstraint
@@ -38,6 +39,7 @@ __all__ = (
     "LogicalNotConstraint",
     "LogicalOrConstraint",
     "MoonSeparationConstraint",
+    "NominalRollConstraint",
     "RadiationBeltConstraint",
     "RightAscensionConstraint",
     "SunSeparationConstraint",
