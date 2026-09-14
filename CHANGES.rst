@@ -13,6 +13,9 @@ Changes
 
 - Progress information is now shown in Jupyter notebooks.
 
+- Add ``m4opt.utils.console.quiet``, a context manager to suppress progress
+  messages inside a ``with:`` block.
+
 2.14.0 (2026-09-11)
 ===================
 

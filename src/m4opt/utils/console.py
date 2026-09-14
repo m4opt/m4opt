@@ -57,12 +57,13 @@ Examples
     RuntimeError: Sorry, I ate it all
 """
 
+import time
 from contextlib import contextmanager
 
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 from rich.text import Text
 
-__all__ = ("progress", "status")
+__all__ = ("progress", "quiet", "status")
 
 _progress = None
 _depth = 0
@@ -125,9 +126,18 @@ def status(description: str):
                 _depth -= 1
 
 
-if __name__ == "__main__":
-    from time import sleep
+@contextmanager
+def quiet():
+    """Suppress all progress messages within this code block."""
+    global _depth
+    _depth = _max_depth
+    try:
+        yield
+    finally:
+        _depth = _max_depth
 
+
+def demo():
     for roman_numeral in ["I", "II", "III"]:
         with status(f"Task {roman_numeral}"):
             for letter in ["A", "B", "C"]:
@@ -135,4 +145,8 @@ if __name__ == "__main__":
                     for number in ["1", "2", "3"]:
                         if roman_numeral == "III" and letter == "B" and number == "1":
                             raise RuntimeError("Failed")
-                        sleep(1)
+                        time.sleep(1)
+
+
+if __name__ == "__main__":
+    demo()
