@@ -59,7 +59,6 @@ Examples
 
 from contextlib import contextmanager
 
-import rich.console
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 from rich.text import Text
 
@@ -68,7 +67,6 @@ __all__ = ("progress", "status")
 _progress = None
 _depth = 0
 _max_depth = 2
-_is_jupyter = rich.console._is_jupyter()
 
 
 @contextmanager
@@ -80,7 +78,7 @@ def progress():
     instead of creating a new one.
     """
     global _progress
-    if not _is_jupyter and _progress is None:
+    if _progress is None:
         with Progress(
             IndentedSpinnerColumn(finished_text="[bar.finished]✓"), TimeElapsedColumn()
         ) as new_progress:
@@ -110,7 +108,7 @@ class IndentedSpinnerColumn(SpinnerColumn):
 def status(description: str):
     """Context manager to track the runtime of a task."""
     global _depth
-    if _is_jupyter or _depth >= _max_depth:
+    if _depth >= _max_depth:
         yield
     else:
         with progress() as pg:

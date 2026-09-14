@@ -11,6 +11,8 @@ Changes
 - Add NominalRollConstraint, necessary for space-based spectroscopy with
   requirements on the position angle of a slit.
 
+- Progress information is now shown in Jupyter notebooks.
+
 2.14.0 (2026-09-11)
 ===================
 
