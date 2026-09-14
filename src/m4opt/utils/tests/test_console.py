@@ -1,11 +1,14 @@
-from runpy import run_module
-
 import pytest
 
-from .. import console
+from ..console import demo, quiet
 
 
-def test_console(monkeypatch):
+def test_console(capsys, monkeypatch):
     monkeypatch.setattr("time.sleep", lambda _: None)
     with pytest.raises(RuntimeError, match="Failed"):
-        run_module(console.__name__, run_name="__main__")
+        demo()
+    assert "Task I" in capsys.readouterr().out
+
+    with pytest.raises(RuntimeError, match="Failed"), quiet():
+        demo()
+    assert "Task I" not in capsys.readouterr().out
