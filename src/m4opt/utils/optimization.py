@@ -310,16 +310,14 @@ def solve_tsp(distances: np.ndarray, **kwargs) -> tuple[np.ndarray, float]:
         # Eliminate 2-cycles for N > 2: if i -> j is selected then j -> i cannot be.
         if n > 2:
             m.add_constraints_(
-                [x[i, j] + x[j, i] <= 1 for i in range(n) for j in range(i)]
+                x[i, j] + x[j, i] <= 1 for i in range(n) for j in range(i)
             )
 
         m.add_constraints_(
-            [
-                y[i] - y[j] + 1 <= (n - 1) * (1 - x[i + 1, j + 1])
-                for i in range(n - 1)
-                for j in range(n - 1)
-                if i != j
-            ]
+            y[i] - y[j] + 1 <= (n - 1) * (1 - x[i + 1, j + 1])
+            for i in range(n - 1)
+            for j in range(n - 1)
+            if i != j
         )
         m.minimize(m.scal_prod_vars_all_different(x.ravel(), distances.ravel()))
         solution = m.solve()
