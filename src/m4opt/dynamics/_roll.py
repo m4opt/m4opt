@@ -58,7 +58,7 @@ def nominal_roll(
     Notes
     -----
     .. plot::
-        :caption: Roll angle field. The Sunward direction is at the center of
+        :caption: Roll angle field. The sunward direction is at the center of
             the plot. The ecliptic poles are along the top and bottom edges.
         :include-source: False
 
