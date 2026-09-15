@@ -1,6 +1,7 @@
 from collections.abc import Hashable
 from dataclasses import dataclass
 
+from astropy import units as u
 from astropy.coordinates import SkyCoord
 from regions import Region, Regions
 
@@ -55,3 +56,6 @@ class Mission:
 
     detector: Detector | None = None
     """Detector model."""
+
+    filter_exchange_time: u.Quantity[u.physical.time] = 0 * u.s
+    """Time to exchange one bandpass filter for another."""
