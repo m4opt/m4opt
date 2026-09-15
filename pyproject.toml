@@ -194,3 +194,6 @@ checks = [
     "SA01",
     "SA04",
 ]
+
+[tool.extension-helpers]
+use_extension_helpers = true
