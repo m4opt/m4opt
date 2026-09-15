@@ -136,10 +136,43 @@ Maximize the sum of the probability of all of the pixels that are contained with
 
     \sum_{i \in I} \rho_i p_i
 
-Problem 2: Variable exposure time
+Problem 2: Filter changes with fixed exposure time
+--------------------------------------------------
+
+In this variation, we enforce that every field must be visited :math:`k` times before any field is visited :math:`k + 1` times to allow for length filter changes to occur between visits. The exposure time is fixed for all fields and visits.
+
+MILP problem formulation
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Constraints
+"""""""""""
+
+The constraints are slightly different:
+
+**Depth.** Same as above.
+
+**Cadence.** Same as above.
+
+**No overlap.** This is similar to Equation :eq:`fixed-exptime-constraint-no-overlap`, but is broken down into two cases with slightly different left-hand sides.
+
+.. math::
+    :label: filter-change-constraint-no-overlap
+
+    \begin{eqnarray}
+    \forall j \neq j',\; k > 1 :\quad t_{jk} - t_{j^\prime, k-1} \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)\\
+    \forall j \neq j',\; k :\quad \left|t_{jk} - t_{j^\prime k}\right| \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
+    \end{eqnarray}
+**Field of regard.** Same as above.
+
+Objective
+"""""""""
+
+Same as above.
+
+Problem 3: Variable exposure time
 ---------------------------------
 
-In this variation, we have a sky map of the exposure time required to detect the source as a function of its position on the sky. We permit the exposure time to vary for each field. A given pixel counts toward the objective value only if the exposure time of a field that contains that pixel exceeds the pixel's exposure time.
+In this variation of Problem 1, we have a sky map of the exposure time required to detect the source as a function of its position on the sky. We permit the exposure time to vary for each field. A given pixel counts toward the objective value only if the exposure time of a field that contains that pixel exceeds the pixel's exposure time.
 
 MILP problem formulation
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -230,7 +263,7 @@ Objective
 
 Same as above.
 
-Problem 3: Variable exposure time with prior distribution of absolute magnitude
+Problem 4: Variable exposure time with prior distribution of absolute magnitude
 -------------------------------------------------------------------------------
 
 In this variation, we don't know the precise absolute magnitude :math:`X` of the source. In the case of kilonovae, our prior knowledge about the absolute magnitude is scant; for the sake of mathematical convenience, we assume that the absolute magnitude has a normal distribution, :math:`X \sim~ \mathcal{N}[\mu_X, \sigma_X]`. We need to compute the distribution of *apparent* magnitudes :math:`x` in order to determine the probability of detection as a function of exposure time for each pixel.
