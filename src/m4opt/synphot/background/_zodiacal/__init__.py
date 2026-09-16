@@ -3,7 +3,7 @@ from typing import override
 
 import numpy as np
 from astropy import units as u
-from astropy.coordinates import GeocentricTrueEcliptic, SkyCoord, get_sun
+from astropy.coordinates import GeocentricMeanEcliptic, SkyCoord, get_sun
 from astropy.table import QTable
 from scipy.interpolate import RegularGridInterpolator
 from synphot import Empirical1D, SourceSpectrum, SpectralElement
@@ -41,7 +41,7 @@ class ZodiacalBackgroundScaleFactor(ExtrinsicScaleFactor):
         self._interp = RegularGridInterpolator([lon, lat], sb)
 
     def _mag_at(self, observer_location, target_coord, obstime):
-        frame = GeocentricTrueEcliptic(equinox=obstime)
+        frame = GeocentricMeanEcliptic(equinox=obstime)
         obj = SkyCoord(target_coord).transform_to(frame)
         sun = get_sun(obstime).transform_to(frame)
 
@@ -82,6 +82,11 @@ class ZodiacalBackground:
 
     .. _`Table 6.2`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-5-detector-and-sky-backgrounds#id-6.5DetectorandSkyBackgrounds-Table6.2
     .. _`Table 6.4`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-6-tabular-sky-backgrounds#id-6.6TabularSkyBackgrounds-Table6.4
+
+    The accuracy of the dependence on the sky location is limited to a fraction
+    of an arcminute because it is evaluated in the
+    :class:`~astropy.coordinates.GeocentricMeanEcliptic` frame which neglects
+    nutation.
 
     Warnings
     --------
