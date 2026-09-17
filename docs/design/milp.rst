@@ -139,7 +139,7 @@ Maximize the sum of the probability of all of the pixels that are contained with
 Problem 2: Filter changes with fixed exposure time
 --------------------------------------------------
 
-In this variation, we enforce that every field must be visited :math:`k` times before any field is visited :math:`k + 1` times to allow for length filter changes to occur between visits. The exposure time is fixed for all fields and visits.
+In this variation, we enforce that every field must be visited for the :math:`k`th before any field is visited for the :math:`(k + 1)` time to allow for length filter changes to occur between visits. The exposure time is fixed for all fields and visits.
 
 MILP problem formulation
 ^^^^^^^^^^^^^^^^^^^^^^^^
