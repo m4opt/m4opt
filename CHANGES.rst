@@ -5,6 +5,24 @@ Changes
 2.16.0 (unreleased)
 ===================
 
+- Allow ``--bandpass`` to be repeated so that successive visits cycle through
+  several bandpasses. Every field is visited for the kth time before any field
+  is visited for the k+1th, so a schedule exchanges the filter once per block
+  boundary however many fields are observed. Ordering the visits also fixes the
+  sign of the time difference between two observations that are in different
+  visits, so the no-overlap constraint needs an absolute value only between two
+  observations within the same visit.
+
+- Add ``Mission.filter_exchange_time`` and set it to 110 s for ZTF.
+
+- Allow ``--exptime-min`` to be repeated so that each bandpass has its own
+  exposure time, given in the same order as ``--bandpass``; a single value
+  applies to every bandpass as before. The scheduler spaces two observations by
+  the slew time plus half of each of their exposure times, so a short exposure
+  in one filter no longer has to be padded out to the length that the least
+  sensitive filter needs. This applies to a fixed exposure time; with
+  ``--absmag-mean`` the exposure time is still shared across bandpasses.
+
 - Calculate the zodiacal light background in the mean ecliptic frame rather
   than the true ecliptic frame. This results in much faster ETC calculations at
   the expense of positional accuracy degrading to a fraction of an arcminute
@@ -85,15 +103,6 @@ Changes
   variance (6 e-/pix) rather than its RMS.
 
 - Add ``intersect1d``, an accelerated version of ``numpy.intersect1d``.
-
-- Allow ``--bandpass`` to be repeated so that successive visits cycle through
-  several bandpasses. Every field is visited for the kth time before any field
-  is visited for the k+1th, so a schedule exchanges the filter once per block
-  boundary however many fields are observed. The ordering also makes the
-  no-overlap constraint redundant across visits, leaving an absolute value
-  only within one.
-
-- Add ``Mission.filter_exchange_time`` and set it to 110 s for ZTF.
 
 2.12.0 (2026-08-28)
 ===================

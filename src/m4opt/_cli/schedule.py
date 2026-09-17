@@ -83,6 +83,50 @@ def prepare_piecewise_breakpoints(breakpoints):
     return [tuple(col.item() for col in row) for row in breakpoints]
 
 
+def _exptime_min_per_visit(exptime_min, bandpass, visit_bandpasses, adaptive_exptime):
+    """
+    Minimum exposure time for each visit, one entry per visit.
+
+    ``--exptime-min`` may be given once, applying to every bandpass, or once per
+    bandpass in the order the bandpasses were given.
+    """
+    values = list(exptime_min) if exptime_min else [900 * u.s]
+    # A None default costs the option its unit checking, so check it here.
+    try:
+        values = [value.to(u.s) for value in values]
+    except u.UnitConversionError as e:
+        raise UsageError(f"--exptime-min must be a time: {e}") from None
+
+    if len(values) == 1:
+        return [values[0]] * len(visit_bandpasses)
+
+    bandpasses = bandpass or []
+    if len(values) != len(bandpasses):
+        raise UsageError(
+            f"Got {len(values)} values for --exptime-min and {len(bandpasses)} "
+            "for --bandpass. Give one exposure time in total, or one for every "
+            "bandpass."
+        )
+    if adaptive_exptime:
+        raise UsageError(
+            "A separate --exptime-min for each bandpass is supported only with "
+            "a fixed exposure time. Omit --absmag-mean, or give a single "
+            "--exptime-min."
+        )
+    by_bandpass = dict(zip(bandpasses, values))
+    return [by_bandpass[band] for band in visit_bandpasses]
+
+
+def _unique_preserving_order(values):
+    """
+    The distinct elements of ``values``, in the order they first appear.
+
+    Order is not significant to the caller, which takes a maximum over the
+    result; it keeps the value stable from one run to the next.
+    """
+    return list(dict.fromkeys(values))
+
+
 def _exptime_over_bandpasses(mission, snr, spectrum, bandpasses):
     """
     Exposure time reaching the target SNR in every one of ``bandpasses``.
@@ -146,11 +190,13 @@ def schedule(
         ),
     ] = 1 * u.min,
     exptime_min: Annotated[
-        u.Quantity,
+        list[u.Quantity] | None,
         typer.Option(
-            help="Minimum exposure time for each observation",
+            help="Minimum exposure time for each observation. Repeat the "
+            "option to give each bandpass its own exposure time, in the same "
+            "order as --bandpass; a single value applies to every bandpass",
         ),
-    ] = 900 * u.s,
+    ] = None,
     exptime_max: Annotated[
         u.Quantity,
         typer.Option(
@@ -289,7 +335,12 @@ def schedule(
     visit_bandpasses = [
         bandpass[i % len(bandpass)] if bandpass else None for i in range(visits)
     ]
-    unique_bandpasses = list(dict.fromkeys(visit_bandpasses))
+    unique_bandpasses = _unique_preserving_order(visit_bandpasses)
+    visit_exptime_min = _exptime_min_per_visit(
+        exptime_min, bandpass, visit_bandpasses, adaptive_exptime
+    )
+    # The shortest of them bounds anything that needs a single number.
+    exptime_min = min(visit_exptime_min)
     filter_changes = [lhs != rhs for lhs, rhs in pairwise(visit_bandpasses)]
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
@@ -332,6 +383,9 @@ def schedule(
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
         exptime_min_s = exptime_min.to_value(u.s)
+        visit_exptime_min_s = np.array(
+            [value.to_value(u.s) for value in visit_exptime_min]
+        )
         cadence_s = cadence.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
         observable_intervals = np.asarray(
@@ -542,7 +596,7 @@ def schedule(
                     time_field_visit_vars,
                     exptime_field_vars
                     if adaptive_exptime
-                    else np.full(n_fields, exptime_min_s),
+                    else np.tile(visit_exptime_min_s, (n_fields, 1)),
                     observable_intervals,
                 ):
                     assert len(intervals) > 0
@@ -574,22 +628,42 @@ def schedule(
             if visits > 1:
                 with status("adding cadence constraints"):
                     if adaptive_exptime:
-                        rhs = cadence_s * field_vars + exptime_field_vars
+                        rhs = (cadence_s * field_vars + exptime_field_vars)[
+                            :, np.newaxis
+                        ]
                     else:
-                        rhs = (exptime_min_s + cadence_s) * field_vars
+                        half_sum = 0.5 * (
+                            visit_exptime_min_s[:-1] + visit_exptime_min_s[1:]
+                        )
+                        rhs = np.multiply.outer(field_vars, cadence_s + half_sum)
                     model.add_constraints_(
                         (time_field_visit_vars[:, 1:] - time_field_visit_vars[:, :-1])
-                        >= rhs[:, np.newaxis]
+                        >= rhs
                     )
 
             with status("adding slew constraints"):
+                # Zero or less unless both fields are observed, which relaxes
+                # the constraint away for any pair that is not.
+                both_observed = field_vars[slew_i] + field_vars[slew_j] - 1
                 if adaptive_exptime:
-                    rhs = 0.5 * (
-                        exptime_field_vars[slew_i] + exptime_field_vars[slew_j]
-                    ) + slew_time_s * (field_vars[slew_i] + field_vars[slew_j] - 1)
+                    rhs = (
+                        0.5 * (exptime_field_vars[slew_i] + exptime_field_vars[slew_j])
+                        + slew_time_s * both_observed
+                    )
+                    rhs_within = rhs
+                    rhs_after = rhs
                 else:
-                    rhs = (slew_time_s + exptime_min_s) * (
-                        field_vars[slew_i] + field_vars[slew_j] - 1
+                    # Two observations clear each other by the slew plus half of
+                    # each exposure, so a pair drawn from two visits is spaced by
+                    # the mean of their exposure times.
+                    def _spacing(exptimes):
+                        return (
+                            slew_time_s[np.newaxis, :] + exptimes[:, np.newaxis]
+                        ) * both_observed[np.newaxis, :]
+
+                    rhs = rhs_within = _spacing(visit_exptime_min_s)
+                    rhs_after = _spacing(
+                        0.5 * (visit_exptime_min_s[:-1] + visit_exptime_min_s[1:])
                     )
 
                 if any(filter_changes):
@@ -599,7 +673,10 @@ def schedule(
                     # ordering also makes the absolute value redundant across
                     # visits, leaving it only within one.
                     exchange_s = mission.filter_exchange_time.to_value(u.s)
-                    gap = rhs + exchange_s * np.asarray(filter_changes)[:, np.newaxis]
+                    gap = (
+                        rhs_after
+                        + exchange_s * np.asarray(filter_changes)[:, np.newaxis]
+                    )
                     within_visit = (
                         time_field_visit_vars[slew_i, :]
                         - time_field_visit_vars[slew_j, :]
@@ -612,11 +689,17 @@ def schedule(
                         time_field_visit_vars[slew_j, 1:]
                         - time_field_visit_vars[slew_i, :-1]
                     )
-                    model.add_constraints_(model.abs(np.transpose(within_visit)) >= rhs)
+                    model.add_constraints_(
+                        model.abs(np.transpose(within_visit)) >= rhs_within
+                    )
                     model.add_constraints_(np.transpose(after_i) >= gap)
                     model.add_constraints_(np.transpose(after_j) >= gap)
                 else:
                     p, q = full_indices(visits)
+                    if not adaptive_exptime:
+                        rhs = _spacing(
+                            0.5 * (visit_exptime_min_s[p] + visit_exptime_min_s[q])
+                        )
                     model.add_constraints_(
                         model.abs(
                             time_field_visit_vars[slew_i, p[:, np.newaxis]]
@@ -676,7 +759,7 @@ def schedule(
             with status("adding cuts"):
                 model.add_user_cut_constraint(
                     model.sum_vars_all_different(field_vars)
-                    <= (deadline - delay).to_value(u.s) / (visits * exptime_min_s)
+                    <= (deadline - delay).to_value(u.s) / visit_exptime_min_s.sum()
                 )
                 if adaptive_exptime:
                     model.add_user_cut_constraint(
@@ -714,16 +797,19 @@ def schedule(
             if solution is None:
                 field_values = np.zeros(field_vars.shape, dtype=bool)
                 time_field_visit_values = np.empty(time_field_visit_vars.shape)
-                exptime_field_values = np.empty(field_vars.shape)
+                exptime_field_values = np.empty(time_field_visit_vars.shape)
                 objective_value = 0.0
             else:
                 field_values = solution.get_values(field_vars) >= 0.5
                 time_field_visit_values = solution.get_values(time_field_visit_vars)
                 if adaptive_exptime:
-                    exptime_field_values = solution.get_values(exptime_field_vars)
-                    field_values &= exptime_field_values > 0
+                    exptime_per_field = solution.get_values(exptime_field_vars)
+                    field_values &= exptime_per_field > 0
+                    exptime_field_values = np.tile(
+                        exptime_per_field[:, np.newaxis], visits
+                    )
                 else:
-                    exptime_field_values = np.full(n_fields, exptime_min_s)
+                    exptime_field_values = np.tile(visit_exptime_min_s, (n_fields, 1))
                 objective_value = solution.get_objective_value()
 
             table = QTable(
@@ -732,13 +818,10 @@ def schedule(
                     "start_time": obstimes[0]
                     + (
                         time_field_visit_values[field_values]
-                        - 0.5 * exptime_field_values[field_values][:, np.newaxis]
+                        - 0.5 * exptime_field_values[field_values]
                     ).ravel()
                     * u.s,
-                    "duration": np.tile(
-                        exptime_field_values[field_values][:, np.newaxis], visits
-                    ).ravel()
-                    * u.s,
+                    "duration": exptime_field_values[field_values].ravel() * u.s,
                     "target_coord": target_coords[
                         np.tile(np.flatnonzero(field_values)[:, np.newaxis], visits)
                     ].ravel(),
