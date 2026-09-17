@@ -86,4 +86,4 @@ def test_a_single_bandpass_needs_no_ordering(fits_path, tmp_path, run_cli):
     assert result.exit_code == 0
     table = QTable.read(out)
     observations = table[table["action"] == "observe"]
-    assert set(np.asarray(observations["bandpass"])) <= {"NUV"}
+    assert set(np.asarray(observations["bandpass"])) == {"NUV"}
