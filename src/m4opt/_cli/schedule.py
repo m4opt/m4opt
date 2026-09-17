@@ -279,7 +279,7 @@ def schedule(
     bandpasses; for example, --bandpass g --bandpass r observes each field in g
     and then in r. Visits are grouped into contiguous blocks of a single
     bandpass, so that every field is observed for the kth time before any field
-    is observed for the k+1th, and the filter is exchanged once per block
+    is observed for the (k+1)th, and the filter is exchanged once per block
     boundary however many fields are observed.
     """
     adaptive_exptime = absmag_mean is not None
