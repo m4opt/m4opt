@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 from pytest_astropy_header.display import PYTEST_HEADER_MODULES, TESTED_VERSIONS
 
+from .tests.plugins.generated_file import generated_file  # noqa: F401
 from .tests.plugins.problem_size_limits import (  # noqa: F401
     pytest_runtest_call,
     pytest_runtest_setup,
