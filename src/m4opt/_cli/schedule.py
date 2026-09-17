@@ -340,7 +340,7 @@ def schedule(
         exptime_min, bandpass, visit_bandpasses, adaptive_exptime
     )
     # The shortest of them bounds anything that needs a single number.
-    exptime_min = min(visit_exptime_min)
+    shortest_exptime_min = min(visit_exptime_min)
     filter_changes = [lhs != rhs for lhs, rhs in pairwise(visit_bandpasses)]
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
@@ -382,7 +382,7 @@ def schedule(
         target_coords = target_coords.unmasked[keep]
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
-        exptime_min_s = exptime_min.to_value(u.s)
+        exptime_min_s = shortest_exptime_min.to_value(u.s)
         visit_exptime_min_s = np.array(
             [value.to_value(u.s) for value in visit_exptime_min]
         )
@@ -513,7 +513,7 @@ def schedule(
                         exptime_max.to_value(u.s),
                         deadline.to_value(u.s),
                     ),
-                    exptime_min.to_value(u.s),
+                    shortest_exptime_min.to_value(u.s),
                 )
                 piecewise_breakpoints = np.pad(
                     np.stack(
@@ -551,7 +551,7 @@ def schedule(
                         deadline.to_value(u.s),
                         exptime_pixel_s.max(initial=exptime_max.to_value(u.s)),
                     ),
-                    exptime_min.to_value(u.s),
+                    shortest_exptime_min.to_value(u.s),
                 )
 
     with status("calculating slew times"):
