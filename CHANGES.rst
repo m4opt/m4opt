@@ -2,6 +2,14 @@
 Changes
 *******
 
+2.16.0 (unreleased)
+===================
+
+- Calculate the zodiacal light background in the mean ecliptic frame rather
+  than the true ecliptic frame. This results in much faster ETC calculations at
+  the expense of positional accuracy degrading to a fraction of an arcminute
+  due to neglecting nutation.
+
 2.15.0 (2026-09-14)
 ===================
 

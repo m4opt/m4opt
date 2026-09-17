@@ -30,7 +30,7 @@ class ZodiacalBackgroundConstraint(Constraint):
 
         import numpy as np
         from astropy import units as u
-        from astropy.coordinates import EarthLocation, GeocentricTrueEcliptic, SkyCoord
+        from astropy.coordinates import EarthLocation, GeocentricMeanEcliptic, SkyCoord
         from astropy.time import Time
         from astropy.visualization import quantity_support
         from matplotlib import pyplot as plt
@@ -42,7 +42,7 @@ class ZodiacalBackgroundConstraint(Constraint):
         lon = np.linspace(-180, 180, 500) * u.deg
         lat = np.linspace(-90, 90, 500) * u.deg
         target_coord = SkyCoord(
-            *np.meshgrid(lon, lat), frame=GeocentricTrueEcliptic(obstime=obstime)
+            *np.meshgrid(lon, lat), frame=GeocentricMeanEcliptic(obstime=obstime)
         )
         in_constraint = np.zeros(target_coord.shape)
         delta = 0.25
