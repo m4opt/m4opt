@@ -276,8 +276,8 @@ def schedule(
 
     \b
     Repeating the --bandpass option makes successive visits cycle through the
-    bandpasses; for example, --bandpass g --bandpass r observes each field in g
-    and then in r. Visits are grouped into contiguous blocks of a single
+    bandpasses; for example, --bandpass g --bandpass r observes every field in g
+    and then every field in r. Visits are grouped into contiguous blocks of a single
     bandpass, so that every field is observed for the kth time before any field
     is observed for the (k+1)th, and the filter is exchanged once per block
     boundary however many fields are observed.
