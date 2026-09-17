@@ -54,6 +54,7 @@ test = [
     "sphinxcontrib-bibtex",
     "pytest-astropy",
     "pytest-benchmark",
+    "pytest-regressions",
 ]
 docs = [
     "pysiaf",
