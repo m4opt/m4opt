@@ -157,6 +157,7 @@ The constraints are slightly different:
 
 .. math::
     :label: filter-change-constraint-no-overlap
+    :no-wrap:
 
     \begin{eqnarray}
     \forall j \neq j',\; k > 1 :\quad t_{jk} - t_{j^\prime, k-1} \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)\\
