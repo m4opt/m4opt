@@ -30,7 +30,6 @@ def pytest_configure(config: pytest.Config):
     # packages for which version numbers are displayed when running the
     # tests.
     PYTEST_HEADER_MODULES.pop("Pandas", None)
-    PYTEST_HEADER_MODULES["scikit-image"] = "skimage"
 
     from . import __version__
 
