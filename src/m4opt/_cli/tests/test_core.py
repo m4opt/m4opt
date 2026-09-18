@@ -43,39 +43,56 @@ def test_quantity(run_cli, default):
     assert "value '100meter' cannot be" in result.output
 
 
-def test_quantity_physical_type_from_annotation(run_cli):
+@pytest.mark.parametrize(
+    "annotation",
+    [
+        Annotated[u.Quantity[u.physical.time], Option()],
+        Annotated[u.Quantity[u.s], Option()],
+        Annotated[u.Quantity, u.physical.time, Option()],
+    ],
+    ids=["physical type", "unit", "metadata"],
+)
+def test_quantity_annotation(run_cli, annotation):
     """An option with no default is checked against the physical type it pins."""
-
-    def run(annotation, *args):
-        app = Typer()
-        value = None
-
-        @app.command()
-        def main(foo: annotation):
-            nonlocal value
-            value = foo
-
-        return run_cli(app, *args), value
-
-    # A required option has no default to take a physical type from.
-    required = Annotated[u.Quantity, u.physical.time, Option()]
-    result, value = run(required, "--foo=200s")
+    result, value = _run_with_annotation(run_cli, annotation, "--foo=200s")
     assert result.exit_code == 0
     assert value == 200 * u.s
 
-    result, _ = run(required, "--foo=100meter")
+    result, _ = _run_with_annotation(run_cli, annotation, "--foo=100meter")
     assert result.exit_code != 0
     assert "cannot be converted to time" in result.output
 
-    # Repeated and optional forms pin it the same way.
-    repeated = Annotated[list[u.Quantity], u.physical.time, Option()]
-    result, value = run(repeated, "--foo=1s", "--foo=2min")
+
+@pytest.mark.parametrize(
+    "annotation",
+    [
+        Annotated[list[u.Quantity[u.physical.time]], Option()],
+        Annotated[list[u.Quantity[u.s]], Option()],
+        Annotated[list[u.Quantity], u.physical.time, Option()],
+    ],
+    ids=["physical type", "unit", "metadata"],
+)
+def test_quantity_list_annotation(run_cli, annotation):
+    """Typer rejects an annotated list element, so the metadata is stripped."""
+    result, value = _run_with_annotation(run_cli, annotation, "--foo=1s", "--foo=2min")
     assert result.exit_code == 0
     assert value == [1 * u.s, 2 * u.min]
 
-    result, _ = run(repeated, "--foo=1s", "--foo=100meter")
+    result, _ = _run_with_annotation(run_cli, annotation, "--foo=100meter")
     assert result.exit_code != 0
     assert "cannot be converted to time" in result.output
+
+
+def _run_with_annotation(run_cli, annotation, *args):
+    app = Typer()
+    value = None
+
+    @app.command()
+    def main(foo: annotation):
+        nonlocal value
+        value = foo
+
+    return run_cli(app, *args), value
 
 
 def test_mission(run_cli):

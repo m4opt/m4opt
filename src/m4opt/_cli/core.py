@@ -91,16 +91,45 @@ def _physical_type(annotation):
     """
     The physical type an annotation pins, if it pins one.
 
-    Typer discards the metadata of an :obj:`~typing.Annotated` annotation before
-    it builds a parameter, so the physical type has to be recovered from the
-    function's own type hints.
+    Both ``u.Quantity[u.physical.time]`` and ``u.Quantity[u.s]`` pin one, the
+    latter through the physical type of its unit. Typer discards the metadata of
+    an :obj:`~typing.Annotated` annotation before it builds a parameter, so this
+    reads the function's own type hints instead.
     """
     if isinstance(annotation, u.PhysicalType):
         return annotation
+    if isinstance(annotation, u.UnitBase):
+        return u.get_physical_type(annotation)
     for arg in typing.get_args(annotation):
         if (found := _physical_type(arg)) is not None:
             return found
     return None
+
+
+def _without_element_metadata(annotation):
+    """
+    ``list[u.Quantity[u.s]]`` reduced to ``list[u.Quantity]``.
+
+    Typer refuses a list whose element type is annotated, so the metadata is
+    stripped here and recovered from the type hints instead.
+    """
+    if typing.get_origin(annotation) is list:
+        (element,) = typing.get_args(annotation)
+        if hasattr(element, "__metadata__"):
+            return list[element.__origin__]
+    return annotation
+
+
+_get_click_param = typer.main.get_click_param
+
+
+def get_click_param(param):
+    """Monkeypatch for Typer to accept a list of annotated quantities."""
+    param.annotation = _without_element_metadata(param.annotation)
+    return _get_click_param(param)
+
+
+typer.main.get_click_param = get_click_param
 
 
 _get_params_from_function = (
