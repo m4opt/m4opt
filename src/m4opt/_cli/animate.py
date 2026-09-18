@@ -33,7 +33,6 @@ from ..synphot import observing
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
 from .core import app
-from .schedule import _unique_preserving_order
 
 
 @app.command()
@@ -97,9 +96,9 @@ def animate(
         # record a single name.
         if isinstance(bandpass, str) or bandpass is None:
             bandpass = [bandpass]
-        bandpass = _unique_preserving_order(bandpass)
         snr = table.meta["args"]["snr"]
-        exptime_min = table.meta["args"]["exptime_min"]
+        # One entry per visit now; older schedules record a single value.
+        exptime_min = u.Quantity(table.meta["args"]["exptime_min"]).min()
         # The schedule records the time it was measured from.
         event_time = table.meta["args"].get("event_time")
 

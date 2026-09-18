@@ -157,5 +157,6 @@ def test_a_variable_exposure_time_refuses_more_than_one_bandpass(
             "--bandpass=g",
             "--bandpass=r",
             "--visits=2",
+            "--exptime-min=300s",
             "--absmag-mean=-16",
         )

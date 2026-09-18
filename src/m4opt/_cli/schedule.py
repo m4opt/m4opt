@@ -83,38 +83,28 @@ def prepare_piecewise_breakpoints(breakpoints):
     return [tuple(col.item() for col in row) for row in breakpoints]
 
 
-def _exptime_min_per_visit(exptime_min, bandpass, visit_bandpasses, adaptive_exptime):
+def _exptime_min_per_visit(exptime_min, bandpass, visits):
     """
     Minimum exposure time for each visit, one entry per visit.
 
-    ``--exptime-min`` may be given once, applying to every bandpass, or once per
-    bandpass in the order the bandpasses were given.
+    ``--exptime-min`` is given either once, applying to every visit, or once for
+    every ``--bandpass``, pairing with them in the order both were given.
     """
-    values = list(exptime_min) if exptime_min else [900 * u.s]
-    # A None default costs the option its unit checking, so check it here.
+    # The option is required and so has no default, which costs it the unit
+    # checking that a default would have supplied.
     try:
-        values = [value.to(u.s) for value in values]
+        values = [value.to(u.s) for value in exptime_min]
     except u.UnitConversionError as e:
         raise UsageError(f"--exptime-min must be a time: {e}") from None
 
-    if len(values) == 1:
-        return [values[0]] * len(visit_bandpasses)
-
     bandpasses = bandpass or []
-    if len(values) != len(bandpasses):
+    if len(values) > 1 and len(values) != len(bandpasses):
         raise UsageError(
             f"Got {len(values)} values for --exptime-min and {len(bandpasses)} "
             "for --bandpass. Give exactly one exposure time, or one for every "
             "bandpass."
         )
-    if adaptive_exptime:
-        raise UsageError(
-            "A separate --exptime-min for each bandpass is supported only with "
-            "a fixed exposure time. Omit --absmag-mean, or give a single "
-            "--exptime-min."
-        )
-    by_bandpass = dict(zip(bandpasses, values))
-    return [by_bandpass[band] for band in visit_bandpasses]
+    return [values[visit % len(values)] for visit in range(visits)]
 
 
 def _unique_preserving_order(values):
@@ -138,6 +128,14 @@ def schedule(
         typer.FileTextWrite,
         typer.Argument(
             help="Output filename for generated schedule", metavar="SCHEDULE.ecsv"
+        ),
+    ],
+    exptime_min: Annotated[
+        list[u.Quantity],
+        typer.Option(
+            help="Minimum exposure time for each observation. Repeat the "
+            "option to give each bandpass its own exposure time, in the same "
+            "order as --bandpass; a single value applies to every bandpass",
         ),
     ],
     mission: Annotated[
@@ -174,14 +172,6 @@ def schedule(
             help="Time step for evaluating field of regard",
         ),
     ] = 1 * u.min,
-    exptime_min: Annotated[
-        list[u.Quantity] | None,
-        typer.Option(
-            help="Minimum exposure time for each observation. Repeat the "
-            "option to give each bandpass its own exposure time, in the same "
-            "order as --bandpass; a single value applies to every bandpass",
-        ),
-    ] = None,
     exptime_max: Annotated[
         u.Quantity,
         typer.Option(
@@ -321,11 +311,7 @@ def schedule(
         bandpass[i % len(bandpass)] if bandpass else None for i in range(visits)
     ]
     unique_bandpasses = _unique_preserving_order(visit_bandpasses)
-    visit_exptime_min = _exptime_min_per_visit(
-        exptime_min, bandpass, visit_bandpasses, adaptive_exptime
-    )
-    # The shortest of them bounds anything that needs a single number.
-    shortest_exptime_min = min(visit_exptime_min)
+    visit_exptime_min = _exptime_min_per_visit(exptime_min, bandpass, visits)
     if adaptive_exptime and len(unique_bandpasses) > 1:
         raise NotImplementedError(
             "A variable exposure time is not supported with more than one "
@@ -374,7 +360,7 @@ def schedule(
         target_coords = target_coords.unmasked[keep]
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
-        exptime_min_s = shortest_exptime_min.to_value(u.s)
+        exptime_min_s = min(visit_exptime_min).to_value(u.s)
         visit_exptime_min_s = np.array(
             [value.to_value(u.s) for value in visit_exptime_min]
         )
@@ -505,7 +491,7 @@ def schedule(
                         exptime_max.to_value(u.s),
                         deadline.to_value(u.s),
                     ),
-                    shortest_exptime_min.to_value(u.s),
+                    exptime_min_s,
                 )
                 piecewise_breakpoints = np.pad(
                     np.stack(
@@ -542,7 +528,7 @@ def schedule(
                         deadline.to_value(u.s),
                         exptime_pixel_s.max(initial=exptime_max.to_value(u.s)),
                     ),
-                    shortest_exptime_min.to_value(u.s),
+                    exptime_min_s,
                 )
 
     with status("calculating slew times"):
