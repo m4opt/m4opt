@@ -229,8 +229,7 @@ def animate(
             if len(bandpass) > 1:
                 raise NotImplementedError(
                     "An exposure time map is not supported for a schedule that "
-                    "uses more than one bandpass, because each field has a "
-                    "single exposure time that every one of its visits shares."
+                    "uses more than one bandpass."
                 )
             with status("adding exposure time map"):
                 distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
