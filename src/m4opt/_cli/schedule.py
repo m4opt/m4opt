@@ -127,21 +127,6 @@ def _unique_preserving_order(values):
     return list(dict.fromkeys(values))
 
 
-def _exptime_over_bandpasses(mission, snr, spectrum, bandpasses):
-    """
-    Exposure time reaching the target SNR in every one of ``bandpasses``.
-
-    A field has a single exposure time shared by all of its visits, so the
-    least sensitive bandpass governs.
-    """
-    return np.maximum.reduce(
-        [
-            mission.detector.get_exptime(snr, spectrum, bandpass).to_value(u.s)
-            for bandpass in bandpasses
-        ]
-    )
-
-
 @app.command()
 @progress()
 def schedule(
@@ -341,6 +326,13 @@ def schedule(
     )
     # The shortest of them bounds anything that needs a single number.
     shortest_exptime_min = min(visit_exptime_min)
+    if adaptive_exptime and len(unique_bandpasses) > 1:
+        raise NotImplementedError(
+            "A variable exposure time is not supported with more than one "
+            "bandpass, because each field has a single exposure time that "
+            "every one of its visits shares. Give one --bandpass, or drop "
+            "--absmag-mean to use a fixed exposure time."
+        )
     filter_changes = [lhs != rhs for lhs, rhs in pairwise(visit_bandpasses)]
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
@@ -505,9 +497,9 @@ def schedule(
                         )
                         * DustExtinction()
                     )
-                    exptime_pixel_s = _exptime_over_bandpasses(
-                        mission, snr, spectrum, unique_bandpasses
-                    )
+                    exptime_pixel_s = mission.detector.get_exptime(
+                        snr, spectrum, unique_bandpasses[0]
+                    ).to_value(u.s)
                 exptime_max_s = max(
                     min(
                         exptime_max.to_value(u.s),
@@ -532,15 +524,14 @@ def schedule(
                     target_coord=hpx.healpix_to_skycoord(good),
                     obstime=obstimes[0],
                 ):
-                    exptime_pixel_s = _exptime_over_bandpasses(
-                        mission,
+                    exptime_pixel_s = mission.detector.get_exptime(
                         snr,
                         synphot.SourceSpectrum(
                             synphot.ConstFlux1D(absmag_mean * u.ABmag + distmod)
                         )
                         * DustExtinction(),
-                        unique_bandpasses,
-                    )
+                        unique_bandpasses[0],
+                    ).to_value(u.s)
                 exptime_min_s = min(
                     max(exptime_min_s, exptime_pixel_s.min(initial=exptime_min_s)),
                     exptime_max.to_value(u.s),

@@ -141,3 +141,21 @@ def test_one_exposure_time_per_bandpass_or_one_in_total(fits_path, tmp_path, run
             "--exptime-min=60s",
             "--no-appmag-dist",
         )
+
+
+def test_a_variable_exposure_time_refuses_more_than_one_bandpass(
+    fits_path, tmp_path, run_cli
+):
+    """Each field has one exposure time, so it cannot serve several bandpasses."""
+    with pytest.raises(NotImplementedError, match="more than one"):
+        run_cli(
+            app,
+            "schedule",
+            fits_path,
+            tmp_path / "adaptive.ecsv",
+            "--mission=ztf",
+            "--bandpass=g",
+            "--bandpass=r",
+            "--visits=2",
+            "--absmag-mean=-16",
+        )

@@ -21,7 +21,8 @@ Changes
   the slew time plus half of each of their exposure times, so a short exposure
   in one filter no longer has to be padded out to the length that the least
   sensitive filter needs. This applies to a fixed exposure time; with
-  ``--absmag-mean`` the exposure time is still shared across bandpasses.
+  ``--absmag-mean`` the scheduler now refuses more than one bandpass rather
+  than quietly making every filter share one exposure time.
 
 - Calculate the zodiacal light background in the mean ecliptic frame rather
   than the true ecliptic frame. This results in much faster ETC calculations at

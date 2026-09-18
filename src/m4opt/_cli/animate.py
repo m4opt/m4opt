@@ -33,7 +33,7 @@ from ..synphot import observing
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
 from .core import app
-from .schedule import _exptime_over_bandpasses
+from .schedule import _unique_preserving_order
 
 
 @app.command()
@@ -97,7 +97,7 @@ def animate(
         # record a single name.
         if isinstance(bandpass, str) or bandpass is None:
             bandpass = [bandpass]
-        bandpass = list(dict.fromkeys(bandpass))
+        bandpass = _unique_preserving_order(bandpass)
         snr = table.meta["args"]["snr"]
         exptime_min = table.meta["args"]["exptime_min"]
         # The schedule records the time it was measured from.
@@ -226,6 +226,12 @@ def animate(
                 raise NotImplementedError(
                     "This mission does not define a detector model"
                 )
+            if len(bandpass) > 1:
+                raise NotImplementedError(
+                    "An exposure time map is not supported for a schedule that "
+                    "uses more than one bandpass, because each field has a "
+                    "single exposure time that every one of its visits shares."
+                )
             with status("adding exposure time map"):
                 distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
                 with observing(
@@ -233,15 +239,14 @@ def animate(
                     target_coord=hpx.healpix_to_skycoord(np.arange(hpx.npix)),
                     obstime=time_steps[0],
                 ):
-                    exptime = _exptime_over_bandpasses(
-                        mission,
+                    exptime = mission.detector.get_exptime(
                         snr,
                         synphot.SourceSpectrum(
                             synphot.ConstFlux1D(absmag_mean * u.ABmag + distmod)
                         )
                         * DustExtinction(),
-                        bandpass,
-                    )
+                        bandpass[0],
+                    ).to_value(u.s)
                 ims = [
                     ax.imshow_hpx(
                         exptime,
