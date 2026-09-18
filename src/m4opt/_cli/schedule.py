@@ -107,16 +107,6 @@ def _exptime_min_per_visit(exptime_min, bandpass, visits):
     return [values[visit % len(values)] for visit in range(visits)]
 
 
-def _unique_preserving_order(values):
-    """
-    The distinct elements of ``values``, in the order they first appear.
-
-    Order is not significant to the caller, which takes a maximum over the
-    result; it keeps the value stable from one run to the next.
-    """
-    return list(dict.fromkeys(values))
-
-
 @app.command()
 @progress()
 def schedule(
@@ -310,14 +300,10 @@ def schedule(
     visit_bandpasses = [
         bandpass[i % len(bandpass)] if bandpass else None for i in range(visits)
     ]
-    unique_bandpasses = _unique_preserving_order(visit_bandpasses)
     visit_exptime_min = _exptime_min_per_visit(exptime_min, bandpass, visits)
-    if adaptive_exptime and len(unique_bandpasses) > 1:
+    if adaptive_exptime and bandpass is not None and len(bandpass) > 1:
         raise NotImplementedError(
-            "A variable exposure time is not supported with more than one "
-            "bandpass, because each field has a single exposure time that "
-            "every one of its visits shares. Give one --bandpass, or drop "
-            "--absmag-mean to use a fixed exposure time."
+            "A variable exposure time is not supported with more than one bandpass."
         )
     filter_changes = [lhs != rhs for lhs, rhs in pairwise(visit_bandpasses)]
     with status("loading sky map"):
@@ -484,7 +470,7 @@ def schedule(
                         * DustExtinction()
                     )
                     exptime_pixel_s = mission.detector.get_exptime(
-                        snr, spectrum, unique_bandpasses[0]
+                        snr, spectrum, visit_bandpasses[0]
                     ).to_value(u.s)
                 exptime_max_s = max(
                     min(
@@ -516,7 +502,7 @@ def schedule(
                             synphot.ConstFlux1D(absmag_mean * u.ABmag + distmod)
                         )
                         * DustExtinction(),
-                        unique_bandpasses[0],
+                        visit_bandpasses[0],
                     ).to_value(u.s)
                 exptime_min_s = min(
                     max(exptime_min_s, exptime_pixel_s.min(initial=exptime_min_s)),

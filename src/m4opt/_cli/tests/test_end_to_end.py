@@ -192,7 +192,14 @@ def test_event_time_required_when_absent_from_sky_map(
 ):
     """A sky map with no trigger time says how to supply one."""
     with pytest.raises(UsageError, match="--event-time"):
-        run_cli(app, "schedule", skymap_without_gps_time, ecsv_path, "--mission=uvex")
+        run_cli(
+            app,
+            "schedule",
+            skymap_without_gps_time,
+            ecsv_path,
+            "--mission=uvex",
+            "--exptime-min=300s",
+        )
 
 
 def test_event_time_option_supplies_the_trigger_time(

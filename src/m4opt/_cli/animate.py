@@ -225,7 +225,7 @@ def animate(
                 raise NotImplementedError(
                     "This mission does not define a detector model"
                 )
-            if len(bandpass) > 1:
+            if len(set(bandpass)) > 1:
                 raise NotImplementedError(
                     "An exposure time map is not supported for a schedule that "
                     "uses more than one bandpass."
