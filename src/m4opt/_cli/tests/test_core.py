@@ -1,3 +1,4 @@
+import pytest
 from astropy import units as u
 from typer import Typer
 
@@ -11,7 +12,8 @@ def test_version(run_cli):
     assert result.output.strip() == __version__
 
 
-def test_quantity(run_cli):
+@pytest.mark.parametrize("default", ["100 s", 100 * u.s])
+def test_quantity(run_cli, default):
     """Test CLI with quantity arguments."""
 
     def run(*args):
@@ -19,7 +21,7 @@ def test_quantity(run_cli):
         value = None
 
         @app.command()
-        def main(foo: u.Quantity = "100 s"):
+        def main(foo: u.Quantity = default):
             nonlocal value
             value = foo
 
