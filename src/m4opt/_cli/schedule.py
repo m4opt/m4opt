@@ -104,7 +104,7 @@ def _exptime_min_per_visit(exptime_min, bandpass, visit_bandpasses, adaptive_exp
     if len(values) != len(bandpasses):
         raise UsageError(
             f"Got {len(values)} values for --exptime-min and {len(bandpasses)} "
-            "for --bandpass. Give one exposure time in total, or one for every "
+            "for --bandpass. Give exactly one exposure time, or one for every "
             "bandpass."
         )
     if adaptive_exptime:
