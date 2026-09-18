@@ -300,9 +300,9 @@ def schedule(
     visit_bandpasses = [
         bandpass[i % len(bandpass)] if bandpass else None for i in range(visits)
     ]
-    visit_exptime_min_s = u.Quantity([
-        exptime_min[i % len(exptime_min)] for i in range(visits)
-    ]).to_value(u.s)
+    visit_exptime_min_s = u.Quantity(
+        [exptime_min[i % len(exptime_min)] for i in range(visits)]
+    ).to_value(u.s)
     if adaptive_exptime and bandpass is not None and len(bandpass) > 1:
         raise NotImplementedError(
             "A variable exposure time is not supported with more than one bandpass."
