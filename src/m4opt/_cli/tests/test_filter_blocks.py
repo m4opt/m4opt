@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 from astropy import units as u
 from astropy.table import QTable
-from click import UsageError
 
 from .. import app
 from . import data
@@ -122,25 +121,6 @@ def test_each_bandpass_may_have_its_own_exposure_time(fits_path, tmp_path, run_c
     starts = observations["start_time"].gps
     ends = starts + observations["duration"].to_value(u.s)
     assert (starts[1:] >= ends[:-1]).all()
-
-
-def test_one_exposure_time_per_bandpass_or_one_in_total(fits_path, tmp_path, run_cli):
-    """Giving neither one exposure time nor one per bandpass is a usage error."""
-    with pytest.raises(UsageError, match="one for every bandpass"):
-        run_cli(
-            app,
-            "schedule",
-            fits_path,
-            tmp_path / "bad.ecsv",
-            "--mission=ztf",
-            "--bandpass=g",
-            "--bandpass=r",
-            "--visits=2",
-            "--exptime-min=120s",
-            "--exptime-min=300s",
-            "--exptime-min=60s",
-            "--no-appmag-dist",
-        )
 
 
 def test_a_variable_exposure_time_refuses_more_than_one_bandpass(

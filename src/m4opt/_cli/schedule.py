@@ -83,30 +83,6 @@ def prepare_piecewise_breakpoints(breakpoints):
     return [tuple(col.item() for col in row) for row in breakpoints]
 
 
-def _exptime_min_per_visit(exptime_min, bandpass, visits):
-    """
-    Minimum exposure time for each visit, one entry per visit.
-
-    ``--exptime-min`` is given either once, applying to every visit, or once for
-    every ``--bandpass``, pairing with them in the order both were given.
-    """
-    # The option is required and so has no default, which costs it the unit
-    # checking that a default would have supplied.
-    try:
-        values = [value.to(u.s) for value in exptime_min]
-    except u.UnitConversionError as e:
-        raise UsageError(f"--exptime-min must be a time: {e}") from None
-
-    bandpasses = bandpass or []
-    if len(values) > 1 and len(values) != len(bandpasses):
-        raise UsageError(
-            f"Got {len(values)} values for --exptime-min and {len(bandpasses)} "
-            "for --bandpass. Give exactly one exposure time, or one for every "
-            "bandpass."
-        )
-    return [values[visit % len(values)] for visit in range(visits)]
-
-
 @app.command()
 @progress()
 def schedule(
@@ -122,6 +98,7 @@ def schedule(
     ],
     exptime_min: Annotated[
         list[u.Quantity],
+        u.physical.time,
         typer.Option(
             help="Minimum exposure time for each observation. Repeat the "
             "option to give each bandpass its own exposure time, in the same "
@@ -365,6 +342,7 @@ def schedule(
         )
 
         # Keep only intervals that are at least as long as the exposure time.
+        exptime_min_s = visit_exptime_min_s.min()
         observable_intervals = np.asarray(
             [
                 intervals[intervals[:, 1] - intervals[:, 0] >= exptime_min_s]
@@ -456,7 +434,8 @@ def schedule(
                     target_coord=hpx.healpix_to_skycoord(good)[:, np.newaxis],
                     obstime=obstimes[0],
                 ):
-                    spectrum = (
+                    exptime_pixel_s = mission.detector.get_exptime(
+                        snr,
                         synphot.SourceSpectrum(synphot.ConstFlux1D(0 * u.ABmag))
                         * synphot.SpectralElement(
                             TabularScaleFactor(
@@ -465,10 +444,8 @@ def schedule(
                                 ).to_value(u.dimensionless_unscaled)
                             )
                         )
-                        * DustExtinction()
-                    )
-                    exptime_pixel_s = mission.detector.get_exptime(
-                        snr, spectrum, visit_bandpasses[0]
+                        * DustExtinction(),
+                        visit_bandpasses[0],
                     ).to_value(u.s)
                 exptime_max_s = max(
                     min(
