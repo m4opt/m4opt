@@ -92,7 +92,7 @@ def animate(
         visits = table.meta["args"]["visits"]
         absmag_mean = table.meta["args"]["absmag_mean"]
         bandpass = table.meta["args"]["bandpass"]
-        # Schedules written before the bandpass became one entry per visit
+        # Schedules written before https://github.com/m4opt/m4opt/pull/574
         # record a single name.
         if isinstance(bandpass, str) or bandpass is None:
             bandpass = [bandpass]
