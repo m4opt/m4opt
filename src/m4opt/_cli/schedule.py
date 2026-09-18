@@ -348,10 +348,6 @@ def schedule(
         target_coords = target_coords.unmasked[keep]
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
-        exptime_min_s = min(visit_exptime_min).to_value(u.s)
-        visit_exptime_min_s = np.array(
-            [value.to_value(u.s) for value in visit_exptime_min]
-        )
         cadence_s = cadence.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
         observable_intervals = np.asarray(
