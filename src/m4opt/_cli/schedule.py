@@ -97,8 +97,7 @@ def schedule(
         ),
     ],
     exptime_min: Annotated[
-        list[u.Quantity],
-        u.physical.time,
+        list[u.Quantity[u.physical.time]],
         typer.Option(
             help="Minimum exposure time for each observation. Repeat the "
             "option to give each bandpass its own exposure time, in the same "
