@@ -17,10 +17,7 @@ Changes
 
 - Allow ``--exptime-min`` to be repeated so that each bandpass has its own
   exposure time, given in the same order as ``--bandpass``; a single value
-  applies to every bandpass as before. The scheduler spaces two observations by
-  the slew time plus half of each of their exposure times, so a short exposure
-  in one filter no longer has to be padded out to the length that the least
-  sensitive filter needs. This applies to a fixed exposure time; with
+  applies to every bandpass as before. This applies to a fixed exposure time; with
   ``--absmag-mean`` the scheduler now refuses more than one bandpass rather
   than quietly making every filter share one exposure time.
 
