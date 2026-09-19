@@ -8,10 +8,7 @@ Changes
 - Allow ``--bandpass`` to be repeated so that successive visits cycle through
   several bandpasses. Every field is visited for the kth time before any field
   is visited for the k+1th, so a schedule exchanges the filter once per block
-  boundary however many fields are observed. Ordering the visits also fixes the
-  sign of the time difference between two observations that are in different
-  visits, so the no-overlap constraint needs an absolute value only between two
-  observations within the same visit.
+  boundary however many fields are observed.
 
 - Add ``Mission.filter_exchange_time`` and set it to 110 s for ZTF.
 
