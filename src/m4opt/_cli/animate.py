@@ -92,8 +92,13 @@ def animate(
         visits = table.meta["args"]["visits"]
         absmag_mean = table.meta["args"]["absmag_mean"]
         bandpass = table.meta["args"]["bandpass"]
+        # Schedules written before https://github.com/m4opt/m4opt/pull/574
+        # record a single name.
+        if isinstance(bandpass, str) or bandpass is None:
+            bandpass = [bandpass]
         snr = table.meta["args"]["snr"]
-        exptime_min = table.meta["args"]["exptime_min"]
+        # One entry per visit now; older schedules record a single value.
+        exptime_min = u.Quantity(table.meta["args"]["exptime_min"]).min()
         # The schedule records the time it was measured from.
         event_time = table.meta["args"].get("event_time")
 
@@ -220,6 +225,11 @@ def animate(
                 raise NotImplementedError(
                     "This mission does not define a detector model"
                 )
+            if len(set(bandpass)) > 1:
+                raise NotImplementedError(
+                    "An exposure time map is not supported for a schedule that "
+                    "uses more than one bandpass."
+                )
             with status("adding exposure time map"):
                 distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
                 with observing(
@@ -233,7 +243,7 @@ def animate(
                             synphot.ConstFlux1D(absmag_mean * u.ABmag + distmod)
                         )
                         * DustExtinction(),
-                        bandpass,
+                        bandpass[0],
                     ).to_value(u.s)
                 ims = [
                     ax.imshow_hpx(
