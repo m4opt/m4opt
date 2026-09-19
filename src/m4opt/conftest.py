@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 from pytest_astropy_header.display import PYTEST_HEADER_MODULES, TESTED_VERSIONS
 
+from .tests.plugins.generated_file import generated_file  # noqa: F401
 from .tests.plugins.problem_size_limits import (  # noqa: F401
     pytest_runtest_call,
     pytest_runtest_setup,
@@ -29,7 +30,6 @@ def pytest_configure(config: pytest.Config):
     # packages for which version numbers are displayed when running the
     # tests.
     PYTEST_HEADER_MODULES.pop("Pandas", None)
-    PYTEST_HEADER_MODULES["scikit-image"] = "skimage"
 
     from . import __version__
 
