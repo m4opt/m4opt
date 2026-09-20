@@ -562,6 +562,14 @@ def schedule(
                             time_visit_vars[:, np.newaxis] - end + 0.5 * exptime <= 0,
                         )
 
+            # Two observations are separated by half of each of their exposure
+            # times, so a pair drawn from consecutive visits is separated by the
+            # mean of theirs. Both the cadence and the slew constraints below
+            # measure that separation.
+            mean_consecutive_exptime_s = 0.5 * (
+                visit_exptime_min_s[:-1] + visit_exptime_min_s[1:]
+            )
+
             if visits > 1:
                 with status("adding cadence constraints"):
                     if adaptive_exptime:
@@ -569,10 +577,9 @@ def schedule(
                             :, np.newaxis
                         ]
                     else:
-                        half_sum = 0.5 * (
-                            visit_exptime_min_s[:-1] + visit_exptime_min_s[1:]
+                        rhs = np.multiply.outer(
+                            field_vars, cadence_s + mean_consecutive_exptime_s
                         )
-                        rhs = np.multiply.outer(field_vars, cadence_s + half_sum)
                     model.add_constraints_(
                         (time_field_visit_vars[:, 1:] - time_field_visit_vars[:, :-1])
                         >= rhs
@@ -590,18 +597,14 @@ def schedule(
                     rhs_within = rhs
                     rhs_after = rhs
                 else:
-                    # Two observations clear each other by the slew plus half of
-                    # each exposure, so a pair drawn from two visits is spaced by
-                    # the mean of their exposure times.
+                    # Two observations also clear each other by the slew itself.
                     def _spacing(exptimes):
                         return (
                             slew_time_s[np.newaxis, :] + exptimes[:, np.newaxis]
                         ) * both_observed[np.newaxis, :]
 
                     rhs = rhs_within = _spacing(visit_exptime_min_s)
-                    rhs_after = _spacing(
-                        0.5 * (visit_exptime_min_s[:-1] + visit_exptime_min_s[1:])
-                    )
+                    rhs_after = _spacing(mean_consecutive_exptime_s)
 
                 if any(filter_changes):
                     # Every field is visited for the kth time before any field
