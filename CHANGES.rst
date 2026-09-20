@@ -5,6 +5,18 @@ Changes
 2.16.0 (unreleased)
 ===================
 
+- Allow ``--bandpass`` to be repeated so that successive visits cycle through
+  several bandpasses. Every field is visited for the kth time before any field
+  is visited for the k+1th, so a schedule exchanges the filter once per block
+  boundary however many fields are observed.
+
+- Add ``Mission.filter_exchange_time`` and set it to 110 s for ZTF.
+
+- Allow ``--exptime-min`` to be repeated so that each bandpass has its own
+  exposure time, given in the same order as ``--bandpass``; a single value
+  applies to every bandpass as before. This applies to a fixed exposure time mode
+  and is not yet supported with adaptive exposure time mode.
+
 - Calculate the zodiacal light background in the mean ecliptic frame rather
   than the true ecliptic frame. This results in much faster ETC calculations at
   the expense of positional accuracy degrading to a fraction of an arcminute

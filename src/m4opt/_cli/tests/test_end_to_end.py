@@ -77,7 +77,8 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, mission_args, request
         )
 
         assert (
-            observations["duration"] + 1e-3 * u.s >= table.meta["args"]["exptime_min"]
+            observations["duration"] + 1e-3 * u.s
+            >= u.Quantity(table.meta["args"]["exptime_min"]).min()
         ).all()
         assert (observations["duration"] <= table.meta["args"]["exptime_max"]).all()
 
@@ -165,6 +166,7 @@ def test_max_fields_limits_the_problem(fits_path, ecsv_path, run_cli):
         "--timelimit=30s",
         "--no-appmag-dist",
         f"--max-fields={max_fields}",
+        "--exptime-min=300s",
     )
     assert result.exit_code == 0
     table = QTable.read(ecsv_path)
@@ -190,7 +192,14 @@ def test_event_time_required_when_absent_from_sky_map(
 ):
     """A sky map with no trigger time says how to supply one."""
     with pytest.raises(UsageError, match="--event-time"):
-        run_cli(app, "schedule", skymap_without_gps_time, ecsv_path, "--mission=uvex")
+        run_cli(
+            app,
+            "schedule",
+            skymap_without_gps_time,
+            ecsv_path,
+            "--mission=uvex",
+            "--exptime-min=300s",
+        )
 
 
 def test_event_time_option_supplies_the_trigger_time(
@@ -209,6 +218,7 @@ def test_event_time_option_supplies_the_trigger_time(
         "--timelimit=10s",
         "--no-appmag-dist",
         "--event-time=2026-03-01T00:00:00",
+        "--exptime-min=300s",
     )
     assert result.exit_code == 0
     assert QTable.read(ecsv_path).meta["args"]["event_time"] == (
@@ -230,6 +240,7 @@ def test_event_time_overrides_the_sky_map(fits_path, ecsv_path, run_cli):
         "--timelimit=10s",
         "--no-appmag-dist",
         "--event-time=2026-03-01T00:00:00",
+        "--exptime-min=300s",
     )
     assert result.exit_code == 0
     assert QTable.read(ecsv_path).meta["args"]["event_time"] == (
@@ -253,6 +264,7 @@ def test_animate_uses_the_recorded_event_time(
         "--timelimit=15s",
         "--no-appmag-dist",
         "--event-time=2026-03-01T00:00:00",
+        "--exptime-min=300s",
     )
     assert result.exit_code == 0
     result = run_cli(app, "animate", ecsv_path, gif_path, "--time-step=1hour")
