@@ -14,9 +14,8 @@ Changes
 
 - Allow ``--exptime-min`` to be repeated so that each bandpass has its own
   exposure time, given in the same order as ``--bandpass``; a single value
-  applies to every bandpass as before. This applies to a fixed exposure time; with
-  ``--absmag-mean`` the scheduler now refuses more than one bandpass rather
-  than quietly making every filter share one exposure time.
+  applies to every bandpass as before. This applies to a fixed exposure time mode
+  and is not yet supported with adaptive exposure time mode.
 
 - Calculate the zodiacal light background in the mean ecliptic frame rather
   than the true ecliptic frame. This results in much faster ETC calculations at
