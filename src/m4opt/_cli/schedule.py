@@ -19,7 +19,7 @@ from ligo.skymap.io import read_sky_map
 from scipy import stats
 
 from .. import __version__, missions
-from ..dynamics import nominal_roll
+from ..dynamics import GroundSlew, Slew, nominal_roll
 from ..fov import footprint_healpix
 from ..milp import Model
 from ..observer import EarthFixedObserverLocation
@@ -493,12 +493,19 @@ def schedule(
 
     with status("calculating slew times"):
         slew_i, slew_j = np.triu_indices(n_fields, 1)
-        slew_time_s = mission.slew.time(
-            target_coords[slew_i],
-            target_coords[slew_j],
-            rolls[slew_i],
-            rolls[slew_j],
-        ).to_value(u.s)
+        if isinstance(mission.slew, Slew):
+            slew_time_s = mission.slew.time(
+                target_coords[slew_i],
+                target_coords[slew_j],
+                rolls[slew_i],
+                rolls[slew_j],
+            ).to_value(u.s)
+        elif isinstance(mission.slew, GroundSlew):
+            slew_time_s = mission.slew.time(
+                target_coords[slew_i],
+                target_coords[slew_j],
+                event_time,
+            ).to_value(u.s)
 
     with Model(
         timelimit=timelimit, jobs=jobs, memory=memory, lowercutoff=cutoff
@@ -830,12 +837,20 @@ def schedule(
             # Add slew segments to table.
             if len(table) > 0:
                 nrows = len(table) - 1
-                slew_duration = mission.slew.time(
-                    table["target_coord"][:-1],
-                    table["target_coord"][1:],
-                    table["roll"][:-1],
-                    table["roll"][1:],
-                )
+                if isinstance(mission.slew, Slew):
+                    slew_duration = mission.slew.time(
+                        table["target_coord"][:-1],
+                        table["target_coord"][1:],
+                        table["roll"][:-1],
+                        table["roll"][1:],
+                    )
+                elif isinstance(mission.slew, GroundSlew):
+                    slew_duration = mission.slew.time(
+                        table["target_coord"][:-1],
+                        table["target_coord"][1:],
+                        event_time,
+                    )
+
                 # The filter is exchanged while the telescope slews, so a
                 # change costs only the excess over the slew itself.
                 changed = table["bandpass"][:-1] != table["bandpass"][1:]

@@ -6,7 +6,7 @@ from astropy.coordinates import SkyCoord
 from regions import Region, Regions
 
 from ..constraints import Constraint
-from ..dynamics import Slew
+from ..dynamics import GroundSlew, Slew
 from ..observer import ObserverLocation
 from ..synphot import Detector
 
@@ -45,7 +45,7 @@ class Mission:
     observer_location: ObserverLocation
     """Orbit of spacecraft."""
 
-    slew: Slew
+    slew: Slew | GroundSlew
     """Slew time model."""
 
     skygrid: SkyCoord | dict[Hashable, SkyCoord]
