@@ -2,8 +2,8 @@
 Changes
 *******
 
-2.16.0 (unreleased)
-===================
+3.0.0 (2026-09-20)
+==================
 
 - Allow ``--bandpass`` to be repeated so that successive visits cycle through
   several bandpasses. Every field is visited for the kth time before any field
