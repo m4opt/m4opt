@@ -850,7 +850,7 @@ def schedule(
                         table["target_coord"][1:],
                         event_time,
                     )
-                    
+
                 # The filter is exchanged while the telescope slews, so a
                 # change costs only the excess over the slew itself.
                 changed = table["bandpass"][:-1] != table["bandpass"][1:]
