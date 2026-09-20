@@ -7,7 +7,8 @@ from ._positional import AltitudeConstraint
 def airmass_to_altitude(
     airmass: float | u.Quantity[u.physical.dimensionless],
 ) -> u.Quantity[u.physical.angle]:
-    """Convert airmass to altitude using the cosecant formula.
+    """
+    Convert airmass to altitude using the cosecant formula.
 
     Examples
     --------

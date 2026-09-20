@@ -1,11 +1,9 @@
 from importlib import resources
 
 import numpy as np
-import yaml
 from astropy import units as u
-from astropy.coordinates import EarthLocation, SkyCoord
-from astropy.table import Table
-from regions import RectangleSkyRegion, Regions
+from astropy.coordinates import EarthLocation
+from regions import Regions
 
 from ... import skygrid
 from ...constraints import (
@@ -20,27 +18,6 @@ from ...synphot import Detector, bandpass_from_svo
 from ...synphot.background import SkyBackground, ZodiacalBackground
 from .._core import Mission
 from . import data
-
-
-def _make_fov():
-    """Generate LSST FOV as rectangular sky regions from detector positions."""
-    file_path = resources.files(data) / "lsstCamSim.yaml"
-    with file_path.open() as file:
-        yaml_data = yaml.safe_load(file)
-    cams = Table(list(yaml_data["CCDs"].values()))
-
-    PLATE_SCALE = 0.2 * u.arcsec
-    return Regions(
-        [
-            RectangleSkyRegion(
-                SkyCoord(*(row["offset"][:2] * PLATE_SCALE / row["pixelSize"])),
-                *(row["bbox"][1] * PLATE_SCALE),
-            )
-            for row in cams
-            if row["detectorType"] == 0  # Science only detectors
-        ]
-    )
-
 
 # Initialize Components for Rubin's Slew Model
 # Location is from https://rubinobservatory.org/explore/how-rubin-works/numbers
@@ -84,7 +61,7 @@ dome_az = SlewComponent(
 
 rubin = Mission(
     name="rubin",
-    fov=_make_fov(),
+    fov=Regions.read(resources.files(data) / "cam.ds9"),
     constraints=(
         AirmassConstraint(2.5)
         & AltitudeConstraint(20 * u.deg, 85 * u.deg)

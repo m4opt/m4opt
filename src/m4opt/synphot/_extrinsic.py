@@ -56,6 +56,7 @@ class ScaleFactor(ABC, Model):
     @abstractmethod
     def value(self) -> float:
         """Return the value of the scale factor."""
+        raise NotImplementedError
 
     def __call__(self, x):
         return self.evaluate(x)
@@ -74,6 +75,7 @@ class ExtrinsicScaleFactor(ScaleFactor):
         self, observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
     ) -> float:
         """Evaluate the scale factor at a particular observerd location, target coordinate, and time."""
+        raise NotImplementedError
 
     @property
     def value(self) -> float:

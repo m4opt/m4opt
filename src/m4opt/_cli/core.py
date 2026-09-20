@@ -1,7 +1,9 @@
+import typing
 from typing import Annotated
 
 import typer
 from astropy import units as u
+from astropy.time import Time
 from typer._click.types import ParamType
 from typer._types import TyperChoice
 from typer.main import get_click_type as _get_click_type
@@ -21,18 +23,41 @@ def version_callback(value: bool):
 class QuantityClickType(ParamType):
     name = "Astropy quantity"
 
+    def __init__(self, physical_type=None):
+        self.physical_type = physical_type
+
     def convert(self, value, param, ctx):
         result = u.Quantity(value)
-        if param is not None and (default := param.default) is not None:
+        target_physical_type = self.physical_type
+        if (
+            target_physical_type is None
+            and param is not None
+            and (default := param.default) is not None
+        ):
+            # An option that pins no physical type is held to its default's.
             target_physical_type = u.get_physical_type(u.Quantity(default))
-            physical_type = u.get_physical_type(result)
-            if physical_type != target_physical_type:
-                self.fail(
-                    f"value '{value}' cannot be converted to {target_physical_type}",
-                    param,
-                    ctx,
-                )
+        if (
+            target_physical_type is not None
+            and u.get_physical_type(result) != target_physical_type
+        ):
+            self.fail(
+                f"value '{value}' cannot be converted to {target_physical_type}",
+                param,
+                ctx,
+            )
         return result
+
+
+class TimeClickType(ParamType):
+    name = "Astropy time"
+
+    def convert(self, value, param, ctx):
+        if isinstance(value, Time):
+            return value
+        try:
+            return Time(value)
+        except ValueError:
+            self.fail(f"value '{value}' is not a recognized time", param, ctx)
 
 
 class MissionClickType(TyperChoice):
@@ -51,6 +76,8 @@ def get_click_type(*, annotation, parameter_info):
     """Monkeypatch for typer.main.get_click_type to add support for new types."""
     if lenient_issubclass(annotation, u.Quantity):
         return QuantityClickType()
+    elif lenient_issubclass(annotation, Time):
+        return TimeClickType()
     elif lenient_issubclass(annotation, missions.Mission):
         return MissionClickType()
     else:
@@ -58,6 +85,80 @@ def get_click_type(*, annotation, parameter_info):
 
 
 typer.main.get_click_type = get_click_type
+
+
+def _physical_type(annotation):
+    """
+    The physical type an annotation pins, if it pins one.
+
+    Both ``u.Quantity[u.physical.time]`` and ``u.Quantity[u.s]`` pin one, the
+    latter through the physical type of its unit. Typer discards the metadata of
+    an :obj:`~typing.Annotated` annotation before it builds a parameter, so this
+    reads the function's own type hints instead.
+    """
+    if isinstance(annotation, u.PhysicalType):
+        return annotation
+    if isinstance(annotation, u.UnitBase):
+        return u.get_physical_type(annotation)
+    for arg in typing.get_args(annotation):
+        if (found := _physical_type(arg)) is not None:
+            return found
+    return None
+
+
+def _without_element_metadata(annotation):
+    """
+    ``list[u.Quantity[u.s]]`` reduced to ``list[u.Quantity]``.
+
+    Typer refuses a list whose element type is annotated, so the metadata is
+    stripped here and recovered from the type hints instead.
+    """
+    if typing.get_origin(annotation) is list:
+        (element,) = typing.get_args(annotation)
+        if hasattr(element, "__metadata__"):
+            return list[element.__origin__]
+    return annotation
+
+
+_get_click_param = typer.main.get_click_param
+
+
+def get_click_param(param):
+    """Monkeypatch for Typer to accept a list of annotated quantities."""
+    param.annotation = _without_element_metadata(param.annotation)
+    return _get_click_param(param)
+
+
+typer.main.get_click_param = get_click_param
+
+
+_get_params_from_function = (
+    typer.main.get_params_convertors_ctx_param_name_from_function
+)
+
+
+def get_params_convertors_ctx_param_name_from_function(callback):
+    """
+    Monkeypatch for Typer to check a quantity against its annotation.
+
+    An option annotated ``u.Quantity[u.physical.time]``, or one whose
+    :obj:`~typing.Annotated` metadata names a physical type, is checked against
+    that rather than against the physical type of its default value. A required
+    option has no default to check against.
+    """
+    params, converters, ctx_name = _get_params_from_function(callback)
+    if callback is not None:
+        hints = typing.get_type_hints(callback, include_extras=True)
+        for param in params:
+            physical_type = _physical_type(hints.get(param.name))
+            if physical_type is not None and isinstance(param.type, QuantityClickType):
+                param.type = QuantityClickType(physical_type)
+    return params, converters, ctx_name
+
+
+typer.main.get_params_convertors_ctx_param_name_from_function = (
+    get_params_convertors_ctx_param_name_from_function
+)
 
 
 @app.callback()

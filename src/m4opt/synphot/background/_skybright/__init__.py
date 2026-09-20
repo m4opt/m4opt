@@ -35,7 +35,7 @@ def read_kpno_sky_data(key):
 
 class SkyBackground:
     """
-    Sky Brightness background: sky glow due to scattered and diffuse light
+    Sky Brightness background: sky glow due to scattered and diffuse light.
 
     Currently, only the Kitt Peak sky brightness observations from Neugent and
     Massey (2010) [1]_ are supported. There are four methods, sampling a

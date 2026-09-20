@@ -3,7 +3,7 @@ from typing import override
 
 import numpy as np
 from astropy import units as u
-from astropy.coordinates import GeocentricTrueEcliptic, SkyCoord, get_sun
+from astropy.coordinates import GeocentricMeanEcliptic, SkyCoord, get_sun
 from astropy.table import QTable
 from scipy.interpolate import RegularGridInterpolator
 from synphot import Empirical1D, SourceSpectrum, SpectralElement
@@ -40,9 +40,8 @@ class ZodiacalBackgroundScaleFactor(ExtrinsicScaleFactor):
         sb = 10 - 2.5 * np.log10(s10 / 60**4)
         self._interp = RegularGridInterpolator([lon, lat], sb)
 
-    @override
-    def at(self, observer_location, target_coord, obstime):
-        frame = GeocentricTrueEcliptic(equinox=obstime)
+    def _mag_at(self, observer_location, target_coord, obstime):
+        frame = GeocentricMeanEcliptic(equinox=obstime)
         obj = SkyCoord(target_coord).transform_to(frame)
         sun = get_sun(obstime).transform_to(frame)
 
@@ -57,9 +56,13 @@ class ZodiacalBackgroundScaleFactor(ExtrinsicScaleFactor):
         # Fix up shape
         if obj.isscalar:
             mag = mag.item()
+        return mag
 
-        mag -= mag_high
-        return mag_to_scale(mag)
+    @override
+    def at(self, observer_location, target_coord, obstime):
+        return mag_to_scale(
+            self._mag_at(observer_location, target_coord, obstime) - mag_high
+        )
 
 
 class ZodiacalBackground:
@@ -67,17 +70,23 @@ class ZodiacalBackground:
     Zodiacal light sky background: sunlight scattered by interplanetary dust.
 
     This is the zodiacal light model that is described in the HST STIS
-    Instrument Handbook [1]_. The "high" zodiacal light spectrum is taken from
-    `Table 6.4`_ and the "average" and "low" spectra are scaled from it so that
-    they have visual surface brightness of 22.1, 22.7, and 23.3 magnitudes per
-    square arcsecond.
+    Instrument Handbook :footcite:`2025stii.book...25R`. The "high" zodiacal
+    light spectrum is taken from `Table 6.4`_ and the "average" and "low"
+    spectra are scaled from it so that they have visual surface brightness of
+    22.1, 22.7, and 23.3 magnitudes per square arcsecond.
 
-    The dependence on sky position is taken from Table 16 of [2]_, which is a
-    higher-resolution version of `Table 6.2`_ from the HST STIS Instrument
-    Handbook.
+    The dependence on sky position is taken from Table 16 of
+    :footcite:`1998A&AS..127....1L`, which is a higher-resolution version of
+    `Table 6.2`_ from the HST STIS Instrument Handbook
+    :footcite:`2025stii.book...25R`.
 
     .. _`Table 6.2`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-5-detector-and-sky-backgrounds#id-6.5DetectorandSkyBackgrounds-Table6.2
     .. _`Table 6.4`: https://hst-docs.stsci.edu/stisihb/chapter-6-exposure-time-calculations/6-6-tabular-sky-backgrounds#id-6.6TabularSkyBackgrounds-Table6.4
+
+    The accuracy of the dependence on the sky location is limited to a fraction
+    of an arcminute because it is evaluated in the
+    :class:`~astropy.coordinates.GeocentricMeanEcliptic` frame which neglects
+    nutation.
 
     Warnings
     --------
@@ -86,13 +95,13 @@ class ZodiacalBackground:
     should NOT be used for observers in orbits around other planets, or in
     distant solar orbits, or at Earth-Sun Lagrange points.
 
+    See Also
+    --------
+    m4opt.constraints.ZodiacalBackgroundConstraint
+
     References
     ----------
-    .. [1] Prichard, L., Welty, D. and Jones, A., et al. 2022 "STIS Instrument
-           Handbook," Version 21.0, (Baltimore: STScI)
-    .. [2] Leinert, Ch., Bowyer, S., and Haikala, L. K., et al. 1998 "The 1997
-           reference of diffuse night sky brightness", Astron. Astrophys.
-           Suppl. Ser. 127, 1-99. https://doi.org/10.1051/aas:1998105
+    .. footbibliography::
 
     Examples
     --------
@@ -195,7 +204,6 @@ class ZodiacalBackground:
         ax.text(sun.ra, sun.dec, '  Sun', color='red', transform=transform)
 
         ax.grid()
-
      """
 
     def __new__(cls):
@@ -203,7 +211,8 @@ class ZodiacalBackground:
 
     @classmethod
     def low(cls):
-        """Zodiacal background for typical "low" background conditions.
+        """
+        Zodiacal background for typical "low" background conditions.
 
         Following the conventions in the HST STIS manual, this is
         1.2 mag / arcsec2 fainter than the "high" model at all frequencies.
@@ -212,7 +221,8 @@ class ZodiacalBackground:
 
     @classmethod
     def mid(cls):
-        """Zodiacal background for "average" background conditions.
+        """
+        Zodiacal background for "average" background conditions.
 
         Following the conventions in the HST STIS manual, this is
         0.6 mag / arcsec2 fainter than the "high" model at all frequencies.

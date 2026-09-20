@@ -8,7 +8,7 @@ from ._core import Constraint
 
 class AtNightConstraint(Constraint):
     """
-     Constrain observations to specific twilight phases or a user-defined solar altitude limit.
+    Constrain observations to specific twilight phases or a user-defined solar altitude limit.
 
     Parameters
     ----------

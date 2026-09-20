@@ -41,12 +41,12 @@ __ https://academic.ibm.com/a2mt/
    :guilabel:`Download method`, select :guilabel:`HTTP`. Then click the
    :guilabel:`Download` button.
 
-4. In the :guilabel:`Part number` search box, enter ``G0D3KML``. Then click the
+4. In the :guilabel:`Part number` search box, enter ``G0HMRML``. Then click the
    :guilabel:`Search` button. This should bring up the search result,
-   ``IBM ILOG CPLEX Optimization Studio V22.1.2 Multiplatform Multilingual eAssembly``.
+   ``IBM ILOG CPLEX Optimization Studio V22.2.0 Multiplatform Multilingual eAssembly``.
 
    .. important::
-      It is important that you select version 22.1.2 because this is the
+      It is important that you select version 22.2.0 because this is the
       version of CPLEX that is currently used by |M4OPT|.
 
 4. Following the onscreen instructions, download and run the appropriate
@@ -54,17 +54,17 @@ __ https://academic.ibm.com/a2mt/
 
    .. hint::
       If you are installing CPLEX on a remote Linux system, copy the installer
-      file (e.g. :file:`cplex_studio2212.linux_x86_64.bin`) to that system.
+      file (e.g. :file:`cplex_studio2220.linux_x86_64.bin`) to that system.
       Launch the installer by running the command
-      ``sh cplex_studio2212.linux_x86_64.bin``.
+      ``sh cplex_studio2220.linux_x86_64.bin``.
 
 5. Make a note of where the installer placed ILOG CPLEX Optimization Studio
-   (for example, :file:`/opt/ibm/ILOG/CPLEX_Studio2212`). In the Python
+   (for example, :file:`/opt/ibm/ILOG/CPLEX_Studio2220`). In the Python
    environment in which you have installed |M4OPT|, run the following command
    to enable your full academic version, updating the path as appropriate for
    your system::
 
-         $ docplex config --upgrade /opt/ibm/ILOG/CPLEX_Studio2212
+         $ docplex config --upgrade /opt/ibm/ILOG/CPLEX_Studio2220
 
 All others
 ----------

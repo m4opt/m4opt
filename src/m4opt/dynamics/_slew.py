@@ -189,17 +189,18 @@ class Slew(ABC):
         roll1: u.Quantity[u.physical.angle] = 0 * u.rad,
         roll2: u.Quantity[u.physical.angle] = 0 * u.rad,
     ) -> u.Quantity[u.physical.time]:
-        """Calculate the time to execute an optimal slew.
+        """
+        Calculate the time to execute an optimal slew.
 
         Parameters
         ----------
-        center1:
+        center1
             Initial boresight position.
-        center2:
+        center2
             Final boresight position.
-        roll1:
+        roll1
             Initial roll angle.
-        roll2:
+        roll2
             Final roll angle.
 
         Returns
@@ -207,11 +208,13 @@ class Slew(ABC):
         :
             Time to slew between the two orientations.
         """
+        raise NotImplementedError
 
 
 @dataclass
 class EigenAxisSlew(Slew, AngularMotionProfile):
-    """Model slew time for a spacecraft employing an eigenaxis maneuver.
+    """
+    Model slew time for a spacecraft employing an eigenaxis maneuver.
 
     An eigenaxis maneuver is a rotation along the path of shortest angular
     separation, about a single axis. The motion profile along that axis is
@@ -236,17 +239,18 @@ class EigenAxisSlew(Slew, AngularMotionProfile):
         roll1: u.Quantity[u.physical.angle] = 0 * u.rad,
         roll2: u.Quantity[u.physical.angle] = 0 * u.rad,
     ) -> u.Quantity[u.physical.time]:
-        """Calculate the time to execute an optimal slew.
+        """
+        Calculate the time to execute an optimal slew.
 
         Parameters
         ----------
-        center1:
+        center1
             Initial boresight position.
-        center2:
+        center2
             Final boresight position.
-        roll1:
+        roll1
             Initial roll angle.
-        roll2:
+        roll2
             Final roll angle.
 
         Returns
@@ -268,13 +272,13 @@ class EigenAxisSlew(Slew, AngularMotionProfile):
 
         Parameters
         ----------
-        center1:
+        center1
             Initial boresight position.
-        center2:
+        center2
             Final boresight position.
-        roll1:
+        roll1
             Initial roll angle.
-        roll2:
+        roll2
             Final roll angle.
 
         Returns
@@ -297,7 +301,6 @@ class EigenAxisSlew(Slew, AngularMotionProfile):
         <Angle 20. deg>
         >>> EigenAxisSlew.separation(c1, c2, roll1, roll2)
         <Angle 28.21208852 deg>
-
         """
         assert center1.is_equivalent_frame(center2)
         center1 = center1.spherical

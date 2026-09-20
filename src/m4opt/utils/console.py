@@ -1,4 +1,5 @@
-"""Utilities for console applications and text user interfaces.
+"""
+Utilities for console applications and text user interfaces.
 
 Use the :meth:`progress` and :meth:`status` methods to create live feedback
 for a nested series of tasks. The elapsed time is shown for each task, along
@@ -56,29 +57,29 @@ Examples
     RuntimeError: Sorry, I ate it all
 """
 
+import time
 from contextlib import contextmanager
 
-import rich.console
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 from rich.text import Text
 
-__all__ = ("progress", "status")
+__all__ = ("progress", "quiet", "status")
 
 _progress = None
 _depth = 0
 _max_depth = 2
-_is_jupyter = rich.console._is_jupyter()
 
 
 @contextmanager
 def progress():
-    """Context manager to create a live display for showing status of tasks.
+    """
+    Context manager to create a live display for showing status of tasks.
 
     If there is already an active progress display, this method will return it
     instead of creating a new one.
     """
     global _progress
-    if not _is_jupyter and _progress is None:
+    if _progress is None:
         with Progress(
             IndentedSpinnerColumn(finished_text="[bar.finished]✓"), TimeElapsedColumn()
         ) as new_progress:
@@ -108,7 +109,7 @@ class IndentedSpinnerColumn(SpinnerColumn):
 def status(description: str):
     """Context manager to track the runtime of a task."""
     global _depth
-    if _is_jupyter or _depth >= _max_depth:
+    if _depth >= _max_depth:
         yield
     else:
         with progress() as pg:
@@ -125,9 +126,18 @@ def status(description: str):
                 _depth -= 1
 
 
-if __name__ == "__main__":
-    from time import sleep
+@contextmanager
+def quiet():
+    """Suppress all progress messages within this code block."""
+    global _depth
+    _depth = _max_depth
+    try:
+        yield
+    finally:
+        _depth = _max_depth
 
+
+def demo():
     for roman_numeral in ["I", "II", "III"]:
         with status(f"Task {roman_numeral}"):
             for letter in ["A", "B", "C"]:
@@ -135,4 +145,8 @@ if __name__ == "__main__":
                     for number in ["1", "2", "3"]:
                         if roman_numeral == "III" and letter == "B" and number == "1":
                             raise RuntimeError("Failed")
-                        sleep(1)
+                        time.sleep(1)
+
+
+if __name__ == "__main__":
+    demo()

@@ -1,9 +1,9 @@
-from functools import reduce
 from typing import override
 
 import numpy as np
 
 from ._core import Constraint
+from ._short_circuit import logical_and_short_circuit, logical_or_short_circuit
 
 
 class LogicalReductionConstraint(Constraint):
@@ -12,15 +12,25 @@ class LogicalReductionConstraint(Constraint):
 
     @override
     def __call__(self, *args):
-        return reduce(self._operator, (operand(*args) for operand in self._operands))
+        first, *rest = self._operands
+        result = first(*args)
+        for operand in rest:
+            result = self._short_circuit(result, operand, *args)
+        return result
 
 
 class LogicalAndConstraint(LogicalReductionConstraint):
-    """Combine two or more constraints using a logical "and" operation.
+    """
+    Combine two or more constraints using a logical "and" operation.
 
     See Also
     --------
     LogicalOrConstraint, LogicalNotConstraint
+
+    Notes
+    -----
+    The order of the operands may affect performance because short-circuit
+    evaluation is employed.
 
     Examples
     --------
@@ -39,15 +49,27 @@ class LogicalAndConstraint(LogicalReductionConstraint):
     np.True_
     """
 
-    _operator = np.logical_and
+    _short_circuit = staticmethod(logical_and_short_circuit)
+
+    def __and__(self, rhs):
+        if isinstance(rhs, __class__):
+            return __class__(*self._operands, *rhs._operands)
+        else:
+            return __class__(*self._operands, rhs)
 
 
 class LogicalOrConstraint(LogicalReductionConstraint):
-    """Combine two or more constraints using a logical "or" operation.
+    """
+    Combine two or more constraints using a logical "or" operation.
 
     See Also
     --------
     LogicalAndConstraint, LogicalNotConstraint
+
+    Notes
+    -----
+    The order of the operands may affect performance because short-circuit
+    evaluation is employed.
 
     Examples
     --------
@@ -66,11 +88,18 @@ class LogicalOrConstraint(LogicalReductionConstraint):
     np.True_
     """
 
-    _operator = np.logical_or
+    _short_circuit = staticmethod(logical_or_short_circuit)
+
+    def __or__(self, rhs):
+        if isinstance(rhs, __class__):
+            return __class__(*self._operands, *rhs._operands)
+        else:
+            return __class__(*self._operands, rhs)
 
 
 class LogicalNotConstraint(Constraint):
-    """Perform a logical "not" on a constraint.
+    """
+    Perform a logical "not" on a constraint.
 
     See Also
     --------
@@ -87,7 +116,7 @@ class LogicalNotConstraint(Constraint):
     >>> target = SkyCoord.from_name("NGC 4993")
     >>> location = EarthLocation.of_site("Rubin Observatory")
     >>> constraint(location, target, time)
-    True
+    np.False_
     """
 
     def __init__(self, operand: Constraint):
@@ -95,4 +124,4 @@ class LogicalNotConstraint(Constraint):
 
     @override
     def __call__(self, *args):
-        return np.logical_not(super().__call__(*args))
+        return np.logical_not(self._operand(*args))

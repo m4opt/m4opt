@@ -3,19 +3,32 @@
 import numpy as np
 from numpy import typing as npt
 
-from ._numpy import count_intersect1d as _count_intersect1d
+from ._numpy import (
+    count_intersect1d as _count_intersect1d,
+)
+from ._numpy import (
+    count_intersect1d_combinations as _count_intersect1d_combinations,
+)
+from ._numpy import intersect1d as _intersect1d
 
 __all__ = (
     "atmost_1d",
     "clump_nonzero",
     "clump_nonzero_inclusive",
     "count_intersect1d",
+    "count_intersect1d_combinations",
     "full_indices",
+    "intersect1d",
 )
 
 
 def atmost_1d(a):
-    """Force an array-like object to have no more than 1 dimension.
+    """
+    Force an array-like object to have no more than 1 dimension.
+
+    See Also
+    --------
+    numpy.atleast_1d
 
     Examples
     --------
@@ -28,10 +41,6 @@ def atmost_1d(a):
     array([], dtype=float64)
     >>> atmost_1d(1)
     1
-
-    See also
-    --------
-    numpy.atleast_1d
     """
     if isinstance(a, (np.ndarray, list, tuple)):
         a = np.ravel(a)
@@ -39,7 +48,12 @@ def atmost_1d(a):
 
 
 def clump_nonzero(a):
-    """Find intervals of nonzero values in an array, row by row.
+    """
+    Find intervals of nonzero values in an array, row by row.
+
+    See Also
+    --------
+    numpy.ma.clump_masked, numpy.ma.clump_unmasked
 
     Examples
     --------
@@ -53,10 +67,6 @@ def clump_nonzero(a):
     [array([[0, 6]])]
     >>> clump_nonzero([[0, 0, 0, 0, 0, 0]])
     [array([], shape=(0, 2), dtype=int64)]
-
-    See also
-    --------
-    numpy.ma.clump_masked, numpy.ma.clump_unmasked
     """
     # FIXME: see https://github.com/numpy/numpy/issues/27374
     masked_array = np.ma.array(np.empty_like(a, dtype=np.void), mask=a)
@@ -70,7 +80,12 @@ def clump_nonzero(a):
 
 
 def clump_nonzero_inclusive(a):
-    """Like clump_nonzero, but return closed rather than half-open intervals.
+    """
+    Like clump_nonzero, but return closed rather than half-open intervals.
+
+    See Also
+    --------
+    m4opt.utils.numpy.clump_nonzero
 
     Examples
     --------
@@ -84,10 +99,6 @@ def clump_nonzero_inclusive(a):
     [array([[0, 5]])]
     >>> clump_nonzero_inclusive([[0, 0, 0, 0, 0, 0]])
     [array([], shape=(0, 2), dtype=int64)]
-
-    See also
-    --------
-    m4opt.utils.numpy.clump_nonzero
     """
     result = clump_nonzero(a)
     for intervals in result:
@@ -96,7 +107,8 @@ def clump_nonzero_inclusive(a):
 
 
 def count_intersect1d(a: npt.ArrayLike, b: npt.ArrayLike) -> int:
-    """Calculate the cardinality of the intersection of `a` and `b`.
+    """
+    Calculate the cardinality of the intersection of `a` and `b`.
 
     This is equivalent to, but much faster than, ``np.intersect1d(a, b).size``.
 
@@ -117,6 +129,10 @@ def count_intersect1d(a: npt.ArrayLike, b: npt.ArrayLike) -> int:
     The elements of arrays `a` and `b` must be sorted and unique. If they are
     not, then the behavior of this function is undefined.
 
+    See Also
+    --------
+    numpy.intersect1d, intersect1d, count_intersect1d_combinations
+
     Examples
     --------
     >>> from m4opt.utils.numpy import count_intersect1d
@@ -126,8 +142,92 @@ def count_intersect1d(a: npt.ArrayLike, b: npt.ArrayLike) -> int:
     return _count_intersect1d(a, b)
 
 
+def count_intersect1d_combinations(
+    arrays: list[npt.ArrayLike],
+) -> np.ndarray[tuple[int], np.dtype[np.intp]]:
+    """
+    Calculate the cardinalities of the intersections of all pairwise combinations.
+
+    All pairs are evaluated in parallel using OpenMP. This is equivalent to,
+    but much faster than::
+
+        from itertools import combinations
+
+        from m4opt.utils.numpy import count_intersect1d
+
+        def count_intersect1d_combinations_slow(arrays):
+            return [count_intersect1d(*args) for args in combinations(arrays, 2)]
+
+    Parameters
+    ----------
+    arrays
+        A list of sorted 1D arrays of type :obj:`numpy.intp`.
+
+    Returns
+    -------
+    :
+        The number of elements in common for each pairwise combination, in the
+        order produced by :func:`itertools.combinations`.
+
+    See Also
+    --------
+    numpy.intersect1d, intersect1d, count_intersect1d
+
+    Notes
+    -----
+    This calculation cannot be effectively parallelized using traditional
+    Python techniques like :mod:`multiprocessing` because the inherently
+    sequential Python overhead of processing the arguments would grow as O(N^2)
+    with the number of input arrays N.
+    """
+    return _count_intersect1d_combinations(arrays)
+
+
+def intersect1d(
+    a: npt.ArrayLike, b: npt.ArrayLike
+) -> np.ndarray[tuple[int], np.dtype[np.intp]]:
+    """
+    Calculate the cardinality of the intersection of `a` and `b`.
+
+    This is equivalent to, but much faster than, ``np.intersect1d(a, b)``.
+
+    Parameters
+    ----------
+    a
+        A sorted 1D array of type :obj:`numpy.intp`.
+    b
+        A sorted 1D array of type :obj:`numpy.intp`.
+
+    Returns
+    -------
+    :
+        An array of elements that are in both `a` and `b`.
+
+    Warnings
+    --------
+    The elements of arrays `a` and `b` must be sorted and unique. If they are
+    not, then the behavior of this function is undefined.
+
+    See Also
+    --------
+    numpy.intersect1d, count_intersect1d, count_intersect1d_combinations
+
+    Examples
+    --------
+    >>> from m4opt.utils.numpy import count_intersect1d
+    >>> intersect1d([0, 1], [1, 2, 3])
+    array([1])
+    """
+    return _intersect1d(a, b)
+
+
 def full_indices(n):
-    """Calculate the indices of all of the elements of a square array.
+    """
+    Calculate the indices of all of the elements of a square array.
+
+    See Also
+    --------
+    numpy.tril_indices, numpy.triu_indices
 
     Examples
     --------
@@ -136,9 +236,5 @@ def full_indices(n):
     [array([0, 0, 1, 1]), array([0, 1, 0, 1])]
     >>> full_indices(0)
     [array([], dtype=int64), array([], dtype=int64)]
-
-    See also
-    --------
-    numpy.tril_indices, numpy.triu_indices
     """
     return [x.ravel() for x in np.mgrid[:n, :n]]

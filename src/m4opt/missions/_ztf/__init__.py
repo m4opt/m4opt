@@ -4,6 +4,7 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import EarthLocation, SkyCoord
 from astropy.table import Table
+from astropy.utils.masked import Masked
 from regions import PolygonSkyRegion, Regions
 
 from ...constraints import (
@@ -64,13 +65,28 @@ def _make_fov():
 
 
 def _read_skygrid():
+    # The columns are whitespace-aligned but not of a fixed width: a
+    # fixed-width reader locks the boundaries to the first row and truncates
+    # the right ascension of every row after it.
     table = Table.read(
         resources.files(data) / "ZTF_Fields.txt",
-        format="ascii.fixed_width_no_header",
-        delimiter=" ",
+        format="ascii.no_header",
         comment="%",
     )
-    return SkyCoord(table["col2"], table["col3"], unit=u.deg)
+    # The grid is numbered by ZTF's own field identifiers, which run from 1 to
+    # 1897 with one gap over 882-1000; the fields it does not use are masked.
+    ids = np.asarray(table["col1"])
+    n = ids.max() + 1
+    ra = np.zeros(n)
+    dec = np.zeros(n)
+    mask = np.ones(n, dtype=bool)
+    ra[ids] = table["col2"]
+    dec[ids] = table["col3"]
+    mask[ids] = False
+    return SkyCoord(
+        Masked(ra * u.deg, mask=mask),
+        Masked(dec * u.deg, mask=mask),
+    )
 
 
 ztf = Mission(
@@ -108,6 +124,7 @@ ztf = Mission(
     #
     # FIXME: Implement non-uniform slew rate about different axes.
     slew=EigenAxisSlew(2.5 * u.deg / u.s, 0.4 * u.deg / u.s**2),
+    filter_exchange_time=110 * u.s,
     # Table 1 of https://ui.adsabs.harvard.edu/abs/2020PASP..132c8001D
     detector=Detector(
         area=np.pi * np.square(0.5 * 1244.6 * u.mm),

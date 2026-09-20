@@ -35,11 +35,12 @@ def dust_map():
 
 
 def DustExtinction(Ebv: float | None = None):
-    """Milky Way dust extinction.
+    """
+    Milky Way dust extinction.
 
     Parameters
     ----------
-    Ebv:
+    Ebv
         Reddening color excess, :math:`E(B-V)`.
 
     Notes

@@ -6,7 +6,8 @@ from ligo.skymap.bayestar.filter import ceil_pow_2
 
 
 def healpix(area: u.Quantity[u.physical.solid_angle]):
-    """Generate a grid in HEALPix coordinates.
+    """
+    Generate a grid in HEALPix coordinates.
 
     Parameters
     ----------
@@ -19,7 +20,6 @@ def healpix(area: u.Quantity[u.physical.solid_angle]):
     -------
     :
         The coordinates of the tiles.
-
     """
     nside = np.sqrt(u.spat / (12 * area)).to_value(u.dimensionless_unscaled)
     nside = int(max(ceil_pow_2(nside), 1))

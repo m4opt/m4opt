@@ -14,18 +14,17 @@ class Constraint(ABC):
         self, observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
     ) -> npt.NDArray[np.bool_]:
         """Evaluate the constraint at a given observer location, target position, and time."""
+        raise NotImplementedError
 
-    def __and__(self, rhs):
-        from ._logical import LogicalAndConstraint
-
+    def __and__(self, rhs: "Constraint") -> "LogicalAndConstraint":
         return LogicalAndConstraint(self, rhs)
 
-    def __or__(self, rhs):
-        from ._logical import LogicalOrConstraint
-
+    def __or__(self, rhs: "Constraint") -> "LogicalOrConstraint":
         return LogicalOrConstraint(self, rhs)
 
-    def __invert__(self):
-        from ._logical import LogicalNotConstraint
-
+    def __invert__(self: "Constraint") -> "LogicalNotConstraint":
         return LogicalNotConstraint(self)
+
+
+# Late imports, to break import cycle
+from ._logical import LogicalAndConstraint, LogicalNotConstraint, LogicalOrConstraint

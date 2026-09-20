@@ -64,7 +64,10 @@ def ArrayOfRegions(first, *rest):
 def concat_healpix(shape, *args):
     regions = np.empty(shape, dtype=object)
     for i in np.ndindex(regions.shape):
-        regions[i] = np.unique(np.concatenate([arg[i] for arg in args]))
+        if len(args) > 0:
+            regions[i] = np.unique(np.concatenate([arg[i] for arg in args]))
+        else:
+            regions[i] = np.asarray([], dtype=np.intp)
     return regions
 
 
@@ -83,7 +86,8 @@ def skycoord_to_healpy_vec(coord: SkyCoord):
 
 
 def circle_to_polygon(region: CircleSkyRegion, n: int) -> PolygonSkyRegion:
-    """Convert a circle region to a polygon that approximates it.
+    """
+    Convert a circle region to a polygon that approximates it.
 
     Parameters
     ----------
@@ -109,7 +113,8 @@ def circle_to_polygon(region: CircleSkyRegion, n: int) -> PolygonSkyRegion:
 
 
 def rectangle_to_polygon(region: RectangleSkyRegion):
-    """Convert a rectangle region to a polygon.
+    """
+    Convert a rectangle region to a polygon.
 
     Rotated rectangle regions do not correctly account for spherical geometry,
     but polygon regions do.
@@ -125,12 +130,14 @@ def rectangle_to_polygon(region: RectangleSkyRegion):
 
 
 def is_convex(region: PolygonSkyRegion) -> bool:
-    """Check if a spherical polygon is convex
+    """
+    Check if a spherical polygon is convex.
 
     Notes
     -----
     This should agree exactly with the convexity check in the query_polygon
-    function of healpy/healpix-cxx."""
+    function of healpy/healpix-cxx.
+    """
     coords = region.vertices.cartesian
     dotprods = coords.cross(np.roll(coords, 1)).dot(np.roll(coords, 2))
     signs = np.sign(dotprods)
@@ -159,9 +166,14 @@ def centered_wcs(region: PolygonSkyRegion) -> WCS:
 def footprint_inner(region: Region | Regions, frame: SkyOffsetFrame):
     match region:
         case Regions():
-            return ArrayOfRegions(
-                *(footprint_inner(subregion, frame) for subregion in region.regions)
-            )
+            if len(region.regions) == 0:
+                result = np.empty(frame.shape, dtype=object)
+                result.fill(Regions([]))
+            else:
+                result = ArrayOfRegions(
+                    *(footprint_inner(subregion, frame) for subregion in region.regions)
+                )
+            return result
         case CircleSkyRegion():
             return ArrayOfCircleSkyRegion(
                 skycoord_to_offset(region.center, frame), region.radius
@@ -198,11 +210,11 @@ def footprint(
 
     Parameters
     ----------
-    region:
+    region
         The shape of the field of view in the standard orientation.
-    target_coord:
+    target_coord
         The position for the center of the field of view.
-    rotation:
+    rotation
         The rotation of the field of view about its center.
 
     Examples
@@ -294,6 +306,15 @@ def footprint(
         [(2.99236656, -4.99694639, 1.), (7.00763344, -4.99694639, 1.),
          (5.        , -3.        , 1.)]>)>
     ])>
+
+    As are empty compound regions:
+
+    >>> regions = Regions([])
+    >>> footprint(regions, target_coord)
+    <Regions([])>
+
+    Not all region types are supported:
+
     >>> region = EllipseSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 5 * u.deg, 2 * u.deg)
     >>> footprint(region, target_coord)
     Traceback (most recent call last):
@@ -391,13 +412,13 @@ def footprint_healpix(
 
     Parameters
     ----------
-    hpx:
+    hpx
         The HEALPix object specifying the ordering and resolution.
-    region:
+    region
         The shape of the field of view in the standard orientation.
-    target_coord:
+    target_coord
         The position for the center of the field of view.
-    rotation:
+    rotation
         The rotation of the field of view about its center.
 
     Examples
@@ -472,6 +493,12 @@ def footprint_healpix(
     ...     PolygonSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))])
     >>> footprint_healpix(hpx, regions, target_coord)
     array([6337, 6465, 6466, 6593, 6594, 6721, 6722, 6849, 6850])
+
+    As are empty compound regions:
+
+    >>> regions = Regions([])
+    >>> footprint_healpix(hpx, regions, target_coord)
+    array([], dtype=int64)
 
     Not all region types are supported:
 

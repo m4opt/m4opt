@@ -3,6 +3,12 @@
 Contributing
 ============
 
+AI policy
+---------
+
+Contributions must adhere to `Astropy's policy on the use of generative AI
+<https://github.com/astropy/astropy-project/blob/main/policies/ai-policy.md>`_.
+
 Code formatting
 ---------------
 

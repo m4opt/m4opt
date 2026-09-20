@@ -25,7 +25,7 @@ jobs:
           cache: pip
           python-version: "3.12"
       - name: Run mypy
-        uses: python/mypy@v2.3.0
+        uses: python/mypy@v2.3.1
   # Github Actions supports ubuntu, windows, and macos virtual environments:
   # https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners
   ci_tests:
@@ -42,7 +42,7 @@ jobs:
           - name: Python 3.12 with all optional dependencies and coverage checking
             os: ubuntu-latest
             python: '3.12'
-            toxenv: py312-test-alldeps-cov
+            toxenv: py312-test-alldeps-remotedata-cov
 
           - name: Python 3.13 with all optional dependencies and coverage checking
             os: ubuntu-latest
@@ -115,13 +115,13 @@ jobs:
 
     - name: Upload coverage to codecov
       if: contains(matrix.toxenv, '-cov')
-      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
+      uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4  # v7.1.0
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Upload test results to Codecov
       if: contains(matrix.toxenv, '-cov')
-      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
+      uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4  # v7.1.0
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         report_type: test_results

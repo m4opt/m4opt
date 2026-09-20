@@ -3,9 +3,9 @@ from importlib import resources
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy.table import Table
+from astropy.table import QTable, Table
 from regions import RectangleSkyRegion
-from synphot import Gaussian1D, SpectralElement
+from synphot import Empirical1D, SpectralElement
 
 from ...constraints import (
     EarthLimbConstraint,
@@ -17,11 +17,21 @@ from ...observer import TleObserverLocation
 from ...synphot import Detector
 from ...synphot.background import (
     CerenkovBackground,
+    EarthshineBackground,
     GalacticBackground,
     ZodiacalBackground,
 )
 from .._core import Mission
 from . import data
+
+
+def _read_throughput() -> SpectralElement:
+    # Total throughput on axis, including all optical elements, the detector
+    # quantum efficiency, and obscuration.
+    table = QTable.read(resources.files(data) / "throughput.ecsv")
+    return SpectralElement(
+        Empirical1D, points=table["wavelength"], lookup_table=table["transmission"]
+    )
 
 
 def _read_allsky_skygrid() -> SkyCoord:
@@ -58,19 +68,19 @@ ultrasat = Mission(
         plate_scale=(5.4 * u.arcsec) ** 2,
         # Circular aperture with a diameter of 33 cm
         area=np.pi * np.square(0.5 * 33 * u.cm),
-        bandpasses={
-            "NUV": SpectralElement(
-                Gaussian1D,
-                amplitude=0.25,
-                mean=2600 * u.angstrom,
-                stddev=340 * u.angstrom,
-            ),
-        },
-        # FIXME: Add model for stray light
+        bandpasses={"NUV": _read_throughput()},
+        # The earthshine model carries HST's point source transmittance, so this
+        # is the ratio of ULTRASAT's off-axis rejection to HST's: the value that
+        # puts the worst case over the sky and over a year, at the 48 degree
+        # Earth limb constraint, at the 12 e-/pix per 300 s of stray light in
+        # the ULTRASAT noise budget.
         background=GalacticBackground()
         + ZodiacalBackground()
-        + CerenkovBackground(factor=21),
-        read_noise=6,
+        + CerenkovBackground(factor=21)
+        + EarthshineBackground(factor=331),
+        # The published noise budget quotes readout noise squared (6 e-/pix),
+        # whereas this field is an RMS.
+        read_noise=np.sqrt(6),
         dark_noise=12 / 300 * u.Hz,
         gain=1,
     ),

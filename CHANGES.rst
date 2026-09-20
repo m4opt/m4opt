@@ -2,6 +2,132 @@
 Changes
 *******
 
+3.0.0 (2026-09-20)
+==================
+
+- Allow ``--bandpass`` to be repeated so that successive visits cycle through
+  several bandpasses. Every field is visited for the kth time before any field
+  is visited for the k+1th, so a schedule exchanges the filter once per block
+  boundary however many fields are observed.
+
+- Add ``Mission.filter_exchange_time`` and set it to 110 s for ZTF.
+
+- Allow ``--exptime-min`` to be repeated so that each bandpass has its own
+  exposure time, given in the same order as ``--bandpass``; a single value
+  applies to every bandpass as before. This applies to a fixed exposure time mode
+  and is not yet supported with adaptive exposure time mode.
+
+- Calculate the zodiacal light background in the mean ecliptic frame rather
+  than the true ecliptic frame. This results in much faster ETC calculations at
+  the expense of positional accuracy degrading to a fraction of an arcminute
+  due to neglecting nutation.
+
+2.15.0 (2026-09-14)
+===================
+
+- Update CPLEX to version 22.2.0. Academic users who are upgrading will need to
+  follow the instructions for downloading and installing CPLEX.
+
+- Add NominalRollConstraint, necessary for space-based spectroscopy with
+  requirements on the position angle of a slit.
+
+- Progress information is now shown in Jupyter notebooks.
+
+- Add ``m4opt.utils.console.quiet``, a context manager to suppress progress
+  messages inside a ``with:`` block.
+
+2.14.0 (2026-09-11)
+===================
+
+- Fix the interpolation of dust extinction. The count rate was sampled on a
+  grid spaced linearly out to the most reddened pixel of the whole dust map,
+  E(B-V) of 165, so that its first step landed at 0.32 and 82% of the sky fell
+  inside it. The grid is now spaced in asinh and the logarithm of the count
+  rate is interpolated, which extinction makes nearly straight, reducing the
+  error from a few percent to about one part in a billion.
+
+- Add a ``field_id`` column to schedules, naming the field that each
+  observation points at. For a mission that numbers its own fields the value
+  is that number: ZTF's sky grid is now indexed by its field identifiers,
+  which run from 1 to 1897 across 1778 fields, with the numbers it does not
+  use masked out. A slew points at no field, so its identifier is masked.
+
+- Speed up evaluation of composite, logical "and" or logical "or", constraints
+  using short-circuit evaluation.
+
+- Add `ZodiacalBackgroundConstraint`, a field of regard constraint that places
+  a maximum value on the modeled surface brightness due to zodiacal light.
+
+2.13.0 (2026-09-08)
+===================
+
+- Fix a crash in variable exposure time mode for ground-based missions, where
+  the observer location was passed as an array over all observing times rather
+  than at the single time for which the exposure time is evaluated.
+
+- Fix ``TypeError`` when a scalar appears on the left of an arithmetic
+  operator applied to an array of decision variables, as in ``5 - x``.
+
+- Add ``--max-fields`` to control how many of the most probable fields the
+  scheduler considers, which was fixed at 50. The cap bounds the size of the
+  MILP problem, which grows roughly quadratically with it, so raising it
+  trades solving time for the chance to cover more of a large localization.
+
+- Fix the ZTF sky grid, whose right ascensions were truncated by a fixed-width
+  table reader so that all 1778 fields fell within 10 degrees of R.A. 0. ZTF
+  schedules were empty as a result.
+
+- Add ``--event-time``, the time that ``--delay`` and ``--deadline`` are
+  measured from. It defaults to the ``DATE-OBS`` field of the sky map as
+  before, so a sky map written without one can now be scheduled, and a sky
+  map missing it reports what to do rather than a ``KeyError``. Schedules
+  record the time they were measured from, and ``m4opt animate`` reads it
+  from there rather than from the sky map.
+
+- Use ULTRASAT's tabulated throughput curve rather than a Gaussian
+  approximation, which had a red leak some four orders of magnitude too
+  large and nearly doubled the predicted zodiacal background.
+
+- Add ``EarthshineBackground``, a model of sunlight reflected off the Earth,
+  scaled by the angular distance from the Earth's limb and by the solar
+  illumination of that part of the limb, and include it in the ULTRASAT
+  stray light budget.
+
+- Fix the ULTRASAT readout noise, which was set to the noise budget's
+  variance (6 e-/pix) rather than its RMS.
+
+- Add ``intersect1d``, an accelerated version of ``numpy.intersect1d``.
+
+2.12.0 (2026-08-28)
+===================
+
+- Add ``EclipticLatitudeConstraint``.
+
+- Add ``AntiSolarSeparationConstraint`` to keep targets away from the
+  anti-solar point, where the nominal spacecraft roll angle is undefined.
+
+- Fix ``LogicalNotConstraint``, which ignored its operand and always
+  evaluated to a scalar ``True``.
+
+- Fix ``footprint`` and ``footprint_healpix`` for empty compound ``Regions``.
+
+- Add ``m4opt.utils.functional.apply`` method.
+
+- Add the function ``count_intersect1d_combinations`` to calculate the overlap
+  of pairwise combinations of arrays, parallelized with OpenMP.
+
+  This operation is needed to calculate per-pixel cadence distributions from
+  HEALPix observation footprints. The specialized parallel version is necessary
+  because ``count_intersect1d`` cannot be effectively parallelized using Python
+  techniques like ``multiprocessing``.
+
+2.11.0 (2026-08-18)
+===================
+
+- Speed up ``solve_tsp`` by adding extra cuts.
+
+- Update the UVEX chip gaps.
+
 2.10.0 (2026-08-13)
 ===================
 

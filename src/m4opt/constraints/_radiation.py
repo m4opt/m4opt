@@ -9,7 +9,8 @@ from ._core import Constraint
 
 @dataclass
 class RadiationBeltConstraint(Constraint):
-    """Constrain the flux of charged particles in the Earth's radiation belts.
+    """
+    Constrain the flux of charged particles in the Earth's radiation belts.
 
     Notes
     -----

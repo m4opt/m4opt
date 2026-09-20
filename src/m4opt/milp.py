@@ -1,4 +1,4 @@
-"""Mixed integer linear programs (MILP)"""
+"""Mixed integer linear programs (MILP)."""
 
 import operator
 from collections.abc import Callable
@@ -7,6 +7,7 @@ from io import BufferedWriter
 from pathlib import Path
 from shutil import copyfileobj
 from tempfile import NamedTemporaryFile, gettempdir
+from types import GeneratorType
 from unittest.mock import patch
 
 import cplex
@@ -20,6 +21,13 @@ from .utils.console import status
 from .utils.numpy import atmost_1d
 
 __all__ = ("Model", "SolveSolution")
+
+
+def _prep_1d(a):
+    if isinstance(a, GeneratorType):
+        return a
+    else:
+        return np.ravel(a)
 
 
 class LowerCutoffCallback:
@@ -50,7 +58,8 @@ class Model(_Model):
         lowercutoff: float | None = None,
         verbose=True,
     ):
-        """Initialize a model with default `CPLEX parameters`_ for M4OPT.
+        """
+        Initialize a model with default `CPLEX parameters`_ for M4OPT.
 
         Parameters
         ----------
@@ -136,7 +145,8 @@ class Model(_Model):
     # https://github.com/IBMDecisionOptimization/docplex/issues/17 is fixed.
     @property
     def best_bound(self) -> float:
-        """Get best bound for the last solve.
+        """
+        Get best bound for the last solve.
 
         Notes
         -----
@@ -148,7 +158,8 @@ class Model(_Model):
         return self.cplex.solution.MIP.get_best_objective()
 
     def add_constraints_(self, cts, names=None):
-        """Add any number of constraints to the model.
+        """
+        Add any number of constraints to the model.
 
         Examples
         --------
@@ -163,10 +174,11 @@ class Model(_Model):
         >>> xmax = np.random.normal(size=x.shape)
         >>> m.add_constraints_(x >= xmax)
         """
-        return super().add_constraints_(atmost_1d(cts), names)
+        return super().add_constraints_(_prep_1d(cts), names)
 
     def add_indicators(self, binary_vars, cts, true_values=1, names=None):
-        """Add any number of indicator constraints to the model.
+        """
+        Add any number of indicator constraints to the model.
 
         Examples
         --------
@@ -184,14 +196,14 @@ class Model(_Model):
         >>> _ = m.add_indicators(y, x >= xmax)
         """
         return super().add_indicators(
-            atmost_1d(binary_vars), atmost_1d(cts), atmost_1d(true_values), names
+            _prep_1d(binary_vars), _prep_1d(cts), atmost_1d(true_values), names
         )
 
     def add_indicator_constraints(self, indcts):
-        return super().add_indicator_constraints(atmost_1d(indcts))
+        return super().add_indicator_constraints(_prep_1d(indcts))
 
     def add_indicator_constraints_(self, indcts):
-        return super().add_indicator_constraints_(atmost_1d(indcts))
+        return super().add_indicator_constraints_(_prep_1d(indcts))
 
     def solve(self, **kwargs) -> "SolveSolution":
         with patch("docplex.mp.solution.SolveSolution", SolveSolution):
@@ -214,7 +226,8 @@ class Model(_Model):
         return np.asarray(super().max(*args)).view(VariableArray)
 
     def to_stream(self, out_file: BufferedWriter):
-        """Write the model to a stream.
+        """
+        Write the model to a stream.
 
         The filename should end in `.lp`, `.mps`, `.sav`, `.lp.gz`, `.mps.gz`,
         or `.sav.gz`.
@@ -253,7 +266,8 @@ class Model(_Model):
 
 class SolveSolution(_SolveSolution):
     def get_values(self, var_seq):
-        """Get solution values for multidimensional arrays of variables.
+        """
+        Get solution values for multidimensional arrays of variables.
 
         Examples
         --------
@@ -295,12 +309,18 @@ class VariableArray(np.ndarray):
                 )
                 .view(self.__class__)
             )
-        elif method != "__call__":
-            return NotImplemented
-        else:
-            return ufunc_map[ufunc](
-                *(input.view(self.__class__) for input in inputs)
+        elif method == "__call__":
+            # A scalar operand, as in ``5 - x``, has no view to take.
+            return getattr(ufunc_map[ufunc], method)(
+                *(
+                    input.view(self.__class__)
+                    if isinstance(input, np.ndarray)
+                    else input
+                    for input in inputs
+                )
             ).view(self.__class__)
+        else:
+            return NotImplemented
 
 
 def make_attr(op):
@@ -384,5 +404,6 @@ def add_var_array_method(cls, tp):
     setattr(cls, f"{tp}_vars", func)
 
 
-for tp in ["binary", "continuous", "integer", "semicontinuous", "semiinteger"]:
+_VARIABLE_TYPES = ("binary", "continuous", "integer", "semicontinuous", "semiinteger")
+for tp in _VARIABLE_TYPES:
     add_var_array_method(Model, tp)

@@ -12,7 +12,11 @@ from astropy.time import Time
 def nominal_roll(
     observer_location: EarthLocation, target_coord: SkyCoord, obstime: Time
 ) -> u.Quantity[u.physical.angle]:
-    """Determine the nominal roll angle for a space telescope.
+    r"""
+    Determine the nominal roll angle for a space telescope.
+
+    This function determines the nominal roll angle for a spacecraft at a given
+    location, observing a given target at a given time.
 
     Many space telescopes have a gross physical configuration that consists of
     a telescope boresight along the +X axis, solar panels that are on the +Y
@@ -30,26 +34,98 @@ def nominal_roll(
     In space telescopes with this general physical plan, it is common to prefer
     or require that the roll of the telescope about the boresight places the +Y
     axis perpendicular to the direction of the sun, so that the solar array can
-    be oriented for optimal power. This is called the nominal roll angle.
-
-    (It is assumed that when roll=0, the +Z axis points to celestial north.)
-
-    This function determines the nominal roll angle for a spacecraft at a given
-    location, observing a given target at a given time.
+    be oriented for optimal power. This is called the nominal roll angle. It is
+    assumed that when roll=0, the +Z axis points to celestial north.
 
     Parameters
     ----------
-    observer_location:
+    observer_location
         Location of the spacecraft.
-    target_coord:
+    target_coord
         Orientation of the boresight of the telescope.
-    obstime:
+    obstime
         The time of the observation.
 
     Returns
     -------
     :
         The nominal roll angle for the observation.
+
+    See Also
+    --------
+    m4opt.constraints.NominalRollConstraint
+
+    Notes
+    -----
+    .. plot::
+        :caption: Roll angle field. The sunward direction is at the center of
+            the plot. The ecliptic poles are along the top and bottom edges.
+        :include-source: False
+
+        import numpy as np
+        from astropy import units as u
+        from astropy.coordinates import (
+            GCRS,
+            EarthLocation,
+            SkyCoord,
+        )
+        from astropy.time import Time
+        from astropy.visualization import quantity_support
+        from ligo.skymap.plot import sun
+        from matplotlib import pyplot as plt
+
+        from m4opt.dynamics import nominal_roll
+
+        obstime = Time("2026-03-20T12:06:05.072")
+        observer_location = EarthLocation.from_geocentric(0 * u.m, 0 * u.m, 0 * u.m)
+        frame = GCRS(obstime=obstime)
+
+        delta = 10
+        ra, dec = np.meshgrid(
+            np.arange(-180, 180 + delta, delta) * u.deg,
+            np.arange(-90, 90 + delta, delta) * u.deg,
+        )
+        target_coord = SkyCoord(ra, dec, frame=frame)
+        roll = nominal_roll(observer_location, target_coord, obstime)
+
+        ax = plt.axes(aspect=1)
+        quantity_support()
+        ax.xaxis.set_major_locator(plt.MultipleLocator(45))
+        ax.yaxis.set_major_locator(plt.MultipleLocator(30))
+        ax.set_xlim(-180, 180)
+        ax.set_ylim(-90, 90)
+        ax.invert_xaxis()
+        bad = ((ra % (180 * u.deg) == 0) & (dec == 0)) | (dec == 90 * u.deg) | (dec == -90 * u.deg)
+        ra[bad] = np.nan
+        dec[bad] = np.nan
+        ax.quiver(
+            ra, dec,
+            1,
+            1,
+            angles=roll.to_value(u.deg),
+            pivot="middle",
+        )
+        ax.plot(0, 0, marker=sun, markersize=10, markeredgewidth=2, color='red')
+        ax.set_xlabel('Right ascension')
+        ax.set_ylabel('Declination')
+
+    The nominal roll angle is degenerate and undefined when the telescope is
+    pointed directly sunward, anti-sunward, or toward either celestial
+    (equatorial) pole. The spacecraft orientation is degenerate in the sunward
+    and anti-sunward directions, whereas the equatorial poles are coordinate
+    singularities only where the spacecraft orientation changes smoothly.
+
+    Near all of these points, the nominal roll angle changes very rapidly with
+    target sky coordinates. For targets at small angular separation
+    :math:`\theta` from these points, the maximum rate of change of the roll
+    angle :math:`\phi` is approximately
+    :math:`\mathrm{d}\phi/\mathrm{d}\theta = 1 / \theta`.
+
+    .. figure:: /_static/roll-angle-flip.svg
+        :alt: Diagram illustrating the degeneracy of the roll angle near the anti-Sun direction
+        :width: 50%
+
+        Illustration of the degeneracy of the roll angle near the anti-Sun direction.
 
     Examples
     --------
@@ -137,7 +213,6 @@ def nominal_roll(
     >>> spacecraft_frame = target_coord.transform_to(
     ...     GCRS(obstime=obstime, obsgeoloc=obsgeoloc, obsgeovel=obsgeovel)
     ... ).skyoffset_frame(roll)
-
     """
     sun = get_body("sun", obstime, observer_location)
 

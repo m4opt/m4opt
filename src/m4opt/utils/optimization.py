@@ -12,14 +12,15 @@ __all__ = ("pack_boxes", "partition_graph", "partition_graph_color", "solve_tsp"
 
 
 def pack_boxes(wh: np.ndarray, **kwargs) -> tuple[np.ndarray, np.ndarray]:
-    """Pack non-overlapping hypercubes into the smallest possible hypercube.
+    """
+    Pack non-overlapping hypercubes into the smallest possible hypercube.
 
     Parameters
     ----------
     wh
         A Numpy array of shape `(n, m)` containing the dimensions of `n`
         hypercubes in `m` dimensions.
-    kwargs
+    **kwargs
         Additional arguments passed to :class:`m4opt.milp.Model`.
 
     Returns
@@ -73,7 +74,8 @@ def partition_graph(
     edge_weight: str = "weight",
     **kwargs,
 ) -> np.ndarray:
-    """Partition a graph into contiguous subgraphs.
+    """
+    Partition a graph into contiguous subgraphs.
 
     Partition a graph into subgraphs using
     `METIS <https://github.com/KarypisLab/METIS>`_.
@@ -92,7 +94,7 @@ def partition_graph(
         Optional key for node weights.
     edge_weight
         Optional key for edge weights.
-    kwargs
+    **kwargs
         Additional arguments passed to :class:`pymetis.Options`.
 
     Returns
@@ -100,16 +102,16 @@ def partition_graph(
     :
         Partition assignments for all nodes.
 
-    References
-    ----------
-    .. footbibliography::
-
     Notes
     -----
     If the graph has edge weights, then the weights must be integer-valued.
 
-    Example
-    -------
+    References
+    ----------
+    .. footbibliography::
+
+    Examples
+    --------
     .. plot::
         :caption: Basic example of graph partitioning.
 
@@ -174,7 +176,8 @@ def partition_graph(
 def partition_graph_color(
     graph: nx.Graph, partition: np.ndarray, **kwargs
 ) -> np.ndarray:
-    """Find a coloring for a partition of a graph.
+    """
+    Find a coloring for a partition of a graph.
 
     Parameters
     ----------
@@ -193,8 +196,8 @@ def partition_graph_color(
         An integer-valued array of color assignments for each partition.
         The color for node `i` in the original graph is `color[partition[i]]`.
 
-    Example
-    -------
+    Examples
+    --------
     .. plot::
 
         from matplotlib import pyplot as plt
@@ -245,14 +248,15 @@ def partition_graph_color(
 
 
 def solve_tsp(distances: np.ndarray, **kwargs) -> tuple[np.ndarray, float]:
-    """Solve the Traveling Salesman problem.
+    """
+    Solve the Traveling Salesman problem.
 
     Parameters
     ----------
     distances
         A square matrix of size (2, 2) or greater representing the distances
         between each pair of nodes.
-    kwargs
+    **kwargs
         Additional arguments passed to :class:`m4opt.milp.Model`.
 
     Returns
@@ -295,38 +299,27 @@ def solve_tsp(distances: np.ndarray, **kwargs) -> tuple[np.ndarray, float]:
     n = len(distances)
     assert n >= 2
     with Model(**kwargs) as m:
-        x = m.binary_vars((n, n))
+        # Diagonal ements of x must be zero
+        x = m.binary_vars((n, n), ub=1 - np.eye(n))
         y = m.integer_vars(n - 1, lb=1, ub=n - 1)
-        m.add_constraints_(
-            [
-                m.sum_vars_all_different([x[i, j] for i in range(n) if i != j]) == 1
-                for j in range(n)
-            ]
-        )
-        m.add_constraints_(
-            [
-                m.sum_vars_all_different([x[i, j] for j in range(n) if i != j]) == 1
-                for i in range(n)
-            ]
-        )
-        m.add_constraints_(
-            [
-                y[i] - y[j] + 1 <= (n - 1) * (1 - x[i + 1, j + 1])
-                for i in range(n - 1)
-                for j in range(n - 1)
-                if i != j
-            ]
-        )
-        m.minimize(
-            m.sum(
-                [
-                    distances[i, j] * x[i, j]
-                    for i in range(n)
-                    for j in range(n)
-                    if i != j
-                ]
+
+        # Exactly one edge is taken into and out of each node.
+        m.add_constraints_([m.sum_vars_all_different(row) == 1 for row in x])
+        m.add_constraints_([m.sum_vars_all_different(col) == 1 for col in x.T])
+
+        # Eliminate 2-cycles for N > 2: if i -> j is selected then j -> i cannot be.
+        if n > 2:
+            m.add_constraints_(
+                x[i, j] + x[j, i] <= 1 for i in range(n) for j in range(i)
             )
+
+        m.add_constraints_(
+            y[i] - y[j] + 1 <= (n - 1) * (1 - x[i + 1, j + 1])
+            for i in range(n - 1)
+            for j in range(n - 1)
+            if i != j
         )
+        m.minimize(m.scal_prod_vars_all_different(x.ravel(), distances.ravel()))
         solution = m.solve()
 
     sequence = np.rint(solution.get_values(y)).astype(np.intp)
