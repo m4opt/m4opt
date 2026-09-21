@@ -553,10 +553,7 @@ def schedule(
                             model.add_constraint_(
                                 model.sum_vars_all_different(interval_vars) >= 1
                             )
-                        # There is one exposure time per visit, which has to
-                        # lie along the visit axis; the intervals broadcast
-                        # along the other one.
-                        exptime_per_visit = np.reshape(exptime, (-1, 1))
+                        exptime_per_visit = exptime[..., np.newaxis]
                         model.add_indicators(
                             visit_interval_vars,
                             time_visit_vars[:, np.newaxis]
