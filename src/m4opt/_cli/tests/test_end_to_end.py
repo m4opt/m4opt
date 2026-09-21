@@ -273,12 +273,17 @@ def test_animate_uses_the_recorded_event_time(
 
 
 @pytest.mark.parametrize(
-    "exptime_args",
-    [("--exptime-min=300s",), ("--exptime-min=120s", "--exptime-min=300s")],
-    ids=["one exposure time", "one per bandpass"],
+    "extra_args",
+    [
+        ("--bandpass=g", "--bandpass=r", "--exptime-min=300s"),
+        ("--bandpass=g", "--bandpass=r", "--exptime-min=120s", "--exptime-min=300s"),
+        # A variable exposure time takes only one bandpass.
+        ("--bandpass=g", "--exptime-min=300s", "--absmag-mean=-16"),
+    ],
+    ids=["one exposure time", "one per bandpass", "variable exposure time"],
 )
 def test_a_field_observable_in_several_windows(
-    fits_path, ecsv_path, run_cli, exptime_args
+    fits_path, ecsv_path, run_cli, extra_args
 ):
     """A field that rises and sets several times still schedules.
 
@@ -292,8 +297,6 @@ def test_a_field_observable_in_several_windows(
         fits_path,
         ecsv_path,
         "--mission=ztf",
-        "--bandpass=g",
-        "--bandpass=r",
         "--visits=2",
         "--nside=16",
         "--max-fields=6",
@@ -301,7 +304,7 @@ def test_a_field_observable_in_several_windows(
         "--deadline=96hour",
         "--timelimit=20s",
         "--no-appmag-dist",
-        *exptime_args,
+        *extra_args,
     )
     assert result.exit_code == 0
 

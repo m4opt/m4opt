@@ -6,10 +6,8 @@ Changes
 ==================
 
 - Fix a crash when scheduling a field that is observable in more than one
-  window, which a ground based telescope sees whenever a field rises on several
-  nights. Each visit has had its own exposure time since version 3.0.0, and
-  those run along the visits while the windows run along an axis of their own,
-  so the two have to be broadcast against each other.
+  window, as a ground based telescope sees whenever a field rises on several
+  nights.
 
 3.0.0 (2026-09-20)
 ==================

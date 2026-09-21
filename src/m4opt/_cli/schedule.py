@@ -553,7 +553,10 @@ def schedule(
                             model.add_constraint_(
                                 model.sum_vars_all_different(interval_vars) >= 1
                             )
-                        exptime_per_visit = exptime[..., np.newaxis]
+                        # One exposure time per visit, or the single
+                        # variable of an adaptive solve, which is not
+                        # subscriptable and so cannot be indexed here.
+                        exptime_per_visit = np.reshape(exptime, (-1, 1))
                         model.add_indicators(
                             visit_interval_vars,
                             time_visit_vars[:, np.newaxis]
