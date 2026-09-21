@@ -73,6 +73,9 @@ def invert_footprints_to_regions(footprints, n_pixels):
     return pixel_to_region_map, region_to_fields_map
 
 
+#: Default separation between consecutive visits.
+_DEFAULT_CADENCE = [30 * u.min]
+
 LARGE_EXPTIME = 1e10
 
 
@@ -174,9 +177,13 @@ def schedule(
     ] = None,
     visits: Annotated[int, typer.Option(min=1, help="Number of visits")] = 2,
     cadence: Annotated[
-        u.Quantity,
-        typer.Option(help="Minimum time separation between visits"),
-    ] = 30 * u.min,
+        list[u.Quantity[u.physical.time]],
+        typer.Option(
+            help="Minimum time separation between visits. Repeat the option to "
+            "give each gap between consecutive visits its own separation; a "
+            "single value applies to every gap",
+        ),
+    ] = _DEFAULT_CADENCE,
     nside: Annotated[int, typer.Option(help="HEALPix resolution")] = 512,
     max_fields: Annotated[
         int,
@@ -279,6 +286,10 @@ def schedule(
     visit_exptime_min_s = u.Quantity(
         [exptime_min[i % len(exptime_min)] for i in range(visits)]
     ).to_value(u.s)
+    # One gap fewer than there are visits, and none at all for a single visit.
+    visit_cadence_s = np.array(
+        [cadence[i % len(cadence)].to_value(u.s) for i in range(visits - 1)]
+    )
     if adaptive_exptime and bandpass is not None and len(bandpass) > 1:
         raise NotImplementedError(
             "A variable exposure time is not supported with more than one bandpass."
@@ -324,7 +335,6 @@ def schedule(
         target_coords = target_coords.unmasked[keep]
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
-        cadence_s = cadence.to_value(u.s)
         obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
         observable_intervals = np.asarray(
             [
@@ -583,12 +593,13 @@ def schedule(
             if visits > 1:
                 with status("adding cadence constraints"):
                     if adaptive_exptime:
-                        rhs = (cadence_s * field_vars + exptime_field_vars)[
-                            :, np.newaxis
-                        ]
+                        rhs = (
+                            np.multiply.outer(field_vars, visit_cadence_s)
+                            + exptime_field_vars[:, np.newaxis]
+                        )
                     else:
                         rhs = np.multiply.outer(
-                            field_vars, cadence_s + mean_consecutive_exptime_s
+                            field_vars, visit_cadence_s + mean_consecutive_exptime_s
                         )
                     model.add_constraints_(
                         (time_field_visit_vars[:, 1:] - time_field_visit_vars[:, :-1])
