@@ -270,3 +270,89 @@ def test_animate_uses_the_recorded_event_time(
     result = run_cli(app, "animate", ecsv_path, gif_path, "--time-step=1hour")
     assert result.exit_code == 0
     assert gif_path.read_bytes().startswith(b"GIF89a")
+
+
+@pytest.mark.parametrize(
+    "exptime_args",
+    [("--exptime-min=300s",), ("--exptime-min=120s", "--exptime-min=300s")],
+    ids=["one exposure time", "one per bandpass"],
+)
+def test_a_field_observable_in_several_windows(
+    fits_path, ecsv_path, run_cli, exptime_args
+):
+    """A field that rises and sets several times still schedules.
+
+    A ground based telescope sees a field in a separate window each night, and
+    the exposure times run along the visits rather than along those windows, so
+    the two have to be broadcast against each other rather than zipped.
+    """
+    result = run_cli(
+        app,
+        "schedule",
+        fits_path,
+        ecsv_path,
+        "--mission=ztf",
+        "--bandpass=g",
+        "--bandpass=r",
+        "--visits=2",
+        "--nside=16",
+        "--max-fields=6",
+        # Long enough that each field sets and rises again more than twice.
+        "--deadline=96hour",
+        "--timelimit=20s",
+        "--no-appmag-dist",
+        *exptime_args,
+    )
+    assert result.exit_code == 0
+
+    table = QTable.read(ecsv_path)
+    observations = table[table["action"] == "observe"]
+    if len(observations) == 0:
+        pytest.skip("no fields were observable")
+    observations.sort("start_time")
+
+    # Each observation lies inside a window, and they do not overlap.
+    starts = observations["start_time"].gps
+    ends = starts + observations["duration"].to_value(u.s)
+    assert (starts[1:] >= ends[:-1]).all()
+
+
+def test_each_gap_between_visits_may_have_its_own_cadence(
+    fits_path, ecsv_path, run_cli
+):
+    """Repeating --cadence separates each pair of consecutive visits in turn."""
+    result = run_cli(
+        app,
+        "schedule",
+        fits_path,
+        ecsv_path,
+        "--mission=ztf",
+        "--bandpass=g",
+        "--bandpass=r",
+        "--visits=3",
+        "--nside=16",
+        "--max-fields=6",
+        "--deadline=8hour",
+        "--timelimit=30s",
+        "--no-appmag-dist",
+        "--exptime-min=300s",
+        "--cadence=1min",
+        "--cadence=45min",
+    )
+    assert result.exit_code == 0
+
+    table = QTable.read(ecsv_path)
+    observations = table[table["action"] == "observe"]
+    if len(observations) == 0:
+        pytest.skip("no fields were observable")
+
+    for coord in {str(coord) for coord in observations["target_coord"]}:
+        visits = observations[
+            [str(each) == coord for each in observations["target_coord"]]
+        ]
+        visits.sort("start_time")
+        starts = visits["start_time"].gps
+        ends = starts + visits["duration"].to_value(u.s)
+        gaps = starts[1:] - ends[:-1]
+        assert gaps[0] >= 60 - 1e-3
+        assert gaps[1] >= 45 * 60 - 1e-3
