@@ -270,3 +270,51 @@ def test_animate_uses_the_recorded_event_time(
     result = run_cli(app, "animate", ecsv_path, gif_path, "--time-step=1hour")
     assert result.exit_code == 0
     assert gif_path.read_bytes().startswith(b"GIF89a")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        ("--bandpass=g", "--bandpass=r", "--exptime-min=300s"),
+        ("--bandpass=g", "--bandpass=r", "--exptime-min=120s", "--exptime-min=300s"),
+        # A variable exposure time takes only one bandpass.
+        ("--bandpass=g", "--exptime-min=300s", "--absmag-mean=-16"),
+    ],
+    ids=["one exposure time", "one per bandpass", "variable exposure time"],
+)
+def test_a_field_observable_in_several_windows(
+    fits_path, ecsv_path, run_cli, extra_args
+):
+    """A field that rises and sets several times still schedules.
+
+    A ground based telescope sees a field in a separate window each night, and
+    the exposure times run along the visits rather than along those windows, so
+    the two have to be broadcast against each other rather than zipped.
+    """
+    result = run_cli(
+        app,
+        "schedule",
+        fits_path,
+        ecsv_path,
+        "--mission=ztf",
+        "--visits=2",
+        "--nside=16",
+        "--max-fields=6",
+        # Long enough that each field sets and rises again more than twice.
+        "--deadline=96hour",
+        "--timelimit=20s",
+        "--no-appmag-dist",
+        *extra_args,
+    )
+    assert result.exit_code == 0
+
+    table = QTable.read(ecsv_path)
+    observations = table[table["action"] == "observe"]
+    if len(observations) == 0:
+        pytest.skip("no fields were observable")
+    observations.sort("start_time")
+
+    # Each observation lies inside a window, and they do not overlap.
+    starts = observations["start_time"].gps
+    ends = starts + observations["duration"].to_value(u.s)
+    assert (starts[1:] >= ends[:-1]).all()
