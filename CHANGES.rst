@@ -2,6 +2,13 @@
 Changes
 *******
 
+3.0.1 (unreleased)
+==================
+
+- Fix a crash when scheduling a field that is observable in more than one
+  window, as a ground based telescope sees whenever a field rises on several
+  nights.
+
 3.0.0 (2026-09-20)
 ==================
 
