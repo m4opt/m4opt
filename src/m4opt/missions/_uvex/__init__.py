@@ -130,15 +130,16 @@ Examples
     :include-source: False
     :caption: Median limiting magnitude, averaged over target coordinates and observation time.
 
+    import numpy as np
     from astropy import units as u
-    from astropy.coordinates import EarthLocation, ICRS
-    from astropy_healpix import HEALPix
+    from astropy.coordinates import ICRS, EarthLocation
     from astropy.time import Time
+    from astropy_healpix import HEALPix
     from matplotlib import pyplot as plt
+    from synphot import ConstFlux1D, SourceSpectrum
+
     from m4opt.missions import uvex
     from m4opt.synphot import observing
-    import numpy as np
-    from synphot import ConstFlux1D, SourceSpectrum
 
     dwell = u.def_unit("dwell", 900 * u.s)
     exptime = np.arange(1, 11) * dwell
@@ -148,7 +149,7 @@ Examples
     observer_location = EarthLocation(0 * u.m, 0 * u.m, 0 * u.m)
 
     limmags = []
-    for filt in uvex.detector.bandpasses.keys():
+    for filt in uvex.detector.bandpasses:
         with observing(
             observer_location,
             target_coords[np.newaxis, :, np.newaxis],
