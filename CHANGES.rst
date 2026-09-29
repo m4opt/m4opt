@@ -9,6 +9,9 @@ Changes
   window, as a ground based telescope sees whenever a field rises on several
   nights.
 
+- Update UVEX detector model from response files version 20260924_v0.1e
+  from https://www.uvex.caltech.edu/page/uvex-etc.
+
 3.0.0 (2026-09-20)
 ==================
 

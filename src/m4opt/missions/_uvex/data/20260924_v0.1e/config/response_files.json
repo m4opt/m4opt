@@ -1,0 +1,248 @@
+{
+    "info": {
+        "name": "Public v1.0 configuration. Identical to response_files_v0.8.1.json except that THROUGHPUT_SCALE_FACTOR is 0.8 rather than 1.0, de-rating the FUV, NUV and LSS bandpasses by 20% for public release."
+    },
+    "uvex": {
+        "EPD": {
+            "description": "Entrance Pupil Diameter (cm)",
+            "type": "By design",
+            "source": "Optical Model",
+            "value": "75"
+        },
+        "N_PIXELS": {
+            "description": "Number of pixels along each edge of the 4k x 4k detectors",
+            "type": "By Design",
+            "source": "CMOS Description",
+            "value": "4096"
+        },
+        "PIXEL_UM": {
+            "description": "UVEX physical pixel size (microns)",
+            "type": "By Design",
+            "source": "CMOS Description",
+            "value": "10"
+        },
+        "PLATE_SCALE": {
+            "description": "UVEX Imager Plate Scale (arcsec / pixel)",
+            "type": "By Design",
+            "source": "Optical Design",
+            "value": "1.03"
+        },
+        "SPEC_PLATE_SCALE": {
+            "description": "UVEX LSS Plate Scale (arcsec / pixel)",
+            "type": "By Design",
+            "source": "Optical Design",
+            "value": "0.8"
+        },
+        "NPIX_IMG": {
+            "description": "Number of effective pixels in the imager photometric aperture for a 2-arcsec FWHM PSF. Sets how many pixels of dark current and read noise enter the imaging SNR.",
+            "type": "model",
+            "source": "uvex_mission_v0.8.1",
+            "value": "10.15"
+        },
+        "NPIX_LSS": {
+            "description": "Number of effective vertical pixels in the LSS spectral extraction for a 2-arcsec FWHM PSF. Sets how many pixels of dark current and read noise enter the spectroscopic SNR, before scaling by the slit width and spectral resolution.",
+            "type": "model",
+            "source": "uvex_mission_v0.8.1",
+            "value": "3"
+        },
+        "LSS_SLIT_THROUGHPUT": {
+            "description": "Fraction of a point source's flux that passes through the LSS slit, applied as a scalar multiplier on the LSS throughput. Value for a Gaussian PSF centered on the 2-arcsec slit, using the v0.8.1 ETC's 2.25-arcsec LSS PSF HPD.",
+            "type": "model",
+            "source": "uvex_mission_v0.8.1",
+            "value": "0.6944",
+            "_comment": "Computed by the v0.8.1 uvex-mission ETC (imaging.spectrometer_image.get_slit_throughput) with that model's 2.0-arcsec SLIT_WIDTH and 2.25-arcsec psf_lss_hpd; the full value is 0.6944392947392539. Two nearby values were considered and rejected in review of PR #63: 0.751, the same function evaluated with a 2.0-arcsec FWHM PSF, and 0.761, from the PhaseB/SlitPerformance slit_offset_test notebook, which integrates the PSF directly rather than calling get_slit_throughput."
+        },
+        "THROUGHPUT_SCALE_FACTOR": {
+            "description": "Scalar multiplier applied to the FUV, NUV and LSS bandpasses (including the LSS Lyman-alpha response) after every wavelength-dependent component has been combined. 1.0 leaves the modelled throughput as-is; a value below 1.0 de-rates the whole response to cover end-to-end losses that the individual component curves do not capture.",
+            "type": "processing choice",
+            "source": "uvex_response",
+            "value": 0.8
+        },
+        "vignetting_method": {
+            "description": "How the 2D vignetting map is reduced to a single scalar throughput factor applied to the bandpass. 'min' takes the minimum throughput over the field of view",
+            "type": "processing choice",
+            "source": "uvex_response",
+            "value": "min"
+        },
+        "nuv_filter_toggle": {
+            "description": "Whether to apply the standalone nuv_filter transmission on top of the NUV detector QE in the NUV bandpass",
+            "type": "processing choice",
+            "source": "uvex_response",
+            "value": true
+        }
+    },
+    "geometry": {
+        "slit_length": {
+            "description": "UVEX LSS slit length (arcsec)",
+            "type": "By Design",
+            "source": "Instrument Design",
+            "value": "3600"
+        },
+        "slit_width": {
+            "description": "UVEX LSS slit width (arcsec)",
+            "type": "By Design",
+            "source": "Instrument Design",
+            "value": "2"
+        },
+        "slit_xy": {
+            "description": "UVEX LSS slit position relative to boresight (x,y in arcsec)",
+            "type": "By Design",
+            "source": "Instrument Design",
+            "value": "12600,0"
+        },
+        "im_gap_x": {
+            "description": "Gap between imager detectors in the X direction (mm)",
+            "type": "By Design",
+            "source": "Instrument Design",
+            "value": "4.05"
+        },
+        "im_gap_y": {
+            "description": "Gap between imager detectors in the Y direction (mm)",
+            "type": "By Design",
+            "source": "Instrument Design",
+            "value": "2.55"
+        },
+        "lss_gap_x": {
+            "description": "Gap between LSS detectors in the X direction (mm)",
+            "type": "By Design",
+            "source": "Instrument Design",
+            "value": "0.616"
+        },
+        "lss_xy1": {
+            "description": "Position of the LSS-short detector in the LSS plane (x,y in mm)",
+            "type": "By Design",
+            "source": "Instrument Design",
+            "value": "-5.874,0.0"
+        }
+    },
+    "optics": {
+        "description": "JPL 24 nm MgF2 / Al mirror coating reflectivity model",
+        "type": "model",
+        "source": "jpl_24nm_mgf2_al",
+        "value": "optics/response_files/optics_jpl_24nmMgF2Al_model.dat"
+    },
+    "fuv_detector": {
+        "description": "JPL 7-layer coating with a band center at 150 nm, dated 2025-05-22",
+        "type": "model",
+        "source": "jpl_150nmcenter_detector_20250522",
+        "value": "fuv_detector/response_files/fuv_detector_150nmcenter_detector_20250522.dat"
+    },
+    "nuv_detector": {
+        "description": "JPL single-layer HfO2 anti-reflection coating",
+        "type": "model",
+        "source": "jpl_single_layer_HfO2",
+        "value": "nuv_detector/response_files/nuv_detector_jpl_single_layer_HfO2.dat"
+    },
+    "nuv_filter": {
+        "description": "Standalone Materion NUV bandpass filter transmission, ported from v0.8.1 of uvex-mission for benchmarking; applied on top of the NUV detector QE",
+        "type": "model",
+        "source": "materion",
+        "value": "nuv_filter/response_files/nuv_filter_materion.dat"
+    },
+    "dichroic": {
+        "description": "Acton 180-nm split dichroic model with 10 mm fused silica substrate, AOI-weighted average over 20-40 degree angles of incidence",
+        "type": "model",
+        "source": "acton_180_dichroic_model_aoi_average",
+        "value": {
+            "reflection": "dichroic/response_files/dichroic_A180_model_reflection.dat",
+            "transmission": "dichroic/response_files/dichroic_A180_model_transmission.dat"
+        }
+    },
+    "lss": {
+        "blaze": {
+            "description": "LSS grating blaze / first-order diffraction efficiency, ported from v0.8.1 uvex-mission (zeiss spectrometer setup)",
+            "type": "model",
+            "source": "zeiss",
+            "value": "lss_blaze/response_files/lss_blaze_zeiss.dat"
+        },
+        "detector": {
+            "description": "LSS spectrometer detector response (graded-overcoat tapered QE, detector coating and QE combined), ported from v0.8.1 uvex-mission; 'response' is the nominal curve and 'lyman' the Lyman-alpha-specific response",
+            "type": "model",
+            "source": "graded_overcoat_00nm",
+            "value": {
+                "response": "lss_detector/response_files/lss_detector_graded_overcoat.dat",
+                "lyman": "lss_detector/response_files/lss_detector_graded_overcoat_lyman.dat"
+            }
+        },
+        "dispersion": {
+            "description": "LSS wavelength dispersion / resolution mapping (WAVE, YPOS, DISPERSION nm/pix, SLIT WIDTH, RESOLUTION), stored as a verbatim pass-through of the v0.8.1 uvex-mission file for downstream wavelength-solution use; not a multiplicative bandpass component",
+            "type": "model",
+            "source": "UVEXS_Spectral_Resolution_R2000 (zeiss / R2000 setup)",
+            "value": "lss_dispersion/response_files/lss_dispersion_R2000.txt"
+        }
+    },
+    "contamination": {
+        "fuv": {
+            "description": "Contamination transmission losses along the FUV optical path (OTA mirrors, dichroic, detector surface) at end of life, ported from the v0.8.1 uvex-mission model: exp(-absorption_coeff * effective_thickness)",
+            "type": "model",
+            "source": "uvex_mission_v0.8.1",
+            "value": "contamination/response_files/contamination_v0.8.1_fuv_eol.dat"
+        },
+        "nuv": {
+            "description": "Contamination transmission losses along the NUV optical path (OTA mirrors, dichroic, detector surface) at end of life, ported from the v0.8.1 uvex-mission model: exp(-absorption_coeff * effective_thickness)",
+            "type": "model",
+            "source": "uvex_mission_v0.8.1",
+            "value": "contamination/response_files/contamination_v0.8.1_nuv_eol.dat"
+        },
+        "lss": {
+            "description": "Contamination transmission losses along the LSS optical path (OTA + relay mirrors, grating, detector surface) at end of life, ported from the v0.8.1 uvex-mission model: exp(-absorption_coeff * effective_thickness)",
+            "type": "model",
+            "source": "uvex_mission_v0.8.1",
+            "value": "contamination/response_files/contamination_v0.8.1_lss_eol.dat"
+        }
+    },
+    "vignetting": {
+        "fuv": {
+            "description": "Fucik 2026-03-16 ray-trace vignetting map for the FUV detector, masked to the detector footprint",
+            "type": "model",
+            "source": "fucik2026",
+            "value": "vignetting/response_files/vignetting_fucik2026_fuv_masked.fits"
+        },
+        "nuv": {
+            "description": "Fucik 2026-03-16 ray-trace vignetting map for the NUV detector, masked to the detector footprint",
+            "type": "model",
+            "source": "fucik2026",
+            "value": "vignetting/response_files/vignetting_fucik2026_nuv_masked.fits"
+        }
+    },
+    "dark_current": {
+        "fuv": {
+            "description": "Dark current in units of electrons per second per pixel for the FUV detectors",
+            "type": "model",
+            "source": "Current Estimates",
+            "value": 0.001
+        },
+        "nuv": {
+            "description": "Dark current in units of electrons per second per pixel for the NUV detectors",
+            "type": "model",
+            "source": "Current Estimates",
+            "value": 0.001
+        },
+        "lss": {
+            "description": "Dark current in units of electrons per second per pixel for the LSS detectors",
+            "type": "model",
+            "source": "Current Estimates",
+            "value": 0.001
+        }
+    },
+    "read_noise": {
+        "fuv": {
+            "description": "Read noise in units of electrons rms per pixel for the FUV detectors",
+            "type": "model",
+            "source": "Current Estimates",
+            "value": 2
+        },
+        "nuv": {
+            "description": "Read noise in units of electrons rms per pixel for the NUV detectors",
+            "type": "model",
+            "source": "Current Estimates",
+            "value": 2
+        },
+        "lss": {
+            "description": "Read noise in units of electrons rms per pixel for the LSS detectors",
+            "type": "model",
+            "source": "Current Estimates",
+            "value": 2
+        }
+    }
+}

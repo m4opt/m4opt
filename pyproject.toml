@@ -55,6 +55,7 @@ test = [
     "pytest-astropy",
     "pytest-benchmark",
     "pytest-regressions",
+    "uvex-imager-etc @ git+https://github.com/uvex-mission/uvex-imager-etc.git",  # FIXME: not yet on PyPI. See https://github.com/uvex-mission/uvex-imager-etc/issues/12
 ]
 docs = [
     "pysiaf",

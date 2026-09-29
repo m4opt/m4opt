@@ -1,9 +1,12 @@
+import json
+from importlib import resources
+
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import Angle, SkyCoord, get_body
 from astropy.time import Time
 from regions import RectangleSkyRegion, Regions
-from synphot import Gaussian1D, SpectralElement
+from synphot import SpectralElement
 
 from ...constraints import (
     EarthLimbConstraint,
@@ -17,6 +20,7 @@ from ...skygrid._geodesic import for_subdivision
 from ...synphot import Detector
 from ...synphot.background import GalacticBackground, ZodiacalBackground
 from .._core import Mission
+from . import data
 
 _chip_length = 40.96 * u.mm
 """Linear extent of one imager chip in length units"""
@@ -31,6 +35,20 @@ _chip_offset = [-1, 0, 1] * (
     _chip_angle + _chip_gap_length[:, np.newaxis] * _chip_angle / _chip_length
 )
 """Offses of chip centers in angular units"""
+
+_data_path = resources.files(data) / "20260924_v0.1e"
+
+with (_data_path / "config" / "response_files.json").open() as f:
+    _json_data = json.load(f)
+
+if (_dark_noise := _json_data["dark_current"]["fuv"]["value"]) != _json_data[
+    "dark_current"
+]["nuv"]["value"]:
+    raise NotImplementedError("Per-band values for dark current is not supported")
+if (_read_noise := _json_data["read_noise"]["fuv"]["value"]) != _json_data[
+    "read_noise"
+]["nuv"]["value"]:
+    raise NotImplementedError("Per-band values for read noise is not supported")
 
 uvex = Mission(
     name="uvex",
@@ -52,30 +70,24 @@ uvex = Mission(
         & MoonSeparationConstraint(25 * u.deg)
     ),
     detector=Detector(
-        npix=4 * np.pi,
+        npix=float(_json_data["uvex"]["NPIX_IMG"]["value"]),
         # "This is Nyquist sampled by the 1 arcsec pixels."
-        plate_scale=1 * u.arcsec**2,
+        plate_scale=np.square(
+            float(_json_data["uvex"]["PLATE_SCALE"]["value"]) * u.arcsec
+        ),
         # "...an effective aperture of 75cm."
-        area=np.pi * np.square(0.5 * 75 * u.cm),
+        area=np.pi * np.square(0.5 * float(_json_data["uvex"]["EPD"]["value"]) * u.cm),
         bandpasses={
-            "FUV": SpectralElement(
-                Gaussian1D,
-                amplitude=0.15,
-                mean=1600 * u.angstrom,
-                stddev=100 * u.angstrom,
+            "FUV": SpectralElement.from_file(
+                str(_data_path / "etc" / "imager" / "fuv_bandpass.fits")
             ),
-            "NUV": SpectralElement(
-                Gaussian1D,
-                amplitude=0.2,
-                mean=2300 * u.angstrom,
-                stddev=180 * u.angstrom,
+            "NUV": SpectralElement.from_file(
+                str(_data_path / "etc" / "imager" / "nuv_bandpass.fits")
             ),
         },
         background=GalacticBackground() + ZodiacalBackground(),
-        # Made up to match plot
-        read_noise=2,
-        dark_noise=1e-3 * u.Hz,
-        gain=0.85,
+        read_noise=_read_noise,
+        dark_noise=_dark_noise * u.Hz,
     ),
     # UVEX will be in a highly elliptical TESS-like orbit.
     # This is the TESS TLE downloaded from Celestrak at 2024-09-10T00:43:57Z.
@@ -106,18 +118,8 @@ from H. P. Earnshaw (private communication). The telescope boresight is
 physically offset from the center of the imager by 0.5°, but this model
 currently does not include that offset.
 
-Note that the imaging mode exposure time calculator is a toy model based on
-the publicly available description of the mission from the UVEX science paper
-:footcite:`2021arXiv211115608K`, and that roughly reproduces the
-`public sensitivity plots <https://www.uvex.caltech.edu/page/for-astronomers>`_.
-It will be replaced with realistic filter bandpasses when those are publicly
-released.
-
-We make these simplifying assumptions:
-
-- The filter bandpasses are Gassians that mimic the filter shapes on the UVEX
-  web site.
-- Assume that the PSF is critically sampled.
+Imager bandpasses and detector properties are taken from the published files
+at <https://www.uvex.caltech.edu/page/uvex-etc>.
 
 References
 ----------
@@ -167,14 +169,14 @@ Examples
 
     ax = plt.axes()
     ax.set_xlim(1, 10)
-    ax.set_ylim(24.5, 26.5)
+    ax.set_ylim(24, 26)
     ax.invert_yaxis()
+    ax.grid()
     for filt, limmag in zip(uvex.detector.bandpasses.keys(), median_limmags):
         ax.plot(exptime, limmag, "-o", label=filt)
     ax.legend()
     ax.set_xlabel("Number of stacked 900 s dwells")
     ax.set_ylabel(r"5-$\sigma$ Limiting magnitude (AB)")
-    plt.savefig("test.png")
 
 .. plot::
     :include-source: False
