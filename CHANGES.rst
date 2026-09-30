@@ -9,6 +9,12 @@ Changes
   window, as a ground based telescope sees whenever a field rises on several
   nights.
 
+- Allow ``--cadence`` to be repeated so that each gap between consecutive
+  visits has its own minimum separation, in the same way that ``--exptime-min``
+  gives each visit its own exposure time; a single value applies to every gap
+  as before. Together they describe a sequence such as two filters a minute
+  apart and then three quarters of an hour before the next pair.
+
 3.0.0 (2026-09-20)
 ==================
 
