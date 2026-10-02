@@ -2,7 +2,7 @@
 Changes
 *******
 
-3.0.1 (unreleased)
+3.1.0 (2026-10-02)
 ==================
 
 - Fix a crash when scheduling a field that is observable in more than one
