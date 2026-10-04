@@ -19,6 +19,7 @@ from ligo.skymap.io import read_sky_map
 from scipy import stats
 
 from .. import __version__, missions
+from ..constraints import visibility_windows
 from ..dynamics import nominal_roll
 from ..fov import footprint_healpix
 from ..milp import Model
@@ -26,7 +27,7 @@ from ..observer import EarthFixedObserverLocation
 from ..synphot import TabularScaleFactor, observing
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
-from ..utils.numpy import clump_nonzero_inclusive, full_indices
+from ..utils.numpy import full_indices
 from .core import app
 
 
@@ -325,30 +326,19 @@ def schedule(
         # FIXME: https://github.com/astropy/astropy/issues/17030
         target_coords = SkyCoord(target_coords.ra, target_coords.dec)
         cadence_s = cadence.to_value(u.s)
-        obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
-        observable_intervals = np.asarray(
-            [
-                obstimes_s[intervals]
-                for intervals in clump_nonzero_inclusive(
-                    mission.constraints(
-                        observer_locations,
-                        target_coords[:, np.newaxis],
-                        obstimes,
-                    )
-                )
-            ],
-            dtype=object,
-        )
-
-        # Keep only intervals that are at least as long as the exposure time.
         exptime_min_s = visit_exptime_min_s.min()
-        observable_intervals = np.asarray(
-            [
-                intervals[intervals[:, 1] - intervals[:, 0] >= exptime_min_s]
-                for intervals in observable_intervals
-            ],
-            dtype=object,
+        windows = visibility_windows(
+            mission.constraints,
+            observer_locations,
+            target_coords,
+            obstimes,
+            min_duration=exptime_min_s * u.s,
         )
+        # Use a one-dimensional object array even when all fields have the same
+        # number of windows, so each entry remains an ordinary numeric array.
+        observable_intervals = np.empty(len(windows), dtype=object)
+        for i, window in enumerate(windows):
+            observable_intervals[i] = (window - obstimes[0]).to_value(u.s)
 
         # Discard fields that are not observable.
         good = np.asarray([len(intervals) > 0 for intervals in observable_intervals])
