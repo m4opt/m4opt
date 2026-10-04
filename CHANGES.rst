@@ -2,6 +2,12 @@
 Changes
 *******
 
+Unreleased
+==========
+
+- Add ``m4opt.constraints.visibility_windows`` for sampled observing intervals,
+  minimum occupied durations, and inward time margins. Use it in the scheduler.
+
 3.1.0 (2026-10-02)
 ==================
 
