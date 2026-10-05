@@ -2,6 +2,15 @@
 Changes
 *******
 
+3.1.1 (unreleased)
+==================
+
+- Fix an infeasible model when scheduling more than one ``--bandpass`` over
+  several visits. The constraints that order the bandpass blocks were applied
+  to every pair of candidate fields, so any two whose observing windows were
+  further apart than a slew and an exposure made the whole schedule
+  infeasible, however few fields were actually observed.
+
 3.1.0 (2026-10-02)
 ==================
 

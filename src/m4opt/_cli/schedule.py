@@ -593,8 +593,7 @@ def schedule(
                     )
 
             with status("adding slew constraints"):
-                # Zero or less unless both fields are observed, which relaxes
-                # the constraint away for any pair that is not.
+                # Zero when both fields are observed, negative otherwise.
                 both_observed = field_vars[slew_i] + field_vars[slew_j] - 1
                 if adaptive_exptime:
                     rhs = (
@@ -620,9 +619,16 @@ def schedule(
                     # ordering also makes the absolute value redundant across
                     # visits, leaving it only within one.
                     exchange_s = mission.filter_exchange_time.to_value(u.s)
+                    # Unlike an absolute value, an ordering is not relaxed by a
+                    # negative right hand side, so a pair that is not observed
+                    # needs slack wider than the schedule to come apart.
+                    slack = ((deadline - delay).to_value(u.s) + exchange_s) * (
+                        1 - both_observed
+                    )
                     gap = (
                         rhs_after
                         + exchange_s * np.asarray(filter_changes)[:, np.newaxis]
+                        - slack
                     )
                     within_visit = (
                         time_field_visit_vars[slew_i, :]

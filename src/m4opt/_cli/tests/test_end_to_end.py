@@ -318,3 +318,34 @@ def test_a_field_observable_in_several_windows(
     starts = observations["start_time"].gps
     ends = starts + observations["duration"].to_value(u.s)
     assert (starts[1:] >= ends[:-1]).all()
+
+
+def test_two_bandpasses_tolerate_fields_that_share_no_observing_window(
+    skymap_without_gps_time, ecsv_path, run_cli
+):
+    """Candidate fields that are never up together leave the model feasible."""
+    result = run_cli(
+        app,
+        "schedule",
+        skymap_without_gps_time,
+        ecsv_path,
+        "--mission=ztf",
+        "--bandpass=ztfg",
+        "--bandpass=ztfr",
+        "--visits=2",
+        "--nside=32",
+        "--max-fields=20",
+        "--event-time=2026-09-30T18:56:58",
+        # A single night, across which fields far apart on an all sky
+        # localization rise and set hours away from one another.
+        "--delay=3.6hour",
+        "--deadline=18.8hour",
+        "--timelimit=30s",
+        "--no-appmag-dist",
+        "--exptime-min=300s",
+    )
+    assert result.exit_code == 0
+
+    table = QTable.read(ecsv_path)
+    assert table.meta["solution_status"] == "integer optimal solution"
+    assert len(table[table["action"] == "observe"]) > 0
