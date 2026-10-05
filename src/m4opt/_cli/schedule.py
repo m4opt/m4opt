@@ -619,9 +619,8 @@ def schedule(
                     # ordering also makes the absolute value redundant across
                     # visits, leaving it only within one.
                     exchange_s = mission.filter_exchange_time.to_value(u.s)
-                    # Unlike an absolute value, an ordering is not relaxed by a
-                    # negative right hand side, so a pair that is not observed
-                    # needs slack wider than the schedule to come apart.
+                    # Unlike a two sided constraint, an ordering stays binding
+                    # when its right hand side goes negative.
                     slack = ((deadline - delay).to_value(u.s) + exchange_s) * (
                         1 - both_observed
                     )
