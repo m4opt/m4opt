@@ -318,3 +318,106 @@ def test_a_field_observable_in_several_windows(
     starts = observations["start_time"].gps
     ends = starts + observations["duration"].to_value(u.s)
     assert (starts[1:] >= ends[:-1]).all()
+
+
+def test_variable_exptime_solves_one_exposure_time_per_bandpass(
+    fits_path, ecsv_path, run_cli
+):
+    """Each bandpass gets its own exposure time, shared by its visits."""
+    result = run_cli(
+        app,
+        "schedule",
+        fits_path,
+        ecsv_path,
+        "--mission=uvex",
+        "--bandpass=NUV",
+        "--bandpass=FUV",
+        "--visits=3",
+        "--nside=32",
+        "--deadline=6hour",
+        "--timelimit=30s",
+        "--no-appmag-dist",
+        "--absmag-mean=-16",
+        "--exptime-min=300s",
+    )
+    assert result.exit_code == 0
+
+    table = QTable.read(ecsv_path)
+    assert table.meta["args"]["bandpass"] == ["NUV", "FUV", "NUV"]
+    observations = table[table["action"] == "observe"]
+    if len(observations) == 0:
+        pytest.skip("no fields were observable")
+
+    fields = np.unique(observations["field_id"])
+    assert len(observations) == 3 * len(fields)
+    for field_id in fields:
+        field = observations[observations["field_id"] == field_id]
+        for bandpass in np.unique(field["bandpass"]):
+            durations = field["duration"][field["bandpass"] == bandpass]
+            assert (durations == durations[0]).all()
+
+    assert (
+        observations["duration"][observations["bandpass"] == "NUV"].min()
+        != observations["duration"][observations["bandpass"] == "FUV"].min()
+    ), "the bandpasses are solved for separately"
+
+
+def test_variable_exptime_takes_one_exposure_time_floor_per_bandpass(
+    fits_path, ecsv_path, run_cli
+):
+    """Repeating --exptime-min floors each bandpass separately."""
+    result = run_cli(
+        app,
+        "schedule",
+        fits_path,
+        ecsv_path,
+        "--mission=uvex",
+        "--bandpass=NUV",
+        "--bandpass=FUV",
+        "--exptime-min=300s",
+        "--exptime-min=900s",
+        "--nside=32",
+        "--deadline=6hour",
+        "--timelimit=30s",
+        "--no-appmag-dist",
+        "--absmag-mean=-16",
+    )
+    assert result.exit_code == 0
+
+    observations = (table := QTable.read(ecsv_path))[table["action"] == "observe"]
+    if len(observations) == 0:
+        pytest.skip("no fields were observable")
+    durations = observations["duration"] + 1e-3 * u.s
+    assert (durations[observations["bandpass"] == "NUV"] >= 300 * u.s).all()
+    assert (durations[observations["bandpass"] == "FUV"] >= 900 * u.s).all()
+
+
+def test_two_bandpasses_tolerate_fields_that_share_no_observing_window(
+    skymap_without_gps_time, ecsv_path, run_cli
+):
+    """Candidate fields that are never up together leave the model feasible."""
+    result = run_cli(
+        app,
+        "schedule",
+        skymap_without_gps_time,
+        ecsv_path,
+        "--mission=ztf",
+        "--bandpass=ztfg",
+        "--bandpass=ztfr",
+        "--visits=2",
+        "--nside=32",
+        "--max-fields=20",
+        "--event-time=2026-09-30T18:56:58",
+        # A single night, across which fields far apart on an all sky
+        # localization rise and set hours away from one another.
+        "--delay=3.6hour",
+        "--deadline=18.8hour",
+        "--timelimit=30s",
+        "--no-appmag-dist",
+        "--exptime-min=300s",
+    )
+    assert result.exit_code == 0
+
+    table = QTable.read(ecsv_path)
+    assert table.meta["solution_status"] == "integer optimal solution"
+    assert len(table[table["action"] == "observe"]) > 0
