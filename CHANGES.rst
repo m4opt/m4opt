@@ -2,7 +2,7 @@
 Changes
 *******
 
-3.0.1 (unreleased)
+3.1.0 (2026-10-02)
 ==================
 
 - Fix a crash when scheduling a field that is observable in more than one
@@ -14,6 +14,9 @@ Changes
   gives each visit its own exposure time; a single value applies to every gap
   as before. Together they describe a sequence such as two filters a minute
   apart and then three quarters of an hour before the next pair.
+
+- Update UVEX detector model from response files version 20260924_v0.1e
+  from https://www.uvex.caltech.edu/page/uvex-etc.
 
 3.0.0 (2026-09-20)
 ==================

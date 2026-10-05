@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>UVEX Response File Configuration</title>
+<style>
+body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    background-color: #f4f6f8;
+    color: #1a1a1a;
+    margin: 0;
+    padding: 32px 16px;
+}
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+h1 {
+    font-size: 1.75rem;
+    margin-bottom: 4px;
+}
+h2 {
+    font-size: 1.15rem;
+    color: #2c3e50;
+    margin: 32px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #2c3e50;
+}
+.info {
+    color: #555;
+    margin-top: 0;
+    margin-bottom: 24px;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+th, td {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+td:nth-child(2), td:nth-child(5) {
+    white-space: normal;
+    word-break: break-word;
+}
+th {
+    background-color: #2c3e50;
+    color: #fff;
+    font-weight: 600;
+}
+tr:not(:last-child) td {
+    border-bottom: 1px solid #e5e5e5;
+}
+tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+tr:hover td {
+    background-color: #eef4fa;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>UVEX Response File Configuration</h1>
+<p class="info">Configuration Type: Public v1.0 configuration. Identical to response_files_v0.8.1.json except that THROUGHPUT_SCALE_FACTOR is 0.8 rather than 1.0, de-rating the FUV, NUV and LSS bandpasses by 20% for public release.</p>
+<h2>UVEX Overview</h2>
+<table>
+<tr><th>Entry</th><th>Description</th><th>Type</th><th>Source</th><th>Value</th></tr>
+<tr><td>EPD</td><td>Entrance Pupil Diameter (cm)</td><td>By design</td><td>Optical Model</td><td>75</td></tr>
+<tr><td>N_PIXELS</td><td>Number of pixels along each edge of the 4k x 4k detectors</td><td>By Design</td><td>CMOS Description</td><td>4096</td></tr>
+<tr><td>PIXEL_UM</td><td>UVEX physical pixel size (microns)</td><td>By Design</td><td>CMOS Description</td><td>10</td></tr>
+<tr><td>PLATE_SCALE</td><td>UVEX Imager Plate Scale (arcsec / pixel)</td><td>By Design</td><td>Optical Design</td><td>1.03</td></tr>
+<tr><td>SPEC_PLATE_SCALE</td><td>UVEX LSS Plate Scale (arcsec / pixel)</td><td>By Design</td><td>Optical Design</td><td>0.8</td></tr>
+<tr><td>NPIX_IMG</td><td>Number of effective pixels in the imager photometric aperture for a 2-arcsec FWHM PSF. Sets how many pixels of dark current and read noise enter the imaging SNR.</td><td>model</td><td>uvex_mission_v0.8.1</td><td>10.15</td></tr>
+<tr><td>NPIX_LSS</td><td>Number of effective vertical pixels in the LSS spectral extraction for a 2-arcsec FWHM PSF. Sets how many pixels of dark current and read noise enter the spectroscopic SNR, before scaling by the slit width and spectral resolution.</td><td>model</td><td>uvex_mission_v0.8.1</td><td>3</td></tr>
+<tr><td>LSS_SLIT_THROUGHPUT</td><td>Fraction of a point source&#x27;s flux that passes through the LSS slit, applied as a scalar multiplier on the LSS throughput. Value for a Gaussian PSF centered on the 2-arcsec slit, using the v0.8.1 ETC&#x27;s 2.25-arcsec LSS PSF HPD.</td><td>model</td><td>uvex_mission_v0.8.1</td><td>0.6944</td></tr>
+<tr><td>THROUGHPUT_SCALE_FACTOR</td><td>Scalar multiplier applied to the FUV, NUV and LSS bandpasses (including the LSS Lyman-alpha response) after every wavelength-dependent component has been combined. 1.0 leaves the modelled throughput as-is; a value below 1.0 de-rates the whole response to cover end-to-end losses that the individual component curves do not capture.</td><td>processing choice</td><td>uvex_response</td><td>0.8</td></tr>
+<tr><td>vignetting_method</td><td>How the 2D vignetting map is reduced to a single scalar throughput factor applied to the bandpass. &#x27;min&#x27; takes the minimum throughput over the field of view</td><td>processing choice</td><td>uvex_response</td><td>min</td></tr>
+<tr><td>nuv_filter_toggle</td><td>Whether to apply the standalone nuv_filter transmission on top of the NUV detector QE in the NUV bandpass</td><td>processing choice</td><td>uvex_response</td><td>True</td></tr>
+</table>
+<h2>UVEX Performance Estimates</h2>
+<table>
+<tr><th>Entry</th><th>Description</th><th>Type</th><th>Source</th><th>Value</th></tr>
+<tr><td>geometry_slit_length</td><td>UVEX LSS slit length (arcsec)</td><td>By Design</td><td>Instrument Design</td><td>3600</td></tr>
+<tr><td>geometry_slit_width</td><td>UVEX LSS slit width (arcsec)</td><td>By Design</td><td>Instrument Design</td><td>2</td></tr>
+<tr><td>geometry_slit_xy</td><td>UVEX LSS slit position relative to boresight (x,y in arcsec)</td><td>By Design</td><td>Instrument Design</td><td>12600,0</td></tr>
+<tr><td>geometry_im_gap_x</td><td>Gap between imager detectors in the X direction (mm)</td><td>By Design</td><td>Instrument Design</td><td>4.05</td></tr>
+<tr><td>geometry_im_gap_y</td><td>Gap between imager detectors in the Y direction (mm)</td><td>By Design</td><td>Instrument Design</td><td>2.55</td></tr>
+<tr><td>geometry_lss_gap_x</td><td>Gap between LSS detectors in the X direction (mm)</td><td>By Design</td><td>Instrument Design</td><td>0.616</td></tr>
+<tr><td>geometry_lss_xy1</td><td>Position of the LSS-short detector in the LSS plane (x,y in mm)</td><td>By Design</td><td>Instrument Design</td><td>-5.874,0.0</td></tr>
+<tr><td>optics</td><td>JPL 24 nm MgF2 / Al mirror coating reflectivity model</td><td>model</td><td>jpl_24nm_mgf2_al</td><td>optics/response_files/optics_jpl_24nmMgF2Al_model.dat</td></tr>
+<tr><td>fuv_detector</td><td>JPL 7-layer coating with a band center at 150 nm, dated 2025-05-22</td><td>model</td><td>jpl_150nmcenter_detector_20250522</td><td>fuv_detector/response_files/fuv_detector_150nmcenter_detector_20250522.dat</td></tr>
+<tr><td>nuv_detector</td><td>JPL single-layer HfO2 anti-reflection coating</td><td>model</td><td>jpl_single_layer_HfO2</td><td>nuv_detector/response_files/nuv_detector_jpl_single_layer_HfO2.dat</td></tr>
+<tr><td>nuv_filter</td><td>Standalone Materion NUV bandpass filter transmission, ported from v0.8.1 of uvex-mission for benchmarking; applied on top of the NUV detector QE</td><td>model</td><td>materion</td><td>nuv_filter/response_files/nuv_filter_materion.dat</td></tr>
+<tr><td>dichroic</td><td>Acton 180-nm split dichroic model with 10 mm fused silica substrate, AOI-weighted average over 20-40 degree angles of incidence</td><td>model</td><td>acton_180_dichroic_model_aoi_average</td><td>reflection: dichroic/response_files/dichroic_A180_model_reflection.dat<br>transmission: dichroic/response_files/dichroic_A180_model_transmission.dat</td></tr>
+<tr><td>lss_blaze</td><td>LSS grating blaze / first-order diffraction efficiency, ported from v0.8.1 uvex-mission (zeiss spectrometer setup)</td><td>model</td><td>zeiss</td><td>lss_blaze/response_files/lss_blaze_zeiss.dat</td></tr>
+<tr><td>lss_detector</td><td>LSS spectrometer detector response (graded-overcoat tapered QE, detector coating and QE combined), ported from v0.8.1 uvex-mission; &#x27;response&#x27; is the nominal curve and &#x27;lyman&#x27; the Lyman-alpha-specific response</td><td>model</td><td>graded_overcoat_00nm</td><td>response: lss_detector/response_files/lss_detector_graded_overcoat.dat<br>lyman: lss_detector/response_files/lss_detector_graded_overcoat_lyman.dat</td></tr>
+<tr><td>lss_dispersion</td><td>LSS wavelength dispersion / resolution mapping (WAVE, YPOS, DISPERSION nm/pix, SLIT WIDTH, RESOLUTION), stored as a verbatim pass-through of the v0.8.1 uvex-mission file for downstream wavelength-solution use; not a multiplicative bandpass component</td><td>model</td><td>UVEXS_Spectral_Resolution_R2000 (zeiss / R2000 setup)</td><td>lss_dispersion/response_files/lss_dispersion_R2000.txt</td></tr>
+<tr><td>contamination_fuv</td><td>Contamination transmission losses along the FUV optical path (OTA mirrors, dichroic, detector surface) at end of life, ported from the v0.8.1 uvex-mission model: exp(-absorption_coeff * effective_thickness)</td><td>model</td><td>uvex_mission_v0.8.1</td><td>contamination/response_files/contamination_v0.8.1_fuv_eol.dat</td></tr>
+<tr><td>contamination_nuv</td><td>Contamination transmission losses along the NUV optical path (OTA mirrors, dichroic, detector surface) at end of life, ported from the v0.8.1 uvex-mission model: exp(-absorption_coeff * effective_thickness)</td><td>model</td><td>uvex_mission_v0.8.1</td><td>contamination/response_files/contamination_v0.8.1_nuv_eol.dat</td></tr>
+<tr><td>contamination_lss</td><td>Contamination transmission losses along the LSS optical path (OTA + relay mirrors, grating, detector surface) at end of life, ported from the v0.8.1 uvex-mission model: exp(-absorption_coeff * effective_thickness)</td><td>model</td><td>uvex_mission_v0.8.1</td><td>contamination/response_files/contamination_v0.8.1_lss_eol.dat</td></tr>
+<tr><td>vignetting_fuv</td><td>Fucik 2026-03-16 ray-trace vignetting map for the FUV detector, masked to the detector footprint</td><td>model</td><td>fucik2026</td><td>vignetting/response_files/vignetting_fucik2026_fuv_masked.fits</td></tr>
+<tr><td>vignetting_nuv</td><td>Fucik 2026-03-16 ray-trace vignetting map for the NUV detector, masked to the detector footprint</td><td>model</td><td>fucik2026</td><td>vignetting/response_files/vignetting_fucik2026_nuv_masked.fits</td></tr>
+<tr><td>dark_current_fuv</td><td>Dark current in units of electrons per second per pixel for the FUV detectors</td><td>model</td><td>Current Estimates</td><td>0.001</td></tr>
+<tr><td>dark_current_nuv</td><td>Dark current in units of electrons per second per pixel for the NUV detectors</td><td>model</td><td>Current Estimates</td><td>0.001</td></tr>
+<tr><td>dark_current_lss</td><td>Dark current in units of electrons per second per pixel for the LSS detectors</td><td>model</td><td>Current Estimates</td><td>0.001</td></tr>
+<tr><td>read_noise_fuv</td><td>Read noise in units of electrons rms per pixel for the FUV detectors</td><td>model</td><td>Current Estimates</td><td>2</td></tr>
+<tr><td>read_noise_nuv</td><td>Read noise in units of electrons rms per pixel for the NUV detectors</td><td>model</td><td>Current Estimates</td><td>2</td></tr>
+<tr><td>read_noise_lss</td><td>Read noise in units of electrons rms per pixel for the LSS detectors</td><td>model</td><td>Current Estimates</td><td>2</td></tr>
+</table>
+</div>
+</body>
+</html>
