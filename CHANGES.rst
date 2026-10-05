@@ -6,10 +6,10 @@ Changes
 ==================
 
 - Fix an infeasible model when scheduling more than one ``--bandpass`` over
-  several visits. The constraints that order the bandpass blocks were applied
-  to every pair of candidate fields, so any two whose observing windows were
-  further apart than a slew and an exposure made the whole schedule
-  infeasible, however few fields were actually observed.
+  several visits. The field of regard was imposed on every candidate field
+  whether or not it was observed, so two fields whose observing windows lay
+  further apart than a slew and an exposure could not both meet the ordering
+  between bandpass blocks, and no schedule came out at all.
 
 3.1.0 (2026-10-02)
 ==================

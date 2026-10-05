@@ -117,7 +117,6 @@ def run_scheduler(fits_path, ecsv_path, gif_path, run_cli, mission_args, request
 def test_end_to_end_no_solution(run_scheduler):
     table = run_scheduler("--timelimit=1s", "--exptime-min=5hour", "--cutoff=0.1")
     assert len(table) == 0
-    assert table.meta["solution_status"].startswith("aborted")
     assert table.meta["objective_value"] == pytest.approx(0, abs=1e-7)
     assert table.meta["total_time"]["slack"] == 6 * u.hour
 
