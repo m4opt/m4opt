@@ -96,14 +96,14 @@ Constraints
 
     \forall j^\prime > j,\; k ,\; k^\prime :\quad \left|t_{jk} - t_{j^\prime k^\prime}\right|  \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
 
-**Field of regard.** An observation of a reference field can only occur while the coordinates of the reference field are within the field of regard.
+**Field of regard.** An observation of a reference field can only occur while the coordinates of the reference field are within the field of regard. A field that we do not select has no observation to place, so the constraint holds only when :math:`r_j = 1`.
 
-For fields that have one observable segment (:math:`{n_M}_j = 1`), this constraint is simply an inequality:
+For fields that have one observable segment (:math:`{n_M}_j = 1`):
 
 .. math::
     :label: fixed-exptime-constraint-for-one
 
-    \forall j ,\; k \;, m \mid {n_M}_j = 1 :\quad \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2
+    \forall j ,\; k \;, m \mid {n_M}_j = 1 :\quad r_j = 1 \;\Rightarrow\; \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2
 
 For fields that have more than one observable segment (:math:`{n_M}_j > 1`), we use the decision variable :math:`s_{jkm}` to determine which inequality is satisfied:
 
@@ -113,7 +113,7 @@ For fields that have more than one observable segment (:math:`{n_M}_j > 1`), we 
 
     \begin{eqnarray}
     \forall j ,\; k \;, m \mid {n_M}_j > 1 :\quad s_{jkm} &=& 1 \;\Rightarrow\; \alpha_{jm} + \epsilon / 2 \leq t_{jk} \leq \omega_{jm} - \epsilon / 2, \\
-    \sum_m s_{jkm} &\geq& 1
+    \sum_m s_{jkm} &\geq& r_j
     \end{eqnarray}
 
 Cuts
@@ -163,7 +163,7 @@ The constraints are slightly different:
     \forall j \neq j',\; k > 1 :\quad t_{jk} - t_{j^\prime, k-1} \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)\\
     \forall j \neq j',\; k :\quad \left|t_{jk} - t_{j^\prime k}\right| \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
     \end{eqnarray}
-**Field of regard.** Same as above.
+**Field of regard.** Same as above. The gate on :math:`r_j` carries the weight here: the first equation above is one sided, so it keeps binding when :math:`r_j + r_{j^\prime} < 1`, and a field held inside its own segments while unselected would conflict with every field whose segments lie more than :math:`\sigma_{jj^\prime} + \epsilon` away.
 
 Objective
 """""""""
