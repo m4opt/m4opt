@@ -2,6 +2,21 @@
 Changes
 *******
 
+3.1.1 (unreleased)
+==================
+
+- Fix an infeasible model when scheduling more than one ``--bandpass`` over
+  several visits. The constraints that order the bandpass blocks were applied
+  to every pair of candidate fields, so any two whose observing windows were
+  further apart than a slew and an exposure made the whole schedule
+  infeasible, however few fields were actually observed.
+
+- Support a variable exposure time with more than one ``--bandpass``. Each
+  bandpass gets its own exposure time for each field, shared by every visit
+  in that bandpass, and a pixel counts as detected only once every bandpass
+  has reached it. Repeating ``--exptime-min`` now floors each bandpass
+  separately in this mode as well.
+
 3.1.0 (2026-10-02)
 ==================
 

@@ -268,6 +268,11 @@ def schedule(
     bandpass, so that every field is observed for the kth time before any field
     is observed for the (k+1)th, and the filter is exchanged once per block
     boundary however many fields are observed.
+
+    \b
+    In the variable exposure time modes, each bandpass gets its own exposure
+    time for each field, and a pixel counts as detected only once every
+    bandpass has reached it.
     """
     adaptive_exptime = absmag_mean is not None
 
@@ -279,10 +284,19 @@ def schedule(
     visit_exptime_min_s = u.Quantity(
         [exptime_min[i % len(exptime_min)] for i in range(visits)]
     ).to_value(u.s)
-    if adaptive_exptime and bandpass is not None and len(bandpass) > 1:
-        raise NotImplementedError(
-            "A variable exposure time is not supported with more than one bandpass."
-        )
+
+    # Reaching the signal to noise ratio takes a different time in each filter.
+    distinct_bandpasses = list(dict.fromkeys(visit_bandpasses))
+    n_bandpasses = len(distinct_bandpasses)
+    visit_bandpass_index = np.array(
+        [distinct_bandpasses.index(band) for band in visit_bandpasses]
+    )
+    bandpass_exptime_min_s = np.array(
+        [
+            visit_exptime_min_s[visit_bandpass_index == i].min()
+            for i in range(n_bandpasses)
+        ]
+    )
     filter_changes = [lhs != rhs for lhs, rhs in pairwise(visit_bandpasses)]
     with status("loading sky map"):
         hpx = HEALPix(nside, frame=ICRS(), order="nested")
@@ -433,8 +447,7 @@ def schedule(
                     target_coord=hpx.healpix_to_skycoord(good)[:, np.newaxis],
                     obstime=obstimes[0],
                 ):
-                    exptime_pixel_s = mission.detector.get_exptime(
-                        snr,
+                    spectrum = (
                         synphot.SourceSpectrum(synphot.ConstFlux1D(0 * u.ABmag))
                         * synphot.SpectralElement(
                             TabularScaleFactor(
@@ -443,25 +456,32 @@ def schedule(
                                 ).to_value(u.dimensionless_unscaled)
                             )
                         )
-                        * DustExtinction(),
-                        visit_bandpasses[0],
-                    ).to_value(u.s)
+                        * DustExtinction()
+                    )
+                    exptime_pixel_s = np.stack(
+                        [
+                            mission.detector.get_exptime(snr, spectrum, band).to_value(
+                                u.s
+                            )
+                            for band in distinct_bandpasses
+                        ]
+                    )
                 exptime_max_s = max(
                     min(
                         exptime_max.to_value(u.s),
                         deadline.to_value(u.s),
                     ),
-                    exptime_min_s,
+                    bandpass_exptime_min_s.max(),
                 )
                 piecewise_breakpoints = np.pad(
                     np.stack(
                         (
-                            np.tile(quantiles[np.newaxis, :], (len(skymap_flat), 1)),
+                            np.broadcast_to(quantiles, exptime_pixel_s.shape),
                             exptime_pixel_s,
                         ),
                         axis=-1,
                     ),
-                    [(0, 0), (1, 0), (0, 0)],
+                    [(0, 0), (0, 0), (1, 0), (0, 0)],
                 )
             else:
                 distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
@@ -470,17 +490,28 @@ def schedule(
                     target_coord=hpx.healpix_to_skycoord(good),
                     obstime=obstimes[0],
                 ):
-                    exptime_pixel_s = mission.detector.get_exptime(
-                        snr,
+                    spectrum = (
                         synphot.SourceSpectrum(
                             synphot.ConstFlux1D(absmag_mean * u.ABmag + distmod)
                         )
-                        * DustExtinction(),
-                        visit_bandpasses[0],
-                    ).to_value(u.s)
-                exptime_min_s = min(
-                    max(exptime_min_s, exptime_pixel_s.min(initial=exptime_min_s)),
-                    exptime_max.to_value(u.s),
+                        * DustExtinction()
+                    )
+                    exptime_pixel_s = np.stack(
+                        [
+                            mission.detector.get_exptime(snr, spectrum, band).to_value(
+                                u.s
+                            )
+                            for band in distinct_bandpasses
+                        ]
+                    )
+                bandpass_exptime_min_s = np.array(
+                    [
+                        min(
+                            max(lo, pixel_s.min(initial=lo)),
+                            exptime_max.to_value(u.s),
+                        )
+                        for lo, pixel_s in zip(bandpass_exptime_min_s, exptime_pixel_s)
+                    ]
                 )
                 exptime_max_s = max(
                     min(
@@ -488,7 +519,7 @@ def schedule(
                         deadline.to_value(u.s),
                         exptime_pixel_s.max(initial=exptime_max.to_value(u.s)),
                     ),
-                    exptime_min_s,
+                    bandpass_exptime_min_s.max(),
                 )
 
     with status("calculating slew times"):
@@ -508,10 +539,19 @@ def schedule(
                 pixel_vars = model.continuous_vars(
                     n_pixels,
                     lb=0,
-                    ub=[
-                        breakpoints[(breakpoints[:, 1] < LARGE_EXPTIME), 0].max()
-                        for breakpoints in piecewise_breakpoints
-                    ],
+                    # A pixel is detected only as deeply as its worst bandpass.
+                    ub=np.min(
+                        [
+                            [
+                                breakpoints[
+                                    (breakpoints[:, 1] < LARGE_EXPTIME), 0
+                                ].max()
+                                for breakpoints in band_breakpoints
+                            ]
+                            for band_breakpoints in piecewise_breakpoints
+                        ],
+                        axis=0,
+                    ),
                 )
             else:
                 pixel_vars = model.binary_vars(n_pixels)
@@ -522,16 +562,21 @@ def schedule(
             if adaptive_exptime:
                 exptime_field_vars = (
                     model.semicontinuous_vars
-                    if exptime_min_s > 0
+                    if bandpass_exptime_min_s.min() > 0
                     else model.continuous_vars
-                )(n_fields, lb=exptime_min_s, ub=exptime_max_s)
-                exptime_region_vars = model.continuous_vars(n_regions)
+                )(
+                    (n_fields, n_bandpasses),
+                    lb=bandpass_exptime_min_s,
+                    ub=exptime_max_s,
+                )
+                exptime_region_vars = model.continuous_vars((n_regions, n_bandpasses))
+                exptime_field_visit_vars = exptime_field_vars[:, visit_bandpass_index]
 
             # Add constraints on observability windows for each field
             with status("adding field of regard constraints"):
                 for time_visit_vars, exptime, intervals in zip(
                     time_field_visit_vars,
-                    np.tile(exptime_field_vars[:, np.newaxis], visits)
+                    exptime_field_visit_vars
                     if adaptive_exptime
                     else np.tile(visit_exptime_min_s, (n_fields, 1)),
                     observable_intervals,
@@ -570,9 +615,7 @@ def schedule(
                         )
 
             # Two observations are separated by half of each of their exposure
-            # times, so a pair drawn from consecutive visits is separated by the
-            # mean of theirs. Both the cadence and the slew constraints below
-            # measure that separation.
+            # times, so consecutive visits are separated by the mean of theirs.
             mean_consecutive_exptime_s = 0.5 * (
                 visit_exptime_min_s[:-1] + visit_exptime_min_s[1:]
             )
@@ -580,9 +623,10 @@ def schedule(
             if visits > 1:
                 with status("adding cadence constraints"):
                     if adaptive_exptime:
-                        rhs = (cadence_s * field_vars + exptime_field_vars)[
-                            :, np.newaxis
-                        ]
+                        rhs = cadence_s * field_vars[:, np.newaxis] + 0.5 * (
+                            exptime_field_visit_vars[:, :-1]
+                            + exptime_field_visit_vars[:, 1:]
+                        )
                     else:
                         rhs = np.multiply.outer(
                             field_vars, cadence_s + mean_consecutive_exptime_s
@@ -593,25 +637,31 @@ def schedule(
                     )
 
             with status("adding slew constraints"):
-                # Zero or less unless both fields are observed, which relaxes
-                # the constraint away for any pair that is not.
+                # Zero when both fields are observed, negative otherwise.
                 both_observed = field_vars[slew_i] + field_vars[slew_j] - 1
-                if adaptive_exptime:
-                    rhs = (
-                        0.5 * (exptime_field_vars[slew_i] + exptime_field_vars[slew_j])
-                        + slew_time_s * both_observed
-                    )
-                    rhs_within = rhs
-                    rhs_after = rhs
-                else:
-                    # Two observations also clear each other by the slew itself.
-                    def _spacing(exptimes):
-                        return (
-                            slew_time_s[np.newaxis, :] + exptimes[:, np.newaxis]
-                        ) * both_observed[np.newaxis, :]
 
-                    rhs = rhs_within = _spacing(visit_exptime_min_s)
-                    rhs_after = _spacing(mean_consecutive_exptime_s)
+                def _spacing(p, q):
+                    # An unobserved field has a zero exposure time, so in
+                    # variable exposure time mode only the slew needs relaxing.
+                    if adaptive_exptime:
+                        return (
+                            0.5
+                            * (
+                                exptime_field_visit_vars[slew_i, p[:, np.newaxis]]
+                                + exptime_field_visit_vars[slew_j, q[:, np.newaxis]]
+                            )
+                            + slew_time_s * both_observed
+                        )
+                    return (
+                        slew_time_s
+                        + 0.5
+                        * (visit_exptime_min_s[p] + visit_exptime_min_s[q])[
+                            :, np.newaxis
+                        ]
+                    ) * both_observed
+
+                visit_indices = np.arange(visits)
+                rhs_within = _spacing(visit_indices, visit_indices)
 
                 if any(filter_changes):
                     # Every field is visited for the kth time before any field
@@ -620,10 +670,15 @@ def schedule(
                     # ordering also makes the absolute value redundant across
                     # visits, leaving it only within one.
                     exchange_s = mission.filter_exchange_time.to_value(u.s)
-                    gap = (
-                        rhs_after
-                        + exchange_s * np.asarray(filter_changes)[:, np.newaxis]
-                    )
+                    exchange = exchange_s * np.asarray(filter_changes)[:, np.newaxis]
+                    # Unlike an absolute value, an ordering is not relaxed by a
+                    # negative right hand side, so a pair that is not observed
+                    # needs slack wider than the schedule to come apart.
+                    slack = (
+                        (deadline - delay).to_value(u.s)
+                        + (exptime_max_s if adaptive_exptime else 0)
+                        + exchange_s
+                    ) * (1 - both_observed)
                     within_visit = (
                         time_field_visit_vars[slew_i, :]
                         - time_field_visit_vars[slew_j, :]
@@ -639,58 +694,79 @@ def schedule(
                     model.add_constraints_(
                         model.abs(np.transpose(within_visit)) >= rhs_within
                     )
-                    model.add_constraints_(np.transpose(after_i) >= gap)
-                    model.add_constraints_(np.transpose(after_j) >= gap)
+                    model.add_constraints_(
+                        np.transpose(after_i)
+                        >= _spacing(visit_indices[1:], visit_indices[:-1])
+                        + exchange
+                        - slack
+                    )
+                    model.add_constraints_(
+                        np.transpose(after_j)
+                        >= _spacing(visit_indices[:-1], visit_indices[1:])
+                        + exchange
+                        - slack
+                    )
                 else:
                     p, q = full_indices(visits)
-                    if not adaptive_exptime:
-                        rhs = _spacing(
-                            0.5 * (visit_exptime_min_s[p] + visit_exptime_min_s[q])
-                        )
                     model.add_constraints_(
                         model.abs(
                             time_field_visit_vars[slew_i, p[:, np.newaxis]]
                             - time_field_visit_vars[slew_j, q[:, np.newaxis]]
                         )
-                        >= rhs
+                        >= _spacing(p, q)
                     )
 
             if adaptive_exptime:
                 with status("adding exposure time constraints"):
+                    # A field is observed in every bandpass or in none of them.
                     model.add_constraints_(
-                        exptime_max_s * field_vars >= exptime_field_vars
+                        exptime_max_s * field_vars[:, np.newaxis] >= exptime_field_vars
+                    )
+                    model.add_constraints_(
+                        exptime_field_vars
+                        >= bandpass_exptime_min_s * field_vars[:, np.newaxis]
                     )
 
             with status("adding coverage constraints"):
                 if adaptive_exptime:
+                    # A pixel is detected only once every bandpass reaches it.
                     if appmag_dist:
-                        for pixel_var, region_index, breakpoints in zip(
-                            pixel_vars, pixel_to_region_map, piecewise_breakpoints
+                        for band_region_vars, band_breakpoints in zip(
+                            exptime_region_vars.T, piecewise_breakpoints
                         ):
-                            breakpoints = prepare_piecewise_breakpoints(breakpoints)
-                            if len(breakpoints) <= 1:
-                                assert pixel_var.ub == 0
-                            else:
-                                model.add_constraint_(
-                                    exptime_region_vars[region_index]
-                                    >= model.piecewise(0, breakpoints, 0)(pixel_var)
-                                )
+                            for pixel_var, region_index, breakpoints in zip(
+                                pixel_vars, pixel_to_region_map, band_breakpoints
+                            ):
+                                breakpoints = prepare_piecewise_breakpoints(breakpoints)
+                                if len(breakpoints) <= 1:
+                                    assert pixel_var.ub == 0
+                                else:
+                                    model.add_constraint_(
+                                        band_region_vars[region_index]
+                                        >= model.piecewise(0, breakpoints, 0)(pixel_var)
+                                    )
                     else:
-                        model.add_indicators(
-                            pixel_vars,
-                            [
-                                exptime_region_vars[region] >= exptime_s
-                                for region, exptime_s in zip(
-                                    pixel_to_region_map, exptime_pixel_s
-                                )
-                            ],
-                        )
+                        for band_region_vars, band_exptime_pixel_s in zip(
+                            exptime_region_vars.T, exptime_pixel_s
+                        ):
+                            model.add_indicators(
+                                pixel_vars,
+                                [
+                                    band_region_vars[region] >= exptime_s
+                                    for region, exptime_s in zip(
+                                        pixel_to_region_map, band_exptime_pixel_s
+                                    )
+                                ],
+                            )
                     model.add_constraints_(
                         [
-                            model.max(*exptime_field_vars[field_indices]).item()
+                            model.max(*band_exptime_field_vars[field_indices]).item()
                             >= exptime_var
+                            for band_exptime_field_vars, band_region_vars in zip(
+                                exptime_field_vars.T, exptime_region_vars.T
+                            )
                             for field_indices, exptime_var in zip(
-                                region_to_fields_map, exptime_region_vars
+                                region_to_fields_map, band_region_vars
                             )
                         ]
                     )
@@ -710,8 +786,16 @@ def schedule(
                 )
                 if adaptive_exptime:
                     model.add_user_cut_constraint(
-                        model.sum_vars_all_different(exptime_field_vars)
-                        <= (deadline - delay).to_value(u.s) / visits
+                        model.scal_prod_vars_all_different(
+                            exptime_field_vars.ravel(),
+                            np.tile(
+                                np.bincount(
+                                    visit_bandpass_index, minlength=n_bandpasses
+                                ),
+                                n_fields,
+                            ),
+                        )
+                        <= (deadline - delay).to_value(u.s)
                     )
 
             with status("adding objective function"):
@@ -751,10 +835,8 @@ def schedule(
                 time_field_visit_values = solution.get_values(time_field_visit_vars)
                 if adaptive_exptime:
                     exptime_per_field = solution.get_values(exptime_field_vars)
-                    field_values &= exptime_per_field > 0
-                    exptime_field_values = np.tile(
-                        exptime_per_field[:, np.newaxis], visits
-                    )
+                    field_values &= exptime_per_field.min(axis=1) > 0
+                    exptime_field_values = exptime_per_field[:, visit_bandpass_index]
                 else:
                     exptime_field_values = np.tile(visit_exptime_min_s, (n_fields, 1))
                 objective_value = solution.get_objective_value()
