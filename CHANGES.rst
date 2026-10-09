@@ -2,6 +2,12 @@
 Changes
 *******
 
+4.0.0 (2026-10-09)
+==================
+
+- The ``uvex_downlink_orientation`` method now requires an
+  ``observer_location`` argument.
+
 3.1.0 (2026-10-02)
 ==================
 
