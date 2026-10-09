@@ -20,7 +20,7 @@ def test_uvex_downlink_orientation(obstime):
     observer_location = mission.observer_location(obstime)
     earth = get_body("earth", obstime, observer_location)
     sun = get_body("sun", obstime, observer_location)
-    target_coord, roll = uvex_downlink_orientation(obstime)
+    target_coord, roll = uvex_downlink_orientation(observer_location, obstime)
     spacecraft_frame = target_coord.transform_to(sun.frame).skyoffset_frame(roll)
     antenna = SkyCoord(
         CartesianRepresentation(-np.sqrt(2) / 2, 0, np.sqrt(2) / 2),
