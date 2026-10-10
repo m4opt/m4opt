@@ -22,24 +22,35 @@ from ...synphot.background import GalacticBackground, ZodiacalBackground
 from .._core import Mission
 from . import data
 
-_chip_length = 40.96 * u.mm
-"""Linear extent of one imager chip in length units"""
+_data_path = resources.files(data) / "20260924_v0.1e"
+with (_data_path / "config" / "response_files.json").open() as f:
+    _json_data = json.load(f)
 
-_chip_angle = 4219 * u.arcsec
+_angular_pixel_size = float(_json_data["uvex"]["PLATE_SCALE"]["value"]) * u.arcsec
+"""Linear extent of one imager pixel in length units"""
+
+_linear_pixel_size = float(_json_data["uvex"]["PIXEL_UM"]["value"]) * u.micron
+"""Linear extent of one imager pixel in angle units"""
+
+_chip_angle = float(_json_data["uvex"]["N_PIXELS"]["value"]) * _angular_pixel_size
 """Linear extent of one imager chip in angular units"""
 
-_chip_gap_length = np.asarray([4.05, 2.55]) * u.mm
+_chip_gap_length = (
+    np.asarray(
+        [
+            float(_json_data["geometry"]["im_gap_x"]["value"]),
+            float(_json_data["geometry"]["im_gap_y"]["value"]),
+        ]
+    )
+    * u.mm
+)
 """Linear extents of chip gaps in length units"""
 
 _chip_offset = [-1, 0, 1] * (
-    _chip_angle + _chip_gap_length[:, np.newaxis] * _chip_angle / _chip_length
+    _chip_angle
+    + _chip_gap_length[:, np.newaxis] * _angular_pixel_size / _linear_pixel_size
 )
 """Offses of chip centers in angular units"""
-
-_data_path = resources.files(data) / "20260924_v0.1e"
-
-with (_data_path / "config" / "response_files.json").open() as f:
-    _json_data = json.load(f)
 
 if (_dark_noise := _json_data["dark_current"]["fuv"]["value"]) != _json_data[
     "dark_current"
@@ -71,11 +82,7 @@ uvex = Mission(
     ),
     detector=Detector(
         npix=float(_json_data["uvex"]["NPIX_IMG"]["value"]),
-        # "This is Nyquist sampled by the 1 arcsec pixels."
-        plate_scale=np.square(
-            float(_json_data["uvex"]["PLATE_SCALE"]["value"]) * u.arcsec
-        ),
-        # "...an effective aperture of 75cm."
+        plate_scale=np.square(_angular_pixel_size),
         area=np.pi * np.square(0.5 * float(_json_data["uvex"]["EPD"]["value"]) * u.cm),
         bandpasses={
             "FUV": SpectralElement.from_file(
