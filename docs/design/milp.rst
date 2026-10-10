@@ -163,6 +163,7 @@ The constraints are slightly different:
     \forall j \neq j',\; k > 1 :\quad t_{jk} - t_{j^\prime, k-1} \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)\\
     \forall j \neq j',\; k :\quad \left|t_{jk} - t_{j^\prime k}\right| \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
     \end{eqnarray}
+
 **Field of regard.** Same as above. The gate on :math:`r_j` carries the weight here: the first equation above is one sided, so it keeps binding when :math:`r_j + r_{j^\prime} < 1`, and a field held inside its own segments while unselected would conflict with every field whose segments lie more than :math:`\sigma_{jj^\prime} + \epsilon` away.
 
 Objective
