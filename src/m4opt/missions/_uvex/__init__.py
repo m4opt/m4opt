@@ -3,7 +3,7 @@ from importlib import resources
 
 import numpy as np
 from astropy import units as u
-from astropy.coordinates import Angle, SkyCoord, get_body
+from astropy.coordinates import Angle, EarthLocation, SkyCoord, get_body
 from astropy.time import Time
 from regions import RectangleSkyRegion, Regions
 from synphot import SpectralElement
@@ -220,7 +220,7 @@ Examples
 
 
 def uvex_downlink_orientation(
-    time: Time,
+    observer_location: EarthLocation, obstime: Time
 ) -> tuple[SkyCoord, Angle]:
     r"""
     Get the target coordinates and roll for a UVEX downlink.
@@ -232,7 +232,9 @@ def uvex_downlink_orientation(
 
     Parameters
     ----------
-    time
+    observer_location
+        Position of spacecraft at the time of the downlink.
+    obstime
         Time of the downlink.
 
     Returns
@@ -383,9 +385,9 @@ def uvex_downlink_orientation(
         from matplotlib import pyplot as plt
 
         time = Time("2025-01-01") + np.linspace(0, 1, 1000) * u.year
-        target, roll = uvex_downlink_orientation(time)
-
         observer_location = mission.observer_location(time)
+        target, roll = uvex_downlink_orientation(observer_location, time)
+
         sun = get_body("sun", time, observer_location)
         earth = get_body("earth", time, observer_location)
         spacecraft_frame = target.skyoffset_frame(roll)
@@ -405,10 +407,9 @@ def uvex_downlink_orientation(
         ax.plot(dt, antenna.separation(earth), label=r"Target $\leftrightarrow$ antenna")
         ax.legend(title="Separation", loc="center right", bbox_to_anchor=(0.975, 0.25))
     """
-    observer_location = uvex.observer_location(time)
-    sun_coord = get_body("sun", time, observer_location)
-    earth_coord = get_body("earth", time, observer_location)
-    roll = nominal_roll(observer_location, earth_coord, time)
+    sun_coord = get_body("sun", obstime, observer_location)
+    earth_coord = get_body("earth", obstime, observer_location)
+    roll = nominal_roll(observer_location, earth_coord, obstime)
     offset_frame = earth_coord.skyoffset_frame(roll)
     target_coord = SkyCoord(180 * u.deg, -45 * u.deg, frame=offset_frame)
     violates_sun_constraint = target_coord.separation(sun_coord) <= 45 * u.deg
@@ -417,6 +418,6 @@ def uvex_downlink_orientation(
         np.where(violates_sun_constraint, 45, -45) * u.deg,
         frame=offset_frame,
     ).transform_to(earth_coord.frame)
-    roll = nominal_roll(observer_location, target_coord, time)
+    roll = nominal_roll(observer_location, target_coord, obstime)
     roll[~violates_sun_constraint] += 180 * u.deg
     return target_coord, Angle(roll).wrap_at(180 * u.deg)
