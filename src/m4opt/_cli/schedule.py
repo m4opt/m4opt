@@ -527,9 +527,10 @@ def schedule(
                 )(n_fields, lb=exptime_min_s, ub=exptime_max_s)
                 exptime_region_vars = model.continuous_vars(n_regions)
 
-            # Add constraints on observability windows for each field
+            # Only an observed field needs a window to sit in.
             with status("adding field of regard constraints"):
-                for time_visit_vars, exptime, intervals in zip(
+                for field_var, time_visit_vars, exptime, intervals in zip(
+                    field_vars,
                     time_field_visit_vars,
                     np.tile(exptime_field_vars[:, np.newaxis], visits)
                     if adaptive_exptime
@@ -539,11 +540,13 @@ def schedule(
                     assert len(intervals) > 0
                     begin, end = intervals.T
                     if len(intervals) == 1:
-                        model.add_constraints_(
-                            time_visit_vars - begin - 0.5 * exptime >= 0
+                        model.add_indicators(
+                            np.full(visits, field_var),
+                            time_visit_vars - begin - 0.5 * exptime >= 0,
                         )
-                        model.add_constraints_(
-                            time_visit_vars - end + 0.5 * exptime <= 0
+                        model.add_indicators(
+                            np.full(visits, field_var),
+                            time_visit_vars - end + 0.5 * exptime <= 0,
                         )
                     else:
                         visit_interval_vars = model.binary_vars(
@@ -551,7 +554,7 @@ def schedule(
                         )
                         for interval_vars in visit_interval_vars:
                             model.add_constraint_(
-                                model.sum_vars_all_different(interval_vars) >= 1
+                                model.sum_vars_all_different(interval_vars) >= field_var
                             )
                         exptime_per_visit = exptime[..., np.newaxis]
                         model.add_indicators(
