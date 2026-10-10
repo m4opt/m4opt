@@ -163,6 +163,7 @@ The constraints are slightly different:
     \forall j \neq j',\; k > 1 :\quad t_{jk} - t_{j^\prime, k-1} \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)\\
     \forall j \neq j',\; k :\quad \left|t_{jk} - t_{j^\prime k}\right| \geq \left(\sigma_{jj^\prime} + \epsilon\right) \left( r_j + r_{j^\prime} - 1\right)
     \end{eqnarray}
+
 **Field of regard.** Same as above.
 
 Objective
