@@ -2,6 +2,14 @@
 Changes
 *******
 
+4.1.0 (unreleased)
+
+- Fix an infeasible model when scheduling more than one ``--bandpass`` over
+  several visits. The field of regard was imposed on every candidate field
+  whether or not it was observed, so two fields whose observing windows lay
+  further apart than a slew and an exposure could not both meet the ordering
+  between bandpass blocks, and no schedule came out at all.
+
 4.0.0 (2026-10-09)
 ==================
 
