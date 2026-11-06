@@ -2,6 +2,18 @@
 Changes
 *******
 
+4.1.0 (unreleased)
+==================
+
+- ``TleObserverLocation.from_id`` now downloads orbital elements from Celestrak
+  in the Orbit Mean-Elements Message (OMM) format instead of the TLE format, so
+  that it works for satellites with NORAD catalog numbers greater than 99999.
+  Downloads are cached for 2 hours, in accordance with Celestrak's usage
+  policy. If Celestrak cannot be reached, then previously cached data is used.
+  The ``satellitetle`` package is no longer a dependency.
+
+- Add ``TleObserverLocation.from_omm`` to create an orbit from OMM fields.
+
 4.0.0 (2026-10-09)
 ==================
 

@@ -22,7 +22,6 @@ dependencies = [
     "numpy >= 2.5.0",  # https://github.com/numpy/numpy/pull/30870
     "regions",
     "pymetis",
-    "satellitetle",
     "scipy",
     "sgp4",
     "shapely >= 2.1.0",
