@@ -1,7 +1,9 @@
+import inspect
+import json
 import shlex
 import sys
 from itertools import pairwise
-from typing import Annotated
+from typing import Annotated, get_args, get_origin, get_type_hints
 
 import numpy as np
 import synphot
@@ -18,7 +20,7 @@ from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
 from scipy import stats
 
-from .. import __version__, missions
+from .. import __version__, constraints, missions
 from ..dynamics import nominal_roll
 from ..fov import footprint_healpix
 from ..milp import Model
@@ -83,6 +85,124 @@ def prepare_piecewise_breakpoints(breakpoints):
     return [tuple(col.item() for col in row) for row in breakpoints]
 
 
+# helper functions for parsing constraints from JSON on the command line
+def _is_quantity_annotation(annotation):
+    return (
+        annotation is u.Quantity
+        or get_origin(annotation) is u.Quantity
+        or any(_is_quantity_annotation(arg) for arg in get_args(annotation))
+    )
+
+
+def _is_numeric_annotation(annotation):
+    return annotation in (int, float) or any(
+        _is_numeric_annotation(arg) for arg in get_args(annotation)
+    )
+
+
+def _is_skycoord_annotation(annotation):
+    return annotation is SkyCoord or any(
+        _is_skycoord_annotation(arg) for arg in get_args(annotation)
+    )
+
+
+def _parse_constraint_spec(spec):
+    if isinstance(spec, str):
+        try:
+            spec = json.loads(spec)
+        except json.JSONDecodeError as error:
+            raise UsageError(f"invalid constraint JSON: {error.msg}") from error
+
+    if not isinstance(spec, dict) or set(spec) - {"type", "args", "kwargs"}:
+        raise UsageError(
+            "a constraint must be a JSON object with 'type', optional 'args', "
+            "and optional 'kwargs' fields"
+        )
+
+    class_name = spec.get("type")
+    if (
+        not isinstance(class_name, str)
+        or (constraint_class := getattr(constraints, class_name, None)) is None
+        or not inspect.isclass(constraint_class)
+        or not issubclass(constraint_class, constraints.Constraint)
+        or inspect.isabstract(constraint_class)
+    ):
+        supported = [
+            name
+            for name in constraints.__all__
+            if inspect.isclass(getattr(constraints, name))
+            and issubclass(getattr(constraints, name), constraints.Constraint)
+            and not inspect.isabstract(getattr(constraints, name))
+        ]
+        raise UsageError(
+            f"unknown constraint type {class_name!r}; choose from {', '.join(supported)}"
+        )
+
+    args = spec.get("args", [])
+    kwargs = spec.get("kwargs", {})
+    if not isinstance(args, list) or not isinstance(kwargs, dict):
+        raise UsageError("'args' must be a JSON array and 'kwargs' must be an object")
+
+    constructor = inspect.signature(constraint_class)
+    try:
+        bound = constructor.bind(*args, **kwargs)
+    except TypeError as error:
+        raise UsageError(f"invalid arguments for {class_name}: {error}") from error
+
+    hints = get_type_hints(constraint_class.__init__)
+    for name, value in bound.arguments.items():
+        parameter = constructor.parameters[name]
+        annotation = hints.get(name, parameter.annotation)
+        if parameter.kind is inspect.Parameter.VAR_POSITIONAL:
+            bound.arguments[name] = tuple(
+                _parse_constraint_value(item, annotation) for item in value
+            )
+        elif parameter.kind is inspect.Parameter.VAR_KEYWORD:
+            bound.arguments[name] = {
+                key: _parse_constraint_value(item, annotation)
+                for key, item in value.items()
+            }
+        else:
+            bound.arguments[name] = _parse_constraint_value(value, annotation)
+
+    if constraint_class in (
+        constraints.LogicalAndConstraint,
+        constraints.LogicalOrConstraint,
+    ) and not bound.arguments.get("operands"):
+        raise UsageError(f"{class_name} requires at least one constraint operand")
+
+    try:
+        return constraint_class(*bound.args, **bound.kwargs)
+    except (TypeError, ValueError) as error:
+        raise UsageError(f"invalid arguments for {class_name}: {error}") from error
+
+
+def _parse_constraint_value(value, annotation):
+    if isinstance(value, dict) and "type" in value:
+        return _parse_constraint_spec(value)
+    if _is_skycoord_annotation(annotation):
+        if isinstance(value, SkyCoord):
+            return value
+        try:
+            return SkyCoord(**value) if isinstance(value, dict) else SkyCoord(value)
+        except (TypeError, ValueError) as error:
+            raise UsageError(
+                f"invalid sky coordinate {value!r} in constraint"
+            ) from error
+    if _is_quantity_annotation(annotation) and not isinstance(value, str):
+        if _is_numeric_annotation(annotation):
+            return value
+        raise UsageError("quantity constraint arguments must be strings with units")
+    if isinstance(value, str) and (
+        _is_quantity_annotation(annotation) or annotation is inspect.Parameter.empty
+    ):
+        try:
+            return u.Quantity(value)
+        except (TypeError, ValueError) as error:
+            raise UsageError(f"invalid quantity {value!r} in constraint") from error
+    return value
+
+
 @app.command()
 @progress()
 def schedule(
@@ -107,6 +227,15 @@ def schedule(
     mission: Annotated[
         missions.Mission, typer.Option(show_default="uvex")
     ] = missions.uvex,
+    additional_constraints: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--constraint",
+            help="Supplementary built-in constraint as JSON. Repeat to add "
+            "multiple constraints; each is ANDed with the mission defaults.",
+            metavar="JSON",
+        ),
+    ] = None,
     skygrid: Annotated[
         str | None,
         typer.Option(
@@ -268,8 +397,24 @@ def schedule(
     bandpass, so that every field is observed for the kth time before any field
     is observed for the (k+1)th, and the filter is exchanged once per block
     boundary however many fields are observed.
+
+    \b
+    Supplementary constraints are specified as JSON objects with a built-in
+    constraint class name and optional constructor arguments. Quantity arguments
+    are strings with units, for example:
+    --constraint '{"type":"DeclinationConstraint","args":["-40 deg","90 deg"]}'.
+    Repeat --constraint to add several constraints; all are combined with the
+    mission constraints using logical AND. Nested constraint objects can be used
+    as arguments to LogicalAndConstraint, LogicalOrConstraint, and
+    LogicalNotConstraint. SkyCoord arguments may be coordinate strings such as
+    "12h30m00s +45d00m00s" or objects such as
+    {"ra":"12h30m00s","dec":"+45d00m00s"}. Supplementary constraints are added
+    after the mission constraints.
     """
     adaptive_exptime = absmag_mean is not None
+    mission_constraint = mission.constraints
+    for constraint_spec in additional_constraints or ():
+        mission_constraint &= _parse_constraint_spec(constraint_spec)
 
     # Successive visits cycle through the requested bandpasses, so that
     # --bandpass g --bandpass r over three visits gives g, r, g.
@@ -330,7 +475,7 @@ def schedule(
             [
                 obstimes_s[intervals]
                 for intervals in clump_nonzero_inclusive(
-                    mission.constraints(
+                    mission_constraint(
                         observer_locations,
                         target_coords[:, np.newaxis],
                         obstimes,
