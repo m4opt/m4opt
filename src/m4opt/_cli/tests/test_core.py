@@ -6,6 +6,7 @@ from typer import Option, Typer
 
 from ... import __version__, missions
 from .. import core
+from .._types import PhysicalQuantity
 
 
 def test_version(run_cli):
@@ -16,7 +17,7 @@ def test_version(run_cli):
 
 @pytest.mark.parametrize("default", ["100 s", 100 * u.s])
 def test_quantity(run_cli, default):
-    """Test CLI with quantity arguments."""
+    """A bare quantity option parses any unit; it pins no physical type."""
 
     def run(*args):
         app = Typer()
@@ -38,49 +39,51 @@ def test_quantity(run_cli, default):
     assert result.exit_code == 0
     assert value == 200 * u.s
 
+    # No physical type is pinned, so a mismatched unit is accepted.
     result, value = run("--foo=100meter")
+    assert result.exit_code == 0
+    assert value == 100 * u.meter
+
+    result, _ = run("--foo=not-a-quantity")
     assert result.exit_code != 0
-    assert "value '100meter' cannot be" in result.output
+    assert "not-a-quantity" in result.output
 
 
-@pytest.mark.parametrize(
-    "annotation",
-    [
-        Annotated[u.Quantity[u.physical.time], Option()],
-        Annotated[u.Quantity[u.s], Option()],
-        Annotated[u.Quantity, u.physical.time, Option()],
-    ],
-    ids=["physical type", "unit", "metadata"],
-)
-def test_quantity_annotation(run_cli, annotation):
-    """An option with no default is checked against the physical type it pins."""
-    result, value = _run_with_annotation(run_cli, annotation, "--foo=200s")
+def test_physical_quantity(run_cli):
+    """An option typed with `PhysicalQuantity` is checked against that type."""
+    TimeQuantity = PhysicalQuantity[u.physical.time]
+    assert TimeQuantity is PhysicalQuantity[u.physical.time]  # cached
+    result, value = _run_with_annotation(
+        run_cli, Annotated[TimeQuantity, Option()], "--foo=200s"
+    )
     assert result.exit_code == 0
     assert value == 200 * u.s
 
-    result, _ = _run_with_annotation(run_cli, annotation, "--foo=100meter")
+    result, _ = _run_with_annotation(
+        run_cli, Annotated[TimeQuantity, Option()], "--foo=100meter"
+    )
     assert result.exit_code != 0
-    assert "cannot be converted to time" in result.output
+    assert "100meter" in result.output
+    assert "cannot be converted" in result.output
+    assert "time" in result.output
 
 
-@pytest.mark.parametrize(
-    "annotation",
-    [
-        Annotated[list[u.Quantity[u.physical.time]], Option()],
-        Annotated[list[u.Quantity[u.s]], Option()],
-        Annotated[list[u.Quantity], u.physical.time, Option()],
-    ],
-    ids=["physical type", "unit", "metadata"],
-)
-def test_quantity_list_annotation(run_cli, annotation):
-    """Typer rejects an annotated list element, so the metadata is stripped."""
-    result, value = _run_with_annotation(run_cli, annotation, "--foo=1s", "--foo=2min")
+def test_physical_quantity_list(run_cli):
+    """A `PhysicalQuantity` works as a list element type, unlike an annotated one."""
+    TimeQuantity = PhysicalQuantity[u.physical.time]
+    result, value = _run_with_annotation(
+        run_cli, Annotated[list[TimeQuantity], Option()], "--foo=1s", "--foo=2min"
+    )
     assert result.exit_code == 0
     assert value == [1 * u.s, 2 * u.min]
 
-    result, _ = _run_with_annotation(run_cli, annotation, "--foo=100meter")
+    result, _ = _run_with_annotation(
+        run_cli, Annotated[list[TimeQuantity], Option()], "--foo=100meter"
+    )
     assert result.exit_code != 0
-    assert "cannot be converted to time" in result.output
+    assert "100meter" in result.output
+    assert "cannot be converted" in result.output
+    assert "time" in result.output
 
 
 def _run_with_annotation(run_cli, annotation, *args):
@@ -121,3 +124,15 @@ def test_mission(run_cli):
     result, value = run("--foo=bar")
     assert result.exit_code != 0
     assert "'bar' is not one of" in result.output
+
+    # "Mission" is the base class itself, not an instance of it, and
+    # `uvex_downlink_orientation` is a helper function; neither is a valid
+    # choice even though both are in `missions.__all__`.
+    result, value = run("--foo=Mission")
+    assert result.exit_code != 0
+    assert "'Mission' is not one of" in result.output
+
+    result, value = run("--foo=uvex_downlink_orientation")
+    assert result.exit_code != 0
+    assert "'uvex_downlink_orientation'" in result.output
+    assert "is not" in result.output
