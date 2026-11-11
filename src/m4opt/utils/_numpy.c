@@ -325,9 +325,15 @@ static PyMethodDef methods[] = {
 };
 
 static PyModuleDef moduledef = {
-    PyModuleDef_HEAD_INIT,
-    "_numpy",
-    NULL, 0, methods
+    .m_base = PyModuleDef_HEAD_INIT,
+    .m_name = "_numpy",
+    .m_methods = methods,
+    .m_slots = {
+        #if PY_VERSION_HEX >= 0x030D0000
+        {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+        #endif
+        {0},
+    },
 };
 
 PyMODINIT_FUNC
