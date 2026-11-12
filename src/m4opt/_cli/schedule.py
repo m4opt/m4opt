@@ -27,6 +27,7 @@ from ..synphot import TabularScaleFactor, observing
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
 from ..utils.numpy import clump_nonzero_inclusive, full_indices
+from ._types import PhysicalQuantity
 from .core import app
 
 
@@ -97,7 +98,7 @@ def schedule(
         ),
     ],
     exptime_min: Annotated[
-        list[u.Quantity[u.physical.time]],
+        list[PhysicalQuantity[u.physical.time]],
         typer.Option(
             help="Minimum exposure time for each observation. Repeat the "
             "option to give each bandpass its own exposure time, in the same "
@@ -121,25 +122,25 @@ def schedule(
         ),
     ] = None,
     delay: Annotated[
-        u.Quantity,
+        PhysicalQuantity[u.physical.time],
         typer.Option(
             help="Delay from time of event until the start of observations",
         ),
     ] = 0 * u.day,
     deadline: Annotated[
-        u.Quantity,
+        PhysicalQuantity[u.physical.time],
         typer.Option(
             help="Maximum time from event until the end of observations",
         ),
     ] = 1 * u.day,
     time_step: Annotated[
-        u.Quantity,
+        PhysicalQuantity[u.physical.time],
         typer.Option(
             help="Time step for evaluating field of regard",
         ),
     ] = 1 * u.min,
     exptime_max: Annotated[
-        u.Quantity,
+        PhysicalQuantity[u.physical.time],
         typer.Option(
             help="Maximum exposure time for each observation",
         ),
@@ -174,7 +175,7 @@ def schedule(
     ] = None,
     visits: Annotated[int, typer.Option(min=1, help="Number of visits")] = 2,
     cadence: Annotated[
-        u.Quantity,
+        PhysicalQuantity[u.physical.time],
         typer.Option(help="Minimum time separation between visits"),
     ] = 30 * u.min,
     nside: Annotated[int, typer.Option(help="HEALPix resolution")] = 512,
@@ -187,14 +188,14 @@ def schedule(
         ),
     ] = 50,
     timelimit: Annotated[
-        u.Quantity,
+        PhysicalQuantity[u.physical.time],
         typer.Option(
             help="Time limit for MILP solver",
             rich_help_panel="Solver Options",
         ),
     ] = 1e75 * u.s,
     memory: Annotated[
-        u.Quantity,
+        PhysicalQuantity[u.physical.data_quantity],
         typer.Option(
             help="Maximum solver memory usage before terminating",
             rich_help_panel="Solver Options",

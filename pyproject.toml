@@ -20,6 +20,7 @@ dependencies = [
     "ligo.skymap >= 2.5.4",
     "networkx",
     "numpy >= 2.5.0",  # https://github.com/numpy/numpy/pull/30870
+    "pydantic",
     "regions",
     "pymetis",
     "satellitetle",
@@ -29,7 +30,7 @@ dependencies = [
     "spiceypy",
     "sympy",
     "synphot",
-    "typer >= 0.26.0",
+    "typer >= 0.29.0",
     "xdg-base-dirs",
 ]
 classifiers = [

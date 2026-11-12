@@ -32,6 +32,7 @@ from ..fov import footprint, footprint_healpix
 from ..synphot import observing
 from ..synphot.extinction import DustExtinction
 from ..utils.console import progress, status
+from ._types import PhysicalQuantity
 from .core import app
 
 
@@ -47,13 +48,13 @@ def animate(
         typer.Argument(help="Output filename for animation", metavar="MOVIE.gif"),
     ],
     time_step: Annotated[
-        u.Quantity,
+        PhysicalQuantity[u.physical.time],
         typer.Option(
             help="Time step for evaluating field of regard",
         ),
     ] = 1 * u.hour,
     duration: Annotated[
-        u.Quantity,
+        PhysicalQuantity[u.physical.time],
         typer.Option(
             help="Duration of animation",
         ),
@@ -74,7 +75,7 @@ def animate(
         typer.Option(help="Center of optional zoomed inset", parser=SkyCoord),
     ] = None,
     inset_radius: Annotated[
-        u.Quantity,
+        PhysicalQuantity[u.physical.angle],
         typer.Option(
             help="Radius of optional zoomed inset",
         ),
