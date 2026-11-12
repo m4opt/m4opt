@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 from astropy import units as u
 from click import UsageError
@@ -26,24 +25,7 @@ def test_parse_constraint_spec_with_typed_keyword_quantity():
     assert constraint.min == 20 * u.deg
 
 
-@pytest.mark.parametrize(
-    "center",
-    [
-        '"12h30m00s +45d00m00s"',
-        '{"ra":"12h30m00s","dec":"+45d00m00s"}',
-    ],
-)
-def test_parse_constraint_spec_with_skycoord(center):
-    constraint = _parse_constraint_spec(
-        '{"type":"AvoidSkyRegionConstraint","args":[' + center + ',"20 deg"]}'
-    )
-
-    assert isinstance(constraint, constraints.AvoidSkyRegionConstraint)
-    np.testing.assert_allclose(constraint.center.ra.to_value(u.deg), 187.5)
-    np.testing.assert_allclose(constraint.center.dec.to_value(u.deg), 45)
-    assert constraint.radius == 20 * u.deg
-
-
+@pytest.mark.parametrize()
 def test_parse_constraint_spec_with_nested_logical_constraint():
     constraint = _parse_constraint_spec(
         '{"type":"LogicalOrConstraint","args":['
@@ -67,10 +49,6 @@ def test_parse_constraint_spec_with_nested_logical_constraint():
         (
             '{"type":"MoonSeparationConstraint","args":[20]}',
             "must be strings with units",
-        ),
-        (
-            '{"type":"AvoidSkyRegionConstraint","args":["not a coordinate","20 deg"]}',
-            "invalid sky coordinate",
         ),
         ('{"type":"LogicalOrConstraint"}', "requires at least one constraint operand"),
     ],

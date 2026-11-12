@@ -6,6 +6,7 @@ from itertools import pairwise
 from typing import Annotated, get_args, get_origin, get_type_hints
 
 import numpy as np
+import regions
 import synphot
 import typer
 from astropy import units as u
@@ -106,6 +107,61 @@ def _is_skycoord_annotation(annotation):
     )
 
 
+def _is_skyregion_annotation(annotation):
+    return (
+        inspect.isclass(annotation) and issubclass(annotation, regions.SkyRegion)
+    ) or any(_is_skyregion_annotation(arg) for arg in get_args(annotation))
+
+
+def _build_region_from_spec(spec):
+    if not isinstance(spec, dict) or set(spec) - {"type", "args", "kwargs"}:
+        raise UsageError("a region spec must be an object with keys type, args, kwargs")
+    kind = spec.get("type")
+    cls = getattr(regions, kind, None) if isinstance(kind, str) else None
+    if not (inspect.isclass(cls) and issubclass(cls, regions.SkyRegion)):
+        supported = sorted(
+            n
+            for n in dir(regions)
+            if inspect.isclass(getattr(regions, n))
+            and issubclass(getattr(regions, n), regions.SkyRegion)
+            and not inspect.isabstract(getattr(regions, n))
+        )
+        raise UsageError(
+            f"unknown region type {kind!r}; choose from {', '.join(supported)}"
+        )
+    args = spec.get("args", [])
+    kwargs = spec.get("kwargs", {})
+    try:
+        bound = inspect.signature(cls).bind(*args, **kwargs)
+    except TypeError as error:
+        raise UsageError(f"invalid arguments for {kind}: {error}") from error
+
+    hints = get_type_hints(cls.__init__)
+    for name, value in bound.arguments.items():
+        bound.arguments[name] = _parse_region_value(value, hints.get(name))
+    try:
+        return cls(*bound.args, **bound.kwargs)
+    except (TypeError, ValueError) as error:
+        raise UsageError(f"invalid arguments for {kind}: {error}") from error
+
+
+def _parse_region_value(value, annotation):
+    # {"frame": "galactic", "l": [...], "b": [...]} or {"frame": "icrs", "ra": ..., "dec": ...}
+    if isinstance(value, dict) and "frame" in value:
+        frame = value["frame"]
+        lon, lat = ("l", "b") if frame == "galactic" else ("ra", "dec")
+        try:
+            return SkyCoord(value[lon] * u.deg, value[lat] * u.deg, frame=frame)
+        except KeyError as error:
+            raise UsageError(f"missing key {error} in coordinate spec") from error
+    if isinstance(value, str):
+        try:
+            return u.Quantity(value)
+        except (TypeError, ValueError):
+            return value
+    return value
+
+
 def _parse_constraint_spec(spec):
     if isinstance(spec, str):
         try:
@@ -178,6 +234,10 @@ def _parse_constraint_spec(spec):
 
 
 def _parse_constraint_value(value, annotation):
+    if _is_skyregion_annotation(annotation):
+        if isinstance(value, regions.SkyRegion):
+            return value
+        return _build_region_from_spec(value)
     if isinstance(value, dict) and "type" in value:
         return _parse_constraint_spec(value)
     if _is_skycoord_annotation(annotation):

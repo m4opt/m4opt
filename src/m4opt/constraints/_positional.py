@@ -23,18 +23,6 @@ from ..dynamics._roll import nominal_roll
 from ._core import Constraint
 
 
-class AvoidSkyRegionConstraint(Constraint):
-    """Stay at least `radius` away from a fixed sky position (target-dependent)."""
-
-    def __init__(self, center: SkyCoord, radius):
-        """Initialize the constraint. `center` : SkyCoord. `radius` : astropy.units.Quantity or astropy.coordinates.Angle."""
-        self.center = center
-        self.radius = radius
-
-    def __call__(self, observer_location, target_coord, obstime):
-        return target_coord.separation(self.center) >= self.radius
-
-
 @dataclass
 class AngleConstraint(Constraint):
     min: u.Quantity[u.physical.angle] | Angle
