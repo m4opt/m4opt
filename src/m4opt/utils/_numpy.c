@@ -318,9 +318,9 @@ free_arrays:
 }
 
 static PyMethodDef methods[] = {
-    {"count_intersect1d", (PyCFunction)py_count_intersect1d, METH_FASTCALL},
-    {"count_intersect1d_combinations", (PyCFunction)py_count_intersect1d_combinations, METH_O},
-    {"intersect1d", (PyCFunction)py_intersect1d, METH_FASTCALL},
+    {"count_intersect1d", (void*) py_count_intersect1d, METH_FASTCALL},
+    {"count_intersect1d_combinations", (void*) py_count_intersect1d_combinations, METH_O},
+    {"intersect1d", (void*) py_intersect1d, METH_FASTCALL},
     {/* Sentinel */}
 };
 

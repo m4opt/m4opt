@@ -13,6 +13,13 @@ def get_extensions():
             ("NPY_NO_DEPRECATED_API", "NPY_2_0_API_VERSION"),
         ],
         include_dirs=[np.get_include()],
+        extra_compile_args=[
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-Wpedantic",
+            "-Wno-missing-field-initializers",
+        ],
     )
     add_openmp_flags_if_available(ext)
     return [ext]
