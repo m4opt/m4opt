@@ -5,11 +5,13 @@ from dataclasses import dataclass
 from typing import override
 
 import numpy as np
+import regions
 from astropy import units as u
 from astropy.coordinates import (
     ICRS,
     AltAz,
     Angle,
+    CartesianRepresentation,
     EarthLocation,
     GeocentricTrueEcliptic,
     HADec,
@@ -18,9 +20,56 @@ from astropy.coordinates import (
     get_sun,
 )
 from astropy.time import Time
+from astropy.wcs.utils import celestial_frame_to_wcs
 
 from ..dynamics._roll import nominal_roll
 from ._core import Constraint
+
+
+def _get_region_coord(region: regions.SkyRegion):
+    """Return the SkyCoord that defines a SkyRegion (center, vertices, ...)."""
+    for attr in ("center", "vertices", "start"):
+        coord = getattr(region, attr, None)
+        if coord is not None:
+            return coord
+    if hasattr(region, "region1"):  # compound region
+        return _get_region_coord(region.region1)
+    raise ValueError(f"Cannot determine coordinates of {type(region).__name__}")
+
+
+def _wcs_for_region(region: regions.SkyRegion):
+    """All-sky TAN WCS in the region's frame, centered on its longitude and latitude."""
+    coord = _get_region_coord(region)
+    frame = coord.frame
+
+    # Circular mean of the longitude
+    cart = coord.cartesian
+    mean = CartesianRepresentation(np.mean(cart.x), np.mean(cart.y), np.mean(cart.z))
+    if (
+        mean.norm() > 1e-12 * cart.x.unit
+    ):  # avoid 0 sized regions (e.g. a single point/pixel) which have no preferred longitude
+        lon0 = mean.represent_as(UnitSphericalRepresentation).lon.deg
+        lat0 = mean.represent_as(UnitSphericalRepresentation).lat.deg
+    else:  # vertices surround the origin, no preferred longitude
+        lon0 = 0.0
+        lat0 = 0.0
+
+    wcs = celestial_frame_to_wcs(frame, projection="TAN")
+    wcs.wcs.crval = [lon0, lat0]
+    wcs.wcs.crpix = [180.5, 90.5]  # center of a 360x180 pixel image
+    wcs.wcs.cdelt = [-1.0, 1.0]
+    return wcs
+
+
+class AvoidSkyRegionConstraint(Constraint):
+    """Exclude targets that fall inside a fixed `regions.SkyRegion`."""
+
+    def __init__(self, region: regions.SkyRegion):
+        self.region = region
+        self.wcs = _wcs_for_region(region)
+
+    def __call__(self, observer_location, target_coord, obstime):
+        return ~self.region.contains(target_coord, self.wcs)
 
 
 @dataclass
