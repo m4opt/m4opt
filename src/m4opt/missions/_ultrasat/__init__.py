@@ -7,6 +7,7 @@ from astropy.table import QTable, Table
 from regions import RectangleSkyRegion
 from synphot import Empirical1D, SpectralElement
 
+from ... import skygrid
 from ...constraints import (
     EarthLimbConstraint,
     MoonSeparationConstraint,
@@ -91,8 +92,10 @@ ultrasat = Mission(
         "1 43226U 18022A   24320.05692005 -.00000082  00000+0  00000+0 0  9997",
         "2 43226   0.0007  47.5006 0003498 198.5164  84.4417  1.00271931 24622",
     ),
-    # Sky grid optimized for ULTRASAT's wide field of view.
     skygrid={
+        # Generic geodesic sky grid.
+        "geodesic": skygrid.geodesic(132 * u.deg**2, class_="III", base="icosahedron"),
+        # Sky grid optimized for ULTRASAT's wide field of view.
         "allsky": _read_allsky_skygrid(),
         "non-overlap": _read_nonoverlapping_skygrid(),
     },
