@@ -1,5 +1,8 @@
-#include <stdlib.h>
+// Python.h must be included first.
+// See https://docs.python.org/3/c-api/intro.html#include-files.
 #include <Python.h>
+
+#include <stdlib.h>
 #include <numpy/arrayobject.h>
 
 /*
