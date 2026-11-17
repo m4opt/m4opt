@@ -13,10 +13,12 @@ from astropy_healpix import HEALPix
 from numpy import typing as npt
 from regions import (
     CircleSkyRegion,
+    CircleSphericalSkyRegion,
     PixCoord,
     PointSkyRegion,
     PolygonPixelRegion,
     PolygonSkyRegion,
+    PolygonSphericalSkyRegion,
     RectangleSkyRegion,
     Region,
     Regions,
@@ -38,6 +40,11 @@ ArrayOfPointSkyRegion = np.vectorize(PointSkyRegion, signature="()->()")
 ArrayOfCircleSkyRegion = np.vectorize(CircleSkyRegion, signature="(),()->()")
 """Construct a Numpy array of :class:`regions.CircularSkyRegion` instances."""
 
+ArrayOfCircleSphericalSkyRegion = np.vectorize(
+    CircleSphericalSkyRegion, signature="(),()->()"
+)
+"""Construct a Numpy array of :class:`regions.CircleSphericalSkyRegion` instances."""
+
 ArrayOfRectangleSkyRegion = np.vectorize(
     RectangleSkyRegion, signature="(),(),(),()->()"
 )
@@ -50,6 +57,15 @@ def ArrayOfPolygonSkyRegion(vertices):
     regions = np.empty(shape, dtype=object)
     for i in np.ndindex(shape):
         regions[i] = PolygonSkyRegion(vertices[i])
+    return regions
+
+
+def ArrayOfPolygonSphericalSkyRegion(vertices):
+    """Construct a Numpy array of :class:`regions.PolygonSphericalSkyRegion` instances."""
+    shape = vertices.shape[:-1]
+    regions = np.empty(shape, dtype=object)
+    for i in np.ndindex(shape):
+        regions[i] = PolygonSphericalSkyRegion(vertices[i])
     return regions
 
 
@@ -178,10 +194,18 @@ def footprint_inner(region: Region | Regions, frame: SkyOffsetFrame):
             return ArrayOfCircleSkyRegion(
                 skycoord_to_offset(region.center, frame), region.radius
             )
+        case CircleSphericalSkyRegion():
+            return ArrayOfCircleSphericalSkyRegion(
+                skycoord_to_offset(region.center, frame), region.radius
+            )
         case PointSkyRegion():
             return ArrayOfPointSkyRegion(skycoord_to_offset(region.center, frame))
         case PolygonSkyRegion():
             return ArrayOfPolygonSkyRegion(
+                skycoord_to_offset(region.vertices, frame[..., np.newaxis])
+            )
+        case PolygonSphericalSkyRegion():
+            return ArrayOfPolygonSphericalSkyRegion(
                 skycoord_to_offset(region.vertices, frame[..., np.newaxis])
             )
         case RectangleSkyRegion():
@@ -222,7 +246,7 @@ def footprint(
 
     First, some imports:
 
-    >>> from regions import CircleSkyRegion, EllipseSkyRegion, PointSkyRegion, PolygonSkyRegion, RectangleSkyRegion, Regions
+    >>> from regions import CircleSkyRegion, CircleSphericalSkyRegion, EllipseSkyRegion, PointSkyRegion, PolygonSphericalSkyRegion, PolygonSkyRegion, RectangleSkyRegion, Regions
     >>> from astropy.coordinates import SkyCoord
     >>> from astropy import units as u
     >>> from m4opt.fov import footprint
@@ -237,6 +261,12 @@ def footprint(
         (5., -5., 1.)>)>
 
     and circular FOVs:
+
+    >>> region = CircleSphericalSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg)
+    >>> target_coord = SkyCoord(5 * u.deg, -5 * u.deg)
+    >>> footprint(region, target_coord)
+    <CircleSphericalSkyRegion(center=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+        (5., -5., 1.)>, radius=3.0 deg)>
 
     >>> region = CircleSkyRegion(SkyCoord(0 * u.deg, 0 * u.deg), 3 * u.deg)
     >>> target_coord = SkyCoord(5 * u.deg, -5 * u.deg)
@@ -269,6 +299,12 @@ def footprint(
           dtype=object)
 
     We support polygon regions:
+
+    >>> region = PolygonSphericalSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))
+    >>> footprint(region, target_coord)
+    <PolygonSphericalSkyRegion(vertices=<SkyCoord (ICRS): (ra, dec, distance) in (deg, deg, )
+        [(2.99236656, -4.99694639, 1.), (7.00763344, -4.99694639, 1.),
+         (5.        , -3.        , 1.)]>)>
 
     >>> region = PolygonSkyRegion(SkyCoord([-2, 2, 0] * u.deg, [0, 0, 2] * u.deg))
     >>> footprint(region, target_coord)
@@ -350,7 +386,7 @@ def footprint_healpix_inner(
                     for subregion in region.regions
                 ),
             )
-        case CircleSkyRegion():
+        case CircleSkyRegion() | CircleSphericalSkyRegion():
             return query_disc(
                 hpx.nside,
                 skycoord_to_healpy_vec(skycoord_to_offset(region.center, frame)),
@@ -361,7 +397,7 @@ def footprint_healpix_inner(
             return hpx.skycoord_to_healpix(skycoord_to_offset(region.center, frame))[
                 ..., np.newaxis
             ]
-        case PolygonSkyRegion():
+        case PolygonSkyRegion() | PolygonSphericalSkyRegion():
             if is_convex(region):
                 return footprint_healpix_convex_polygon_inner(hpx, region, frame)
             else:
