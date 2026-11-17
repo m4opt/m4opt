@@ -61,6 +61,72 @@ if (_read_noise := _json_data["read_noise"]["fuv"]["value"]) != _json_data[
 ]["nuv"]["value"]:
     raise NotImplementedError("Per-band values for read noise is not supported")
 
+_slit_x, _slit_y = (
+    float(_) * u.arcsec for _ in _json_data["geometry"]["slit_xy"]["value"].split(",")
+)
+# FIXME: There is a 0.5 deg offset between the imager FOV and the telescope
+# boresight which is not documented in response_files.json.
+#
+# See https://github.com/uvex-mission/uvex_response/issues/80.
+_slit_x += 0.5 * u.deg
+
+# FIXME: Refactor this into a property of a detector object for the LSS.
+uvex_lss_fov = RectangleSkyRegion(
+    SkyCoord(_slit_x, _slit_y),
+    width=float(_json_data["geometry"]["slit_width"]["value"]) * u.arcsec,
+    height=float(_json_data["geometry"]["slit_length"]["value"]) * u.arcsec,
+)
+uvex_lss_fov.__doc__ = """The field of view of the UVEX Long Slit Spectrograph (LSS).
+
+The region is specified relative to the center of the imaging field of view,
+from which it is offset by 4°.
+
+Example
+-------
+.. plot::
+    :caption: The UVEX imager and LSS fields of view.
+
+    from ligo.skymap import plot  # noqa: F401
+    from matplotlib import pyplot as plt
+
+    from m4opt.missions import uvex, uvex_lss_fov
+
+    ax = plt.axes(projection='astro zoom', radius='5 deg')
+    for region in [*uvex.fov, uvex_lss_fov]:
+        ax.add_patch(region.to_pixel(ax.wcs).as_artist())
+
+.. plot::
+    :caption: UVEX LSS footprints resulting from imaging survey observations
+              within the region of 30 Dor. Notice that the slit orientations
+              (black) trace out 4° circles around the imaging field centers
+              (red plus marks).
+
+    from astropy.coordinates import SkyCoord
+    from astropy.table import QTable
+    from ligo.skymap import plot  # noqa: F401
+    from matplotlib import pyplot as plt
+
+    from m4opt.fov import footprint
+    from m4opt.missions import uvex_lss_fov
+
+    # Download simulated whole-mission science timeline
+    url = "https://github.com/m4opt/uvex-scheduler/raw/refs/tags/v0.6.0/tables/plan.ecsv"
+    plan = QTable.read(url, cache=True)
+
+    # Keep only observing dwell rows (not slews or downlinks)
+    obs = plan[plan["action"] == "observe"]
+    target_coord = obs["target_coord"].unmasked
+    roll = obs["roll"].unmasked
+
+    ax = plt.axes(
+        projection="astro zoom", center=SkyCoord.from_name("30 Dor"), radius="3 deg"
+    )
+    for region in footprint(uvex_lss_fov, target_coord, roll):
+        ax.add_patch(region.to_pixel(ax.wcs).as_artist())
+    ax.plot_coord(target_coord, '+r')
+"""
+
+
 uvex = Mission(
     name="uvex",
     fov=Regions(
