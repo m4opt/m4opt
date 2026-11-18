@@ -6,7 +6,6 @@ Mission Profiles (`m4opt.missions`)
     :caption: Gallery of FOVs of supported missions
     :include-source: False
 
-    import ligo.skymap.plot  # noqa: F401
     import numpy as np
     from astropy import units as u
     from astropy.coordinates import SkyCoord
@@ -26,12 +25,12 @@ Mission Profiles (`m4opt.missions`)
     ]
 
     wcs = WCS(
-        dict(
-            CTYPE1="RA---CAR",
-            CTYPE2="DEC--CAR",
-            CRPIX1=1,
-            CRPIX2=1,
-        )
+        {
+            "CTYPE1": "RA---CAR",
+            "CTYPE2": "DEC--CAR",
+            "CRPIX1": 1,
+            "CRPIX2": 1,
+        }
     )
 
     origin = SkyCoord(0 * u.deg, 0 * u.deg)
@@ -56,10 +55,11 @@ Mission Profiles (`m4opt.missions`)
         dims = np.flipud(dims)
 
     ax = plt.axes(aspect=1, frameon=False)
-    ax.set_xlim(0, dims[0])
+    ax.set_xlim(0, dims[0] + 3)
     ax.set_ylim(0, dims[1])
     ax.set_xticks([])
     ax.set_yticks([])
+    ax.invert_xaxis()
 
     for mission, center, text_center, regions in zip(
         missions,
@@ -75,6 +75,18 @@ Mission Profiles (`m4opt.missions`)
                     facecolor="lightgray", edgecolor="black", fill=True, transform=transform
                 )
             )
+
+    compass_point = np.asarray((dims[0] + 1, 0))
+    for label, offset in [["N", (0, 2)], ["E", (2, 0)]]:
+        ax.annotate(
+            label,
+            compass_point,
+            compass_point + offset,
+            ha="center",
+            va="center",
+            color="red",
+            arrowprops={"arrowstyle": "<-", "shrinkB": 0, "color": "red"},
+        )
 
 .. automodapi:: m4opt.missions
     :include-all-objects:
