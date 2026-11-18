@@ -2,6 +2,11 @@
 Changes
 *******
 
+4.0.2 (unreleased)
+==================
+
+- Fix UVEX imager chip gaps; the horizontal and vertical gaps were reversed.
+
 4.0.1 (2026-11-13)
 ==================
 

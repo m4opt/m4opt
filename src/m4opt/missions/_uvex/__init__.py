@@ -70,7 +70,7 @@ uvex = Mission(
                 width=_chip_angle,
                 height=_chip_angle,
             ),
-            SkyCoord(*np.meshgrid(*_chip_offset)),
+            SkyCoord(*np.meshgrid(*_chip_offset, indexing="ij")),
         )
         .ravel()
         .tolist()
