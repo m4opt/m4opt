@@ -2,59 +2,54 @@ import heapq
 import shlex
 import sys
 from itertools import pairwise
-from typing import Annotated
 from pathlib import Path
+from typing import Annotated
 
-import numpy as np
-import synphot
-import typer
 import healpy as hp
+import numpy as np
+import typer
 from astropy import units as u
-from astropy.coordinates import ICRS, Distance, SkyCoord
+from astropy.coordinates import ICRS, SkyCoord
 from astropy.table import QTable, vstack
 from astropy.time import Time
 from astropy_healpix import HEALPix
 from click import UsageError
 from docplex.mp.progress import ProgressData, ProgressDataRecorder
-from ligo.skymap import distance
 from ligo.skymap.bayestar import rasterize
 from ligo.skymap.io import read_sky_map
-from scipy import stats
 
-from m4opt import __version__ 
+from m4opt import __version__
 from m4opt import missions as miss
+from m4opt._cli.core import app
 from m4opt.dynamics import nominal_roll
 from m4opt.fov import footprint_healpix
 from m4opt.milp import Model
 from m4opt.observer import EarthFixedObserverLocation
-from m4opt.synphot import TabularScaleFactor, observing
-from m4opt.synphot.extinction import DustExtinction
 from m4opt.utils.console import progress, status
 from m4opt.utils.numpy import clump_nonzero_inclusive, full_indices
+
 from ._types import PhysicalQuantity
-from m4opt._cli.core import app
 from .schedule import (
-    invert_footprints, 
-    invert_footprints_to_regions, 
-    prepare_piecewise_breakpoints,
+    invert_footprints,
 )
 
-'''
+"""
 Implementation of a multiple missions scheduler.
 Work in progress
-'''
+"""
 
 LARGE_EXPTIME = 1e10
 
+
 def remap_footprints(footprints, pixel_map):
     return [pixel_map[footprint] for footprint in footprints]
+
 
 def select_missions(mission_names):
     available_missions = {
         name: getattr(miss, name)
         for name in miss.__all__
-        if name != "Mission"
-        and isinstance(getattr(miss, name), miss.Mission)
+        if name != "Mission" and isinstance(getattr(miss, name), miss.Mission)
     }
     unknown_missions = set(mission_names) - available_missions.keys()
     if unknown_missions:
@@ -69,37 +64,44 @@ def select_missions(mission_names):
     return {name: available_missions[name] for name in mission_names}
 
 
-def prepare_visit_configuration(visits, bandpass, exptime_min): # need modification because for now filter change is not really supported
+def prepare_visit_configuration(
+    visits, bandpass, exptime_min
+):  # need modification because for now filter change is not really supported
     if visits < 1:
         raise UsageError("The number of visits must be at least one.")
     if not exptime_min:
         raise UsageError("Specify at least one minimum exposure time.")
 
     visit_bandpasses = [
-        bandpass[i % len(bandpass)] if bandpass else None
-        for i in range(visits)
+        bandpass[i % len(bandpass)] if bandpass else None for i in range(visits)
     ]
     visit_exptime_min_s = u.Quantity(
         [exptime_min[i % len(exptime_min)] for i in range(visits)]
     ).to_value(u.s)
     return visit_bandpasses, visit_exptime_min_s
 
+
 def build_mission_table(
     mission_name,
-    mission_obj,                       # missions[mission_name]
+    mission_obj,  # missions[mission_name]
     *,
-    field_vars,                        # dict
-    time_field_visit_vars,             # dict
-    n_fields,                          # dict
-    target_coords, rolls, field_ids,   # dicts
-    visit_bandpasses,                  # dict
+    field_vars,  # dict
+    time_field_visit_vars,  # dict
+    n_fields,  # dict
+    target_coords,
+    rolls,
+    field_ids,  # dicts
+    visit_bandpasses,  # dict
     solution,
     visits,
     visit_exptime_min_s,
     obstimes,
-    deadline, delay,
-    meta_common,                       # common val for all missions
-    objective_value, model, has_model,
+    deadline,
+    delay,
+    meta_common,  # common val for all missions
+    objective_value,
+    model,
+    has_model,
 ):
     nf = n_fields[mission_name]
 
@@ -110,29 +112,34 @@ def build_mission_table(
         exptime_field_values = np.empty((nf, visits))
     else:
         field_values = solution.get_values(field_vars[mission_name]) >= 0.5
-        time_field_visit_values = solution.get_values(time_field_visit_vars[mission_name])
+        time_field_visit_values = solution.get_values(
+            time_field_visit_vars[mission_name]
+        )
         exptime_field_values = np.tile(visit_exptime_min_s, (nf, 1))
 
     # per mission table
     idx = np.flatnonzero(field_values)
     n_obs = idx.size * visits
-    print("visit_exptime_min_s:", type(visit_exptime_min_s),
-        getattr(visit_exptime_min_s, 'shape', None),
-        visit_exptime_min_s
+    print(
+        "visit_exptime_min_s:",
+        type(visit_exptime_min_s),
+        getattr(visit_exptime_min_s, "shape", None),
+        visit_exptime_min_s,
     )
     table = QTable(
         {
             "action": np.full(n_obs, "observe"),
             "start_time": obstimes[0]
-                + (time_field_visit_values[field_values]
-                   - 0.5 * exptime_field_values[field_values]).ravel() * u.s,
+            + (
+                time_field_visit_values[field_values]
+                - 0.5 * exptime_field_values[field_values]
+            ).ravel()
+            * u.s,
             "duration": exptime_field_values[field_values].ravel() * u.s,
             "target_coord": target_coords[mission_name][
                 np.tile(idx[:, np.newaxis], visits)
             ].ravel(),
-            "roll": rolls[mission_name][
-                np.tile(idx[:, np.newaxis], visits)
-            ].ravel(),
+            "roll": rolls[mission_name][np.tile(idx[:, np.newaxis], visits)].ravel(),
             "field_id": field_ids[mission_name][
                 np.tile(idx[:, np.newaxis], visits)
             ].ravel(),
@@ -149,14 +156,15 @@ def build_mission_table(
             "roll": "Position angle of the FOV",
             "field_id": "The mission's ID for the field observed",
             "bandpass": "Detector bandpass",
-        },   # identiques
+        },  # identiques
     )
     table.sort("start_time")
 
     # mission's intrinsic observer (not common)
     table.add_column(
         mission_obj.observer_location(table["start_time"]),
-        index=3, name="observer_location",
+        index=3,
+        name="observer_location",
     )
     table["observer_location"].info.description = "Position of the spacecraft"
 
@@ -164,19 +172,23 @@ def build_mission_table(
     if len(table) > 0:
         nrows = len(table) - 1
         slew_duration = mission_obj.slew.time(
-            table["target_coord"][:-1], table["target_coord"][1:],
-            table["roll"][:-1], table["roll"][1:],
+            table["target_coord"][:-1],
+            table["target_coord"][1:],
+            table["roll"][:-1],
+            table["roll"][1:],
         )
         changed = table["bandpass"][:-1] != table["bandpass"][1:]
         slew_duration[changed] = np.maximum(
             slew_duration[changed], mission_obj.filter_exchange_time
         )
-        slew_table = QTable({
-            "action": np.full(nrows, "slew"),
-            "start_time": (table["start_time"] + table["duration"])[:-1],
-            "duration": slew_duration,
-            "bandpass": np.full(nrows, ""),
-        })
+        slew_table = QTable(
+            {
+                "action": np.full(nrows, "slew"),
+                "start_time": (table["start_time"] + table["duration"])[:-1],
+                "duration": slew_duration,
+                "bandpass": np.full(nrows, ""),
+            }
+        )
         table = vstack((table, slew_table))
     table.sort("start_time")
 
@@ -189,29 +201,32 @@ def build_mission_table(
             str(row["action"]): row["duration"].to(u.s) for row in total_time_by_action
         }
         table.meta["total_time"]["slack"] = (
-            deadline - delay
-            - total_time_by_action["duration"].sum()
+            deadline - delay - total_time_by_action["duration"].sum()
         ).to(u.s)
     else:
         table.meta["total_time"] = {}
 
-    table.meta.update({
-        "command": shlex.join(sys.argv),
-        "version": __version__,
-        "args": {
-            **meta_common,
-            "mission": mission_obj.name,
-            "bandpass": visit_bandpasses,
-        },
-        "objective_value": objective_value,
-        "best_bound": model.best_bound if has_model else 0,
-        "solution_status": (
-            model.solve_details.status if has_model
-            else "infeasible, no observable fields or pixels"
-        ),
-        "solution_time": (model.solve_details.time if has_model else 0) * u.s,
-    })
+    table.meta.update(
+        {
+            "command": shlex.join(sys.argv),
+            "version": __version__,
+            "args": {
+                **meta_common,
+                "mission": mission_obj.name,
+                "bandpass": visit_bandpasses,
+            },
+            "objective_value": objective_value,
+            "best_bound": model.best_bound if has_model else 0,
+            "solution_status": (
+                model.solve_details.status
+                if has_model
+                else "infeasible, no observable fields or pixels"
+            ),
+            "solution_time": (model.solve_details.time if has_model else 0) * u.s,
+        }
+    )
     return table
+
 
 @app.command()
 @progress()
@@ -223,7 +238,8 @@ def schedule_multi(
     schedule: Annotated[
         str,
         typer.Argument(
-            help="Output filename for generated schedule, attention, don't provide the extension, the scheduler will produce several out files (1 per mission)", metavar="SCHEDULE.ecsv"
+            help="Output filename for generated schedule, attention, don't provide the extension, the scheduler will produce several out files (1 per mission)",
+            metavar="SCHEDULE.ecsv",
         ),
     ],
     exptime_min: Annotated[
@@ -298,7 +314,7 @@ def schedule_multi(
             "Visits are grouped into contiguous blocks of a single bandpass so "
             "that the filter is exchanged only between blocks."
         ),
-    ] = ['r'], # must be changed to have per facility filter !
+    ] = ["r"],  # must be changed to have per facility filter !
     visits: Annotated[int, typer.Option(min=1, help="Number of visits")] = 1,
     cadence: Annotated[
         PhysicalQuantity[u.physical.time],
@@ -389,7 +405,7 @@ def schedule_multi(
     Generate an observing plan for a (GW) skymap.
 
     This is a work in progress, major changes are expected.
-    For now, only supports a fixed exposure time. 
+    For now, only supports a fixed exposure time.
 
     Planned changes:
     - Switch from a mission list approach to a Network approach (with a dedicated Network class)
@@ -407,15 +423,15 @@ def schedule_multi(
 
     ### Constraints:
     - FoV, slew, cuts exactly the same → **mission specific constraints grows linearly with the number of facilities**
-    - Joint coverage constraints: `pixel_vars` is now shared across all facilities, concatenate all individual missions' `good pixels`. 
+    - Joint coverage constraints: `pixel_vars` is now shared across all facilities, concatenate all individual missions' `good pixels`.
 
     ### Objective
-    Same implementation (so $\max \sum_i \rho_i \, p_i$) but with
+    Same implementation (so $\\max \\sum_i \rho_i \\, p_i$) but with
 
-    $$p_i \le \sum_f \sum_{j \in J_i^{(f)}} m_{f,j} \quad \forall i$$
+    $$p_i \\le \\sum_f \\sum_{j \\in J_i^{(f)}} m_{f,j} \\quad \forall i$$
 
     With:
-    - $\sum_f$ a sum over the different facilities (missions) considered
+    - $\\sum_f$ a sum over the different facilities (missions) considered
     - $m_{f,j}$ is the $j$-th field of facility $f$
     - $J_i^{(f)}$ is the set of indices of fields that contain the pixel $i$ for facility $f$
 
@@ -423,7 +439,7 @@ def schedule_multi(
     """
     missions = select_missions(mission_names)
     with status(f"Using missions: {missions.keys()}"):
-        adaptive_exptime = False # force constant exp time for now
+        adaptive_exptime = False  # force constant exp time for now
 
     visit_bandpasses, visit_exptime_min_s = prepare_visit_configuration(
         visits, bandpass, exptime_min
@@ -482,8 +498,12 @@ def schedule_multi(
             field_ids[mission] = np.arange(len(target_coords[mission]))[keep]
             target_coords[mission] = target_coords[mission].unmasked[keep]
             # FIXME: https://github.com/astropy/astropy/issues/17030
-            target_coords[mission] = SkyCoord(target_coords[mission].ra, target_coords[mission].dec)
-            cadence_s = cadence.to_value(u.s) # now only fix cadence so no problem leaving it like this
+            target_coords[mission] = SkyCoord(
+                target_coords[mission].ra, target_coords[mission].dec
+            )
+            cadence_s = cadence.to_value(
+                u.s
+            )  # now only fix cadence so no problem leaving it like this
             obstimes_s = (obstimes - obstimes[0]).to_value(u.s)
             observable_intervals[mission] = np.asarray(
                 [
@@ -510,29 +530,37 @@ def schedule_multi(
             )
 
             # Discard fields that are not observable.
-            good = np.asarray([len(intervals) > 0 for intervals in observable_intervals[mission]])
+            good = np.asarray(
+                [len(intervals) > 0 for intervals in observable_intervals[mission]]
+            )
             observable_intervals[mission] = observable_intervals[mission][good]
             target_coords[mission] = target_coords[mission][good]
-            field_ids[mission] = field_ids[mission][good]    
+            field_ids[mission] = field_ids[mission][good]
 
     with status("calculating footprints"):
         rolls = {}
-        global_good_pixels = {} # try to have a unique pixel var for multiple mission
+        global_good_pixels = {}  # try to have a unique pixel var for multiple mission
         footprints = {}
         n_fields = {}
         n_pixels = {}
         skymap_flat_full = skymap_flat
         all_footprints = {}
         for mission in missions.keys():
-            if isinstance(missions[mission].observer_location, EarthFixedObserverLocation):
+            if isinstance(
+                missions[mission].observer_location, EarthFixedObserverLocation
+            ):
                 rolls[mission] = np.zeros(len(target_coords[mission])) * u.deg
             else:
                 # Compute nominal roll angles for optimal solar power.
                 # The nominal roll angle varies as a function of sky position and time.
                 # We compute it for the start of the schedule because we assume that it
                 # does not change much over the duration.
-                rolls[mission] = nominal_roll(observer_locations[mission][0], target_coords[mission], event_time)
-            footprints[mission] = footprint_healpix(hpx, missions[mission].fov, target_coords[mission], rolls[mission])
+                rolls[mission] = nominal_roll(
+                    observer_locations[mission][0], target_coords[mission], event_time
+                )
+            footprints[mission] = footprint_healpix(
+                hpx, missions[mission].fov, target_coords[mission], rolls[mission]
+            )
             all_footprints[mission] = footprints[mission]
 
         pix_prob = np.asarray(skymap_flat_full["PROB"])
@@ -544,16 +572,16 @@ def schedule_multi(
             fp = np.asarray(fp)
             p = pix_prob[fp]
             is_new = counts[fp] == 0
-            return p[is_new].sum() + overlap_weight * p[~is_new].sum() 
+            return p[is_new].sum() + overlap_weight * p[~is_new].sum()
 
         heap = []
         for mission in missions.keys():
             for i, fp in enumerate(footprints[mission]):
-                heapq.heappush(heap, (-marginal_gain(fp), mission, i)) 
+                heapq.heappush(heap, (-marginal_gain(fp), mission, i))
 
-        n_covered_version = 0                      
-        gain_version = {}                          
-        full = set()        
+        n_covered_version = 0
+        gain_version = {}
+        full = set()
 
         while heap and len(full) < len(missions):
             neg_gain, mission, i = heapq.heappop(heap)
@@ -561,16 +589,20 @@ def schedule_multi(
                 continue
             if gain_version.get((mission, i), -1) != n_covered_version:
                 gain_version[(mission, i)] = n_covered_version
-                heapq.heappush(heap, (-marginal_gain(footprints[mission][i]), mission, i))
+                heapq.heappush(
+                    heap, (-marginal_gain(footprints[mission][i]), mission, i)
+                )
                 continue
             if -neg_gain <= 0:
-                break                            
+                break
             selected[mission].append(i)
             counts[np.asarray(footprints[mission][i])] += 1
             n_covered_version += 1
             if len(selected[mission]) >= max_fields:
                 full.add(mission)
-        print(f"Found best fields after {n_covered_version} iterations, covering {np.count_nonzero(counts)} pixels")
+        print(
+            f"Found best fields after {n_covered_version} iterations, covering {np.count_nonzero(counts)} pixels"
+        )
         for mission in missions.keys():
             good = np.array(sorted(selected[mission]), dtype=int)
             n_fields[mission] = len(good)
@@ -584,7 +616,8 @@ def schedule_multi(
             if write_candidates is not None:
                 write_candidates_mission = f"{write_candidates}_{mission}.npz"
                 candidate_footprints = [
-                    np.asarray(footprint, dtype=np.intp) for footprint in footprints[mission]
+                    np.asarray(footprint, dtype=np.intp)
+                    for footprint in footprints[mission]
                 ]
                 footprint_lengths = np.fromiter(
                     (len(footprint) for footprint in candidate_footprints),
@@ -630,7 +663,7 @@ def schedule_multi(
             footprints[mission] = remap_footprints(footprints[mission], imap)
             n_pixels[mission] = len(good_pixels)
 
-            #pixels_to_fields_map[mission] = invert_footprints(footprints[mission], n_pixels[mission]) -> useless ?
+            # pixels_to_fields_map[mission] = invert_footprints(footprints[mission], n_pixels[mission]) -> useless ?
 
     with status("calculating slew times"):
         slew_time_s = {}
@@ -638,24 +671,29 @@ def schedule_multi(
         for mission in missions.keys():
             slew_i, slew_j = np.triu_indices(n_fields[mission], 1)
             slew_indices[mission] = (slew_i, slew_j)
-            slew_time_s[mission] = missions[mission].slew.time(
-                target_coords[mission][slew_i],
-                target_coords[mission][slew_j],
-                rolls[mission][slew_i],
-                rolls[mission][slew_j],
-            ).to_value(u.s)
+            slew_time_s[mission] = (
+                missions[mission]
+                .slew.time(
+                    target_coords[mission][slew_i],
+                    target_coords[mission][slew_j],
+                    rolls[mission][slew_i],
+                    rolls[mission][slew_j],
+                )
+                .to_value(u.s)
+            )
 
-    # construct global pixel var 
+    # construct global pixel var
     all_pixels_global = np.unique(
-    np.concatenate([global_good_pixels[m] for m in missions])
+        np.concatenate([global_good_pixels[m] for m in missions])
     )
     if len(all_pixels_global) == 0:
         raise ValueError("No observable pixels")
     n_pixels_global = len(all_pixels_global)
-    assert n_pixels_global >= max(n_pixels[m] for m in missions), \
-        "n_pixels_global < max local : bug dans l'union" # AI assert as a failsafe but should never appear
+    assert n_pixels_global >= max(n_pixels[m] for m in missions), (
+        "n_pixels_global < max local : bug dans l'union"
+    )  # AI assert as a failsafe but should never appear
 
-    # remap HEALPIX index to the all pixel var 
+    # remap HEALPIX index to the all pixel var
     global_map = np.full(len(skymap_flat_full), -1, dtype=np.intp)
     global_map[all_pixels_global] = np.arange(n_pixels_global)
 
@@ -669,43 +707,56 @@ def schedule_multi(
         footprints_global[mission] = remap_footprints(
             footprints[mission], local_to_global
         )
-        assert all((f >= 0).all() for f in footprints_global[mission]), \
+        assert all((f >= 0).all() for f in footprints_global[mission]), (
             f"missing pixel for the union of mission {mission}"
+        )
         pixels_to_fields_map_global[mission] = invert_footprints(
             footprints_global[mission], n_pixels_global
         )
 
-    print("skymap_full PROB:",
+    print(
+        "skymap_full PROB:",
         float(skymap_flat_full["PROB"].min()),
         float(skymap_flat_full["PROB"].max()),
         float(skymap_flat_full["PROB"].mean()),
-        float(skymap_flat_full["PROB"].sum()))          # ← sum ≈ 1 ?
+        float(skymap_flat_full["PROB"].sum()),
+    )  # ← sum ≈ 1 ?
     print("skymap_full n_pixels:", len(skymap_flat_full))
-    print("all_pixels_global min/max:", all_pixels_global.min(), all_pixels_global.max())
-    print("frac PROB covered:",
-        float(skymap_flat_full["PROB"][all_pixels_global].sum()
-                / skymap_flat_full["PROB"].sum()))
+    print(
+        "all_pixels_global min/max:", all_pixels_global.min(), all_pixels_global.max()
+    )
+    print(
+        "frac PROB covered:",
+        float(
+            skymap_flat_full["PROB"][all_pixels_global].sum()
+            / skymap_flat_full["PROB"].sum()
+        ),
+    )
 
     nside_skymap = hp.npix2nside(len(skymap_flat_full))
     ipix_peak = int(np.argmax(skymap_flat_full["PROB"]))
     ra_peak, dec_peak = hp.pix2ang(nside_skymap, ipix_peak, lonlat=True)
-    print(f"skymap peak: RA={ra_peak:.2f} Dec={dec_peak:.2f} PROB={skymap_flat_full['PROB'][ipix_peak]:.3e}")
+    print(
+        f"skymap peak: RA={ra_peak:.2f} Dec={dec_peak:.2f} PROB={skymap_flat_full['PROB'][ipix_peak]:.3e}"
+    )
 
     for m in missions:
         tc = target_coords[m]
         if len(tc) == 0:
             print(f"{m}: n_obs=0, no fields are observable in the scheduling window")
             continue
-        sep = tc.separation(SkyCoord(ra_peak*u.deg, dec_peak*u.deg)).deg
+        sep = tc.separation(SkyCoord(ra_peak * u.deg, dec_peak * u.deg)).deg
         i_best = int(np.argmin(sep))
-        print(f"{m}: n_obs={len(tc)}, best field to peak = {sep[i_best]:.2f} deg, "
-            f"field RA/Dec = ({tc[i_best].ra.deg:.2f}, {tc[i_best].dec.deg:.2f})")
+        print(
+            f"{m}: n_obs={len(tc)}, best field to peak = {sep[i_best]:.2f} deg, "
+            f"field RA/Dec = ({tc[i_best].ra.deg:.2f}, {tc[i_best].dec.deg:.2f})"
+        )
 
     # do the MILP model
     with Model(
-            timelimit=timelimit, jobs=jobs, memory=memory, lowercutoff=cutoff
-        ) as model:
-        with status("assembling MILP model"): 
+        timelimit=timelimit, jobs=jobs, memory=memory, lowercutoff=cutoff
+    ) as model:
+        with status("assembling MILP model"):
             pixel_vars = model.binary_vars(n_pixels_global)
 
             field_vars = {}
@@ -768,13 +819,17 @@ def schedule_multi(
             with status("adding slew constraints"):
                 for mission in missions.keys():
                     slew_i, slew_j = slew_indices[mission]
-                # Zero or less unless both fields are observed, which relaxes
-                # the constraint away for any pair that is not.
-                    both_observed = field_vars[mission][slew_i] + field_vars[mission][slew_j] - 1
+                    # Zero or less unless both fields are observed, which relaxes
+                    # the constraint away for any pair that is not.
+                    both_observed = (
+                        field_vars[mission][slew_i] + field_vars[mission][slew_j] - 1
+                    )
+
                     # Two observations also clear each other by the slew itself.
                     def _spacing(exptimes):
                         return (
-                            slew_time_s[mission][np.newaxis, :] + exptimes[:, np.newaxis]
+                            slew_time_s[mission][np.newaxis, :]
+                            + exptimes[:, np.newaxis]
                         ) * both_observed[np.newaxis, :]
 
                     rhs = rhs_within = _spacing(visit_exptime_min_s)
@@ -795,10 +850,10 @@ def schedule_multi(
 
             with status("adding coverage constraints"):
                 coverage_rhs = []
-                for p in range(n_pixels_global):    
-                    terms = [                       
-                        field_vars[mission][f_idx]  
-                        for mission in missions     
+                for p in range(n_pixels_global):
+                    terms = [
+                        field_vars[mission][f_idx]
+                        for mission in missions
                         for f_idx in pixels_to_fields_map_global[mission][p]
                     ]
                     coverage_rhs.append(
@@ -831,7 +886,9 @@ def schedule_multi(
                 if write_progress is not None:
                     model.add_progress_listener(recorder := ProgressDataRecorder())
 
-                if write_model is not None: # allows to create a directory for the model file if it doesn't exist
+                if (
+                    write_model is not None
+                ):  # allows to create a directory for the model file if it doesn't exist
                     Path(write_model.name).parent.mkdir(parents=True, exist_ok=True)
                     model.to_stream(write_model)
 
@@ -861,9 +918,8 @@ def schedule_multi(
                     dtype=[int, bool, float, float, float, int, int, int, float, float],
                 ).write(write_progress, format="ascii.ecsv", overwrite=True)
 
-
             meta_common = {
-                "deadline": deadline,         
+                "deadline": deadline,
                 "delay": delay,
                 "skygrid": skygrid,
                 "nside": nside,
@@ -871,7 +927,7 @@ def schedule_multi(
                 "time_step": time_step,
                 "skymap": skymap.name,
                 "event_time": event_time.isot,
-                "visits": visits,            
+                "visits": visits,
                 "exptime_min": exptime_min,
                 "exptime_max": exptime_max,
                 "absmag_mean": absmag_mean,
@@ -896,11 +952,11 @@ def schedule_multi(
                     field_ids=field_ids,
                     visit_bandpasses=visit_bandpasses,
                     solution=solution,
-                    visits=visits,      
+                    visits=visits,
                     visit_exptime_min_s=visit_exptime_min_s,
                     obstimes=obstimes,
-                    deadline=deadline,                 
-                    delay=delay,                       
+                    deadline=deadline,
+                    delay=delay,
                     meta_common=meta_common,
                     objective_value=objective_value,
                     model=model,
@@ -908,4 +964,8 @@ def schedule_multi(
                 )
 
             for mission_name, table in tables.items():
-                table.write(f"{schedule}_{mission_name}.ecsv", format="ascii.ecsv", overwrite=True)
+                table.write(
+                    f"{schedule}_{mission_name}.ecsv",
+                    format="ascii.ecsv",
+                    overwrite=True,
+                )

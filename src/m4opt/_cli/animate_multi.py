@@ -45,10 +45,7 @@ def _joint_coverage_steps(
     """Return cumulative union probability after each observation starts."""
     covered_pixels = np.zeros(len(probabilities), dtype=bool)
     event_hours = sorted(
-        [
-            ((start_gps - event_time.gps) / 3600, pixels)
-            for start_gps, pixels in events
-        ],
+        [((start_gps - event_time.gps) / 3600, pixels) for start_gps, pixels in events],
         key=lambda event: event[0],
     )
     steps = []
@@ -298,9 +295,7 @@ def animate_multi(
                     distmod = Distance(skymap_moc.meta["distmean"] * u.Mpc).distmod
                     with observing(
                         observer_location=observer_locations[0][0],
-                        target_coord=hpx.healpix_to_skycoord(
-                            np.arange(hpx.npix)
-                        ),
+                        target_coord=hpx.healpix_to_skycoord(np.arange(hpx.npix)),
                         obstime=time_steps[0],
                     ):
                         exptime = mission.detector.get_exptime(
@@ -395,10 +390,9 @@ def animate_multi(
                     schedule.footprint_patches_zoom = footprint_patches_zoom
 
                 ivisit = np.arange(schedule.visits)
-                table["area"] = (
-                    np.empty((len(table), schedule.visits))
-                    * hpx.pixel_area.to(u.deg**2)
-                )
+                table["area"] = np.empty(
+                    (len(table), schedule.visits)
+                ) * hpx.pixel_area.to(u.deg**2)
                 table["prob"] = np.empty((len(table), schedule.visits))
                 selected_by_observation = list(
                     footprint_healpix(
@@ -419,8 +413,8 @@ def animate_multi(
                         np.bincount(selected_pixels, minlength=hpx.npix)
                         > ivisit[:, np.newaxis]
                     )
-                    row["area"] = (
-                        np.count_nonzero(visited, axis=1) * hpx.pixel_area.to(u.deg**2)
+                    row["area"] = np.count_nonzero(visited, axis=1) * hpx.pixel_area.to(
+                        u.deg**2
                     )
                     row["prob"] = np.sum(probs * visited, axis=1)
 
