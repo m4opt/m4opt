@@ -123,7 +123,12 @@ def test_end_to_end_no_solution(run_scheduler):
 
 
 def test_end_to_end_solution(run_scheduler):
-    table = run_scheduler("--timelimit=1min", "--exptime-min=300s")
+    table = run_scheduler(
+        "--timelimit=1min",
+        "--exptime-min=300s",
+        '--constraint={"type":"DeclinationConstraint","args":["-90 deg","90 deg"]}',
+        '--constraint={"type":"MoonSeparationConstraint","kwargs":{"min":"0 deg"}}',
+    )
     assert len(table) >= 3
 
 
