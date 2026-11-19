@@ -1,5 +1,8 @@
-#include <stdlib.h>
+// Python.h must be included first.
+// See https://docs.python.org/3/c-api/intro.html#include-files.
 #include <Python.h>
+
+#include <stdlib.h>
 #include <numpy/arrayobject.h>
 
 /*
@@ -325,9 +328,15 @@ static PyMethodDef methods[] = {
 };
 
 static PyModuleDef moduledef = {
-    PyModuleDef_HEAD_INIT,
-    "_numpy",
-    NULL, 0, methods
+    .m_base = PyModuleDef_HEAD_INIT,
+    .m_name = "_numpy",
+    .m_methods = methods,
+    .m_slots = (PyModuleDef_Slot []) {
+        #if PY_VERSION_HEX >= 0x030D0000
+        {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+        #endif
+        {0},
+    },
 };
 
 PyMODINIT_FUNC
