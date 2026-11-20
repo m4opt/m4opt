@@ -11,6 +11,7 @@ from ._galactic import GalacticLatitudeConstraint
 from ._logical import LogicalAndConstraint, LogicalNotConstraint, LogicalOrConstraint
 from ._positional import (
     AltitudeConstraint,
+    AvoidSkyRegionConstraint,
     AzimuthConstraint,
     DeclinationConstraint,
     EclipticLatitudeConstraint,
@@ -27,6 +28,7 @@ __all__ = (
     "AltitudeConstraint",
     "AntiSolarSeparationConstraint",
     "AtNightConstraint",
+    "AvoidSkyRegionConstraint",
     "AzimuthConstraint",
     "Constraint",
     "DeclinationConstraint",
