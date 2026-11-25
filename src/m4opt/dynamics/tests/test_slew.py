@@ -1,10 +1,12 @@
 import numpy as np
 from astropy import units as u
+from astropy.coordinates import SkyCoord
+from astropy.tests.helper import assert_quantity_allclose
 from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import array_shapes, arrays
 
-from .._slew import AngularMotionProfile
+from .._slew import AngularMotionProfile, EigenAxisSlew
 
 
 @given(
@@ -70,3 +72,12 @@ def test_angular_motion_profile_jerk(
         u.rad
     )
     np.testing.assert_almost_equal(distance_roundtrip, distance)
+
+
+def test_eigen_axis_slew_separation_180_deg():
+    """Rounding error used to give NaN for a rotation of exactly 180 deg."""
+    center1 = SkyCoord(0 * u.deg, -65 * u.deg)
+    center2 = SkyCoord(180 * u.deg, 65 * u.deg)
+    separation = EigenAxisSlew.separation(center1, center2, 0 * u.deg, -30 * u.deg)
+    assert np.isfinite(separation)
+    assert_quantity_allclose(separation, 180 * u.deg)

@@ -304,4 +304,6 @@ class EigenAxisSlew(Slew, AngularMotionProfile):
             @ rotation_matrix(center1.lon - center2.lon, "z")
             @ rotation_matrix(center2.lat, "y")
         )
-        return Angle(np.arccos(0.5 * (matrix_trace(mat) - 1)) * u.rad).to(u.deg)
+        # Clip to [-1, 1]: rounding error gives NaN for rotations of exactly 180 deg.
+        cos_angle = np.clip(0.5 * (matrix_trace(mat) - 1), -1, 1)
+        return Angle(np.arccos(cos_angle) * u.rad).to(u.deg)
