@@ -2,6 +2,12 @@
 Changes
 *******
 
+4.0.2 (unreleased)
+==================
+
+- Fix ``EigenAxisSlew.separation`` giving ``NaN`` for an exact 180° slew, and
+  losing precision for slews near 0° or 180°.
+
 4.0.1 (2026-11-13)
 ==================
 

@@ -5,12 +5,6 @@ from typing import override
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import Angle, SkyCoord
-from astropy.coordinates.matrix_utilities import rotation_matrix
-
-
-def matrix_trace(matrix):
-    return np.trace(matrix, axis1=-2, axis2=-1)
-
 
 # FIXME: drop if https://github.com/astropy/astropy/pull/19923 is merged
 u.def_physical_type(u.rad / u.s**3, {"angular jerk", "angular jolt"})
@@ -204,6 +198,10 @@ class Slew(ABC):
         raise NotImplementedError
 
 
+def _sincos(x):
+    return np.sin(x), np.cos(x)
+
+
 @dataclass
 class EigenAxisSlew(Slew, AngularMotionProfile):
     """
@@ -298,10 +296,23 @@ class EigenAxisSlew(Slew, AngularMotionProfile):
         assert center1.is_equivalent_frame(center2)
         center1 = center1.spherical
         center2 = center2.spherical
-        mat = (
-            rotation_matrix(roll2 - roll1, "x")
-            @ rotation_matrix(-center1.lat, "y")
-            @ rotation_matrix(center1.lon - center2.lon, "z")
-            @ rotation_matrix(center2.lat, "y")
-        )
-        return Angle(np.arccos(0.5 * (matrix_trace(mat) - 1)) * u.rad).to(u.deg)
+
+        sin_a, cos_a = _sincos(0.5 * (center1.lon - center2.lon))
+        sin_b, cos_b = _sincos(0.5 * (roll2 - roll1))
+        sin_p, cos_p = _sincos(0.5 * (center1.lat + center2.lat))
+        sin_m, cos_m = _sincos(0.5 * (center1.lat - center2.lat))
+
+        W = cos_a * cos_m
+        X = -sin_a * sin_p
+        Y = cos_a * sin_m
+        Z = -sin_a * cos_p
+
+        w = cos_b * W + sin_b * X
+        x = cos_b * X - sin_b * W
+        y = cos_b * Y + sin_b * Z
+        z = cos_b * Z - sin_b * Y
+
+        # abs(w): the quaternion may come out as q or -q; only |w| gives the
+        # angle in [0, 180] deg that both represent.
+        theta = 2 * np.arctan2(np.sqrt(x**2 + y**2 + z**2), np.abs(w))
+        return Angle(theta).to(u.deg)
