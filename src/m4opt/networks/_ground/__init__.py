@@ -1,5 +1,5 @@
+from ...missions import rubin, ztf
 from .._core import Network
-from ...missions import ztf, rubin
 
 ground = Network(
     name="ground",

@@ -61,7 +61,7 @@ def test_schedule_network_is_registered(run_cli):
 def test_per_mission_config_overrides_defaults(tmp_path):
     config_path = tmp_path / "schedule.toml"
     config_path.write_text(
-        '[default]\nmax_fields = 3\n[rubin]\nmax_fields = 2\n',
+        "[default]\nmax_fields = 3\n[rubin]\nmax_fields = 2\n",
         encoding="utf-8",
     )
     spec = _per_mission_spec(schedule_network)
